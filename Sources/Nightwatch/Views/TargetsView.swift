@@ -41,9 +41,8 @@ struct TargetsView: View {
     private func visible(at now: Date) -> [RankedTarget] {
         guard case .group(let g) = ui.section, let site = store.site else { return [] }
         let shown = targets.filter { $0.group == g }
-            .filter { !ui.fitsOnly || $0.fit == .fits }
-            .filter { ui.includeMoonWashed || !$0.moonWashed }
-            .filter { ui.search.isEmpty || $0.name.localizedCaseInsensitiveContains(ui.search) || $0.subtitle.localizedCaseInsensitiveContains(ui.search) }
+            .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
+            .filter { $0.matches(ui.search) }
         return Planner.sorted(shown, by: ui.sort, now: now, span: store.plan.flatMap { $0.primary ?? $0.darkSpan }, site: site)
     }
 
@@ -179,6 +178,10 @@ struct TargetsView: View {
                 if store.plan?.mode == .bright, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
+                if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
+                                              includeMoonWashed: ui.includeMoonWashed) {
+                    Text(hint).font(.caption).foregroundStyle(Tokens.textSecondary)
+                }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
@@ -211,7 +214,7 @@ struct TargetsView: View {
             ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { chips(t).padding(8) }
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(t.catalogueID).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
-                Text(t.commonName ?? t.typeName).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
+                Text(t.cardLine).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
                 Spacer(minLength: 4)
                 Text(t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
             }

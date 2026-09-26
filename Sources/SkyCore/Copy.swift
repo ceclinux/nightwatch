@@ -63,10 +63,31 @@ public struct Copy: Sendable {
 
     public static func hoursAgo(_ from: Date, now: Date) -> String { "\(Int(now.timeIntervalSince(from) / 3600)) h ago" }
 
+    /// Why a Targets search shows less than it found: matches in this group hidden by the filters, and matches in other
+    /// groups (the search covers only the group on screen). Nil when there is nothing to explain.
+    public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool) -> String? {
+        guard !query.allSatisfy(\.isWhitespace) else { return nil }
+        let found = targets.filter { $0.matches(query) }
+        let here = found.filter { $0.group == group }
+        func noun(_ n: Int) -> String { n == 1 ? "match" : "matches" }
+        var parts: [String] = []
+        // Counted per filter: a match both Moon-washed and outside the field of view is named by both, as both hide it.
+        let washed = here.filter { $0.hiddenByMoon(includeMoonWashed: includeMoonWashed) }.count
+        if washed > 0 { parts.append("\(washed) Moon-washed \(noun(washed)) hidden: turn on Include Moon-washed.") }
+        let unfit = here.filter { $0.hiddenByFit(fitsOnly: fitsOnly) }.count
+        if unfit > 0 { parts.append("\(unfit) \(noun(unfit)) hidden by Fits my field of view.") }
+        let elsewhere = TargetGroup.allCases.filter { $0 != group }.compactMap { g -> String? in
+            let n = found.filter { $0.group == g }.count
+            return n == 0 ? nil : "\(g.displayName) (\(n))"
+        }
+        if !elsewhere.isEmpty { parts.append("Also in \(elsewhere.joined(separator: ", ")).") }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
     /// "NGC 6992 Eastern Veil, viewable from 00:00 to 03:28, best at 00:00, 57 degrees up" (spec §7).
     /// The card's whole sentence, chips and magnitude included, because the label replaces the card's contents for a screen reader.
     public static func cardLabel(_ t: RankedTarget, lit: Bool, nearMoon: Bool, site: Site) -> String {
-        let name = [t.catalogueID, t.commonName].compactMap { $0 }.joined(separator: " ")
+        let name = [t.catalogueID, t.caldwell.map { "C\($0)" }, t.commonName].compactMap { $0 }.joined(separator: " ")
         var parts = [name]
         if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
         parts.append(frameChip(t))

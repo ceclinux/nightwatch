@@ -26,9 +26,32 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
     public let minAxisArcmin: Double?
     public let magnitude: Double?
     public let constellation: String
+    /// The Caldwell number (1–109), from OpenNGC's "C 043" identifier or an addendum entry named "C009".
+    public var caldwell: Int? = nil
 
     /// "M42" for a Messier object, else the catalogue number spaced and without leading zeros: "NGC 281", "IC 1340".
-    public var catalogueID: String { messier.map { "M\($0)" } ?? DeepSkyObject.spaced(id) }
+    /// An addendum entry that is only a Caldwell object reads "C14". Otherwise the NGC or IC number stays the ID even for
+    /// a Caldwell object, because most are better known by it (NGC 7000 is C20); the C number joins the name instead.
+    public var catalogueID: String {
+        if let m = messier { return "M\(m)" }
+        if let c = DeepSkyObject.caldwellNumber(name: id) { return "C\(c)" }
+        return DeepSkyObject.spaced(id)
+    }
+
+    /// 43 for an addendum name "C043"; nil for anything else.
+    static func caldwellNumber(name: String) -> Int? {
+        guard name.count == 4, name.first == "C", name.dropFirst().allSatisfy(\.isNumber), let n = Int(name.dropFirst()) else { return nil }
+        return n
+    }
+
+    /// 43 from OpenNGC's identifiers list ("2MASX J00031494+1608428,C 043,MCG +03-01-020").
+    static func caldwellNumber(identifiers: String) -> Int? {
+        for token in identifiers.split(separator: ",") {
+            let t = token.trimmingCharacters(in: .whitespaces)
+            if t.count == 5, t.hasPrefix("C "), let n = Int(t.dropFirst(2)) { return n }
+        }
+        return nil
+    }
 
     /// "{catalogue} {number}": letters, a space, then the number without leading zeros. ESO, PGC and UGC numbers are
     /// fixed-format and kept whole ("ESO 056-115"). An id with no letters or no number is returned as it is.
@@ -42,8 +65,8 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
 
     public var displayName: String {
         var parts: [String] = []
-        if let m = messier { parts.append("M\(m)") }
-        parts.append(DeepSkyObject.spaced(id))
+        if let m = messier { parts += ["M\(m)", DeepSkyObject.spaced(id)] } else { parts.append(catalogueID) }
+        if let c = caldwell, catalogueID != "C\(c)" { parts.append("C\(c)") }
         if let c = commonName { parts.append(c) }
         return parts.joined(separator: " · ")
     }
@@ -108,7 +131,8 @@ public struct Catalog: Sendable {
                 messier: Int(field(row, "M")),
                 typeCode: type, group: group, raHours: ra, decDeg: dec,
                 majAxisArcmin: Double(field(row, "MajAx")), minAxisArcmin: Double(field(row, "MinAx")),
-                magnitude: v ?? b, constellation: field(row, "Const")))
+                magnitude: v ?? b, constellation: field(row, "Const"),
+                caldwell: DeepSkyObject.caldwellNumber(identifiers: field(row, "Identifiers")) ?? DeepSkyObject.caldwellNumber(name: field(row, "Name"))))
         }
         return out
     }

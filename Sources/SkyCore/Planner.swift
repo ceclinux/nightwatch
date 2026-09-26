@@ -176,6 +176,33 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// "NGC 7000", "M42", "Jupiter", "Moon", "Cygnus".
     public var catalogueID: String = ""
     public var commonName: String? = nil
+    /// The Caldwell number, for the card line and search; the catalogue ID stays the NGC or IC number.
+    public var caldwell: Int? = nil
+
+    /// The card's line under the catalogue ID: "C43 · Galaxy", "C20 · North America Nebula", "Andromeda Galaxy".
+    public var cardLine: String {
+        [caldwell.map { "C\($0)" }, commonName ?? typeName].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// The Targets search, ignoring case. A catalogue number ("C43", "C 43", "NGC7814", "m 31") must begin one of the name's
+    /// " · " parts once spaces are removed, so "C43" does not find NGC 4303; a bare number ("7814") must begin one part's
+    /// digits. Anything else ("veil", "north america", "Peg") is found anywhere in the name or subtitle. Empty matches all.
+    public func matches(_ query: String) -> Bool {
+        let q = query.filter { !$0.isWhitespace }.lowercased()
+        guard !q.isEmpty else { return true }
+        let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
+        guard let first = number.first, first.isNumber else {
+            return [name, subtitle].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
+        }
+        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
+        if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }
+        return parts.contains { $0.hasPrefix(q) }
+    }
+
+    /// Hidden while Include Moon-washed is off. Shared by the Targets grid and its search hint so the two cannot disagree.
+    public func hiddenByMoon(includeMoonWashed: Bool) -> Bool { moonWashed && !includeMoonWashed }
+    /// Hidden while Fits my field of view is on.
+    public func hiddenByFit(fitsOnly: Bool) -> Bool { fitsOnly && fit != .fits }
 }
 
 /// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.
@@ -256,8 +283,9 @@ extension Planner {
 
     /// The target with its viewable span, altitude curve and names filled in.
     static func described(_ r: RankedTarget, viewable: ClearWindow?, site: Site, typeName: String, catalogueID: String,
-                          commonName: String? = nil, frameFill: Double? = nil) -> RankedTarget {
+                          commonName: String? = nil, frameFill: Double? = nil, caldwell: Int? = nil) -> RankedTarget {
         var r = r
+        r.caldwell = caldwell
         r.viewable = viewable
         r.altitudeSamples = viewable.map { altitudes(raHours: r.raHours, decDeg: r.decDeg, span: $0, site: site) } ?? []
         r.typeName = typeName; r.catalogueID = catalogueID; r.commonName = commonName; r.frameFill = frameFill
@@ -281,7 +309,8 @@ extension Planner {
                                               fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
                                               moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction),
                                  viewable: tr.viewable, site: site, typeName: Catalog.typeNames[o.typeCode] ?? o.typeCode,
-                                 catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov)))
+                                 catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov),
+                                 caldwell: o.caldwell))
         }
 
         for p in Planet.allCases {

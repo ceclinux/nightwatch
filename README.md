@@ -86,7 +86,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
   - a chip saying how much of your field of view it fills
   - an amber chip when the Moon washes it out or sits close by
 
-  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
+  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness). Search finds a target by name or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); when a match is hidden by the filters or sits in another group, a line under the header says so.
 - On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. The app's red keeps your night vision, and on the popover and the target cards it marks clear sky only. Warnings are amber with a dot and words.
 
 ## Telescope
