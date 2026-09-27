@@ -9,3 +9,4 @@ curl -sSL -o $R/catalog/constellations.json https://raw.githubusercontent.com/of
 curl -sSL -o $R/catalog/constellations.lines.json https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/constellations.lines.json
 head -1 $R/catalog/NGC.csv | cut -c1-60
 wc -l $R/catalog/NGC.csv $R/catalog/addendum.csv
+scripts/build-bright-stars.py

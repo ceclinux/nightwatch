@@ -16,13 +16,14 @@ public struct ShootingTip: Equatable, Sendable {
 
 public enum ShootingTips {
     /// What kind of light the target gives, which decides the filter.
-    enum Kind: Equatable { case emission, broadband, nebulaUnknown, moon, planet, constellation }
+    enum Kind: Equatable { case emission, broadband, nebulaUnknown, moon, planet, constellation, star }
 
     static func kind(_ t: RankedTarget) -> Kind {
         if t.id == "moon" { return .moon }
         if t.id.hasPrefix("planet-") { return .planet }
         switch t.group {
         case .constellations: return .constellation
+        case .stars: return .star
         case .galaxies, .clusters: return t.typeName == "Cluster with nebula" ? .emission : .broadband
         default: break
         }
@@ -41,6 +42,16 @@ public enum ShootingTips {
         let name = presetName ?? "your telescope"
         let hours = stackMinutes.map { String(format: "%.1f h", $0 / 60).replacingOccurrences(of: ".0 h", with: " h") }
         func frames(_ seconds: Double) -> Int? { stackMinutes.map { Int(($0 * 60 / seconds).rounded()) } }
+
+        // The same for every instrument: no maker publishes star settings, so this is guidance without numbers.
+        if k == .star {
+            rows.append(.init("Use", "A bright point for focusing, plate-solving and checking the mount's tracking, rather than a subject on its own."))
+            rows.append(.init("Exposure", "Keep frames short, so it stays a sharp point instead of a bloated disc."))
+            if let v = t.viewable {
+                rows.append(.init("When", "Up and clear from \(Copy.hhmm(v.start, site: site)); highest at \(Copy.hhmm(t.peakTime, site: site))."))
+            }
+            return ShootingTip(title: "How to shoot this with \(presetName == nil ? "your telescope" : "your \(name)")", rows: rows, source: nil)
+        }
 
         switch presetID {
         case "dwarf-mini", "dwarf-3":

@@ -36,10 +36,11 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 - **Clear-sky bars:** one per hour of darkness, with the window hours red.
 - **Notice line:** at most one: aurora, in AuroraWatch UK's own colours (yellow, amber or red) and linking to their site, or a clearer dark site nearby.
 - **Six tiles:** dark hours, the Moon with a real NASA phase image and its set or rise time, seeing, wind, dew or frost risk (amber with "Dew heater advised" when high), and transparency.
-- **Best targets:** the best three, with thumbnails, catalogue ID, name and best time.
+- **Best targets:** the best three, with thumbnails, catalogue ID, name and best time. A favourite well placed tonight, and not Moon-washed, takes one slot: in place of its own group's pick, else of the last.
 - **Footer:** a "Notify at HH:MM" switch, the Refresh button, and the update time with the cloud source (the Apple Weather mark and legal link, or Open-Meteo), plus an amber dot and "{n} h ago" when the forecast is over six hours old.
 
-**Targets window.** Everything above the horizon during tonight's window, grouped into nebulae, galaxies, star clusters, planets and Moon, events, constellations, and dark sites.
+**Targets window.** Everything above the horizon during tonight's window, grouped into nebulae, galaxies, star clusters, stars (the 49 named stars of magnitude 2 or brighter), planets and Moon, events, constellations, and dark sites.
+- **Favourites:** the heart on a card or a target's page adds it; the Favourites group, first in the sidebar, lists every favourite. One that is not usable tonight is dimmed with the reason ("Below 30° in tonight's window", "Above 30° for under half of tonight's window", "No astronomical darkness tonight"). A favourite is kept whatever its magnitude, and the two filters never hide one. Favourites are saved in the settings file.
 - **Cards:** Digitized Sky Survey images for deep sky, real photographs for the planets and the Moon, and artwork made for Nightwatch for all 88 constellations (the figure with its star points on top).
   - Every card's timeline spans the clear window, lit where the target is viewable, brighter where it is higher, with the best moment marked and "Viewable HH:MM–HH:MM · Best HH:MM · N°" beneath.
   - A neutral chip says how much of the field of view the target fills.
@@ -103,6 +104,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
 | Constellation artwork | Original to Nightwatch, created with ChatGPT image generation; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |
+| Bright stars | d3-celestial star catalogue and names, via `scripts/build-bright-stars.py` | BSD-3 |
 | Sky-survey images | Digitized Sky Survey (STScI/NASA), coloured by CDS, via hips2fits | ODbL 1.0 (CDS); STScI permits non-profit use with acknowledgement; plates copyright AAO, SERC, Caltech, AURA |
 | Comets | IAU Minor Planet Center | Public |
 | ISS passes | CelesTrak elements, SatelliteKit SGP4 | MIT |

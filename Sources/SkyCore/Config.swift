@@ -40,8 +40,14 @@ public struct Config: Codable, Equatable, Sendable {
     public var darkSites = DarkSiteSettings()
     public var brightNights = BrightSettings()
     public var aurora = AuroraSettings()
+    /// Target IDs the user has hearted (v1.0.1), in the order they were added: "NGC7814", "HIP24608", "planet-saturn", "Ori".
+    public var favourites: [String] = []
 
     public init() {}
+
+    public mutating func toggleFavourite(_ id: String) {
+        if let i = favourites.firstIndex(of: id) { favourites.remove(at: i) } else { favourites.append(id) }
+    }
     public static let `default` = Config()
 
     /// A visited dark site wins; then a named saved site; otherwise the automatic fix; otherwise the first saved site.
@@ -107,7 +113,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -131,6 +137,7 @@ public struct Config: Codable, Equatable, Sendable {
         darkSites = try c.decodeIfPresent(DarkSiteSettings.self, forKey: .darkSites) ?? DarkSiteSettings()
         brightNights = try c.decodeIfPresent(BrightSettings.self, forKey: .brightNights) ?? BrightSettings()
         aurora = try c.decodeIfPresent(AuroraSettings.self, forKey: .aurora) ?? AuroraSettings()
+        favourites = try c.decodeIfPresent([String].self, forKey: .favourites) ?? []
     }
 }
 

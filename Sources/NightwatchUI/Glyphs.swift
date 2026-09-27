@@ -7,6 +7,7 @@ extension TargetGroup {
         case .nebulae: "cloud.fill"
         case .galaxies: "hurricane"
         case .clusters: "sparkles"
+        case .stars: "star.fill"
         case .planets: "circle.circle"
         case .events: "calendar"
         case .constellations: "point.3.connected.trianglepath.dotted"

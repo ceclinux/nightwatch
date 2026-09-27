@@ -1,12 +1,13 @@
 import Foundation
 
 public enum TargetGroup: String, Codable, CaseIterable, Sendable {
-    case nebulae, galaxies, clusters, planets, events, constellations
+    case nebulae, galaxies, clusters, stars, planets, events, constellations
     public var displayName: String {
         switch self {
         case .nebulae: "Nebulae"
         case .galaxies: "Galaxies"
         case .clusters: "Star clusters"
+        case .stars: "Stars"
         case .planets: "Planets and Moon"
         case .events: "Events"
         case .constellations: "Constellations"

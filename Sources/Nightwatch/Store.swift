@@ -45,6 +45,7 @@ final class Store: ObservableObject {
     private let fetcher: Fetcher = URLSessionFetcher()
     private let catalog: Catalog
     private let constellations: [Constellation]
+    private let stars: [BrightStar]
     private let showers: [MeteorShower]
     private let certified: [CertifiedSite]
     private let grids: [LPGrid]
@@ -59,6 +60,7 @@ final class Store: ObservableObject {
     init() {
         catalog = (try? Catalog.bundled()) ?? Catalog(objects: [])
         constellations = (try? Constellations.bundled()) ?? []
+        stars = (try? BrightStars.bundled()) ?? []
         showers = (try? MeteorShowers.bundled()) ?? []
         certified = (try? DarkSites.bundledCertified()) ?? []
         grids = LPGrids.bundled()
@@ -211,8 +213,10 @@ final class Store: ObservableObject {
         guard let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: site),
               let next = try? Ephemeris.night(localDate: cal.date(byAdding: .day, value: 1, to: night.localDate)!, site: site) else { return }
         let fov = config.fov, rule = config.goRule
-        let p = Planner.plan(night: night, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule, bright: config.brightNights)
-        let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule, bright: config.brightNights)
+        let p = Planner.plan(night: night, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
+                             bright: config.brightNights, favourites: config.favourites)
+        let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
+                             bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")

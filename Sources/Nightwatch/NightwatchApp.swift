@@ -73,7 +73,8 @@ struct NightwatchApp: App {
             case .target(let id):
                 // Both lists, so a Moon or planet id finds its group on either kind of night; TargetsView selects it only
                 // when it is in tonight's list, else it opens the section.
-                let group = store.plan.flatMap { p in (p.targets + p.brightTargets).first { $0.id == id }?.group }
+                // A favourite the magnitude cut left out can be in the popover's best three: it is found among the favourites.
+                let group = store.plan.flatMap { p in (p.targets + p.brightTargets + p.favourites.map(\.target)).first { $0.id == id }?.group }
                 store.targetsRequest = TargetsRequest(section: .group(group ?? .nebulae), siteID: nil, targetID: id)
             }
         }

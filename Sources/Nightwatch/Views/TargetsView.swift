@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-enum BrowserSection: Hashable { case group(TargetGroup), darkSites }
+enum BrowserSection: Hashable { case favourites, group(TargetGroup), darkSites }
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
@@ -34,17 +34,34 @@ struct TargetsView: View {
         return .nebulae
     }
 
-    private var sections: [BrowserSection] { TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+    private var sections: [BrowserSection] { [.favourites] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+
+    private var favourites: [FavouriteTarget] { store.plan?.favourites ?? [] }
 
 
     /// The filtered, sorted cards at `now`. "Best now" sorts by altitude at that instant, so the grid passes a clock tick.
-    private func visible(at now: Date) -> [RankedTarget] {
-        guard case .group(let g) = ui.section, let site = store.site else { return [] }
-        let shown = targets.filter { $0.group == g }
-            .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
-            .filter { $0.matches(ui.search) }
-        return Planner.sorted(shown, by: ui.sort, now: now, span: store.plan.flatMap { $0.primary ?? $0.darkSpan }, site: site)
+    /// Favourites ignore the two filters, since every favourite is always shown: usable ones sorted, then the greyed rest.
+    private func visible(at now: Date) -> [FavouriteTarget] {
+        guard let site = store.site else { return [] }
+        let span = store.plan.flatMap { $0.primary ?? $0.darkSpan }
+        switch ui.section {
+        case .favourites:
+            let found = favourites.filter { $0.target.matches(ui.search) }
+            let usable = Planner.sorted(found.filter { $0.notTonight == nil }.map(\.target), by: ui.sort, now: now, span: span, site: site)
+            return usable.map { FavouriteTarget(target: $0, notTonight: nil) } + found.filter { $0.notTonight != nil }
+        case .group(let g):
+            let shown = targets.filter { $0.group == g }
+                .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
+                .filter { $0.matches(ui.search) }
+            return Planner.sorted(shown, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+        case .darkSites:
+            return []
+        }
     }
+
+    private func isFavourite(_ t: RankedTarget) -> Bool { store.config.favourites.contains(t.id) }
+
+    private func toggleFavourite(_ t: RankedTarget) { store.config.toggleFavourite(t.id); store.saveConfig() }
 
     var body: some View {
         NavigationSplitView {
@@ -71,7 +88,7 @@ struct TargetsView: View {
                 switch ui.section {
                 case .group(.events): eventsList
                 case .darkSites: darkSitesList
-                case .group: grid
+                case .group, .favourites: grid
                 }
             }
         }
@@ -85,6 +102,8 @@ struct TargetsView: View {
     private func sidebarRow(_ section: BrowserSection) -> some View {
         HStack {
             switch section {
+            case .favourites:
+                Label("Favourites", systemImage: "heart.fill"); Spacer(); Text("\(favourites.count)").foregroundStyle(Tokens.textSecondary)
             case .group(let g):
                 Label(g.displayName, systemImage: Theme.glyph(for: g)); Spacer(); Text("\(count(g))").foregroundStyle(Tokens.textSecondary)
             case .darkSites:
@@ -113,7 +132,7 @@ struct TargetsView: View {
         if let section = r.section {
             ui.section = section
             ui.pendingScrollID = r.siteID
-            ui.selected = r.targetID.flatMap { id in targets.first { $0.id == id } }
+            ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
         }
         store.targetsRequest = nil
     }
@@ -157,7 +176,7 @@ struct TargetsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text(selectedGroup.displayName).font(.title2.weight(.semibold))
+                    Text(ui.section == .favourites ? "Favourites" : selectedGroup.displayName).font(.title2.weight(.semibold))
                     Spacer()
                     Picker("Sort", selection: $ui.sort) {
                         ForEach(TargetSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -175,20 +194,29 @@ struct TargetsView: View {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if store.plan?.mode == .bright, selectedGroup != .planets {
+                if store.plan?.mode == .bright, ui.section != .favourites, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
-                if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                              includeMoonWashed: ui.includeMoonWashed) {
+                if ui.section == .favourites {
+                    if favourites.isEmpty {
+                        Text("No favourites yet. Click the heart on any target to add it here.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
+                        Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    }
+                } else if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
+                                                     includeMoonWashed: ui.includeMoonWashed) {
                     Text(hint).font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                        ForEach(visible(at: clock.date)) { t in
-                            Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
-                                .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
+                        ForEach(visible(at: clock.date)) { f in
+                            let t = f.target
+                            Button { ui.selected = t } label: { card(t, notTonight: f.notTonight) }.buttonStyle(.plain)
+                                .accessibilityLabel(f.notTonight.map { "\(t.name), \($0)" }
+                                                    ?? store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
+                                .overlay(alignment: .topLeading) { heart(t).padding(14) }   // outside the card's button, so it clicks alone
                         }
                     }.padding(20)
                 }
@@ -209,16 +237,31 @@ struct TargetsView: View {
         }
     }
 
-    private func card(_ t: RankedTarget) -> some View {
+    private func heart(_ t: RankedTarget) -> some View {
+        let on = isFavourite(t)
+        return Button { toggleFavourite(t) } label: {
+            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(on ? Theme.accent : Tokens.textPrimary).padding(5)
+                .background(Circle().fill(.black.opacity(0.45)))
+        }
+        .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
+        .accessibilityLabel(on ? "Remove \(t.name) from favourites" : "Add \(t.name) to favourites")
+    }
+
+    /// `notTonight`: a favourite that is not usable tonight, drawn dimmed with the reason in place of its timeline.
+    private func card(_ t: RankedTarget, notTonight: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { chips(t).padding(8) }
+                .opacity(notTonight == nil ? 1 : 0.45)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(t.catalogueID).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
                 Text(t.cardLine).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
                 Spacer(minLength: 4)
                 Text(t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
             }
-            if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
+            if let reason = notTonight {
+                Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)
+            } else if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
                 ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
             }
         }

@@ -142,6 +142,14 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
     #expect(p.targets.isEmpty && p.best.isEmpty)
 }
 
+@Test func favouritesSurviveABrightNight() throws {
+    let (night, fc) = try brightNight(7, 30, cloud: 5)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], stars: try BrightStars.bundled(),
+                         site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn, favourites: ["planet-saturn", "HIP91262"])
+    #expect(p.mode == .bright)
+    #expect(p.favourites.map(\.id) == ["planet-saturn", "HIP91262"])   // Saturn and Vega
+}
+
 @Test func brightModeOffKeepsTheDarkResult() throws {
     let (night, fc) = try brightNight(7, 30, cloud: 5)
     let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: nil)

@@ -1,0 +1,394 @@
+[
+{
+"id": "HIP32349",
+"name": "Sirius",
+"designation": "α CMa",
+"magnitude": -1.44,
+"raHours": 6.75248,
+"decDeg": -16.7161
+},
+{
+"id": "HIP30438",
+"name": "Canopus",
+"designation": "α Car",
+"magnitude": -0.62,
+"raHours": 6.3992,
+"decDeg": -52.6957
+},
+{
+"id": "HIP69673",
+"name": "Arcturus",
+"designation": "α Boo",
+"magnitude": -0.05,
+"raHours": 14.26102,
+"decDeg": 19.1824
+},
+{
+"id": "HIP71683",
+"name": "Rigil Kentaurus",
+"designation": "α1 Cen",
+"magnitude": -0.01,
+"raHours": 14.66014,
+"decDeg": -60.834
+},
+{
+"id": "HIP91262",
+"name": "Vega",
+"designation": "α Lyr",
+"magnitude": 0.03,
+"raHours": 18.61565,
+"decDeg": 38.7837
+},
+{
+"id": "HIP24608",
+"name": "Capella",
+"designation": "α Aur",
+"magnitude": 0.08,
+"raHours": 5.27815,
+"decDeg": 45.998
+},
+{
+"id": "HIP24436",
+"name": "Rigel",
+"designation": "β Ori",
+"magnitude": 0.18,
+"raHours": 5.2423,
+"decDeg": -8.2016
+},
+{
+"id": "HIP37279",
+"name": "Procyon",
+"designation": "α CMi",
+"magnitude": 0.4,
+"raHours": 7.65503,
+"decDeg": 5.225
+},
+{
+"id": "HIP7588",
+"name": "Achernar",
+"designation": "α Eri",
+"magnitude": 0.45,
+"raHours": 1.62857,
+"decDeg": -57.2368
+},
+{
+"id": "HIP27989",
+"name": "Betelgeuse",
+"designation": "α Ori",
+"magnitude": 0.45,
+"raHours": 5.91953,
+"decDeg": 7.4071
+},
+{
+"id": "HIP68702",
+"name": "Hadar",
+"designation": "β Cen",
+"magnitude": 0.61,
+"raHours": 14.06373,
+"decDeg": -60.373
+},
+{
+"id": "HIP97649",
+"name": "Altair",
+"designation": "α Aql",
+"magnitude": 0.76,
+"raHours": 19.84639,
+"decDeg": 8.8683
+},
+{
+"id": "HIP60718",
+"name": "Acrux",
+"designation": "α1 Cru",
+"magnitude": 0.77,
+"raHours": 12.44331,
+"decDeg": -63.0991
+},
+{
+"id": "HIP21421",
+"name": "Aldebaran",
+"designation": "α Tau",
+"magnitude": 0.87,
+"raHours": 4.59868,
+"decDeg": 16.5093
+},
+{
+"id": "HIP65474",
+"name": "Spica",
+"designation": "α Vir",
+"magnitude": 0.98,
+"raHours": 13.41988,
+"decDeg": -11.1613
+},
+{
+"id": "HIP80763",
+"name": "Antares",
+"designation": "α Sco",
+"magnitude": 1.06,
+"raHours": 16.49013,
+"decDeg": -26.432
+},
+{
+"id": "HIP37826",
+"name": "Pollux",
+"designation": "β Gem",
+"magnitude": 1.16,
+"raHours": 7.75527,
+"decDeg": 28.0262
+},
+{
+"id": "HIP113368",
+"name": "Fomalhaut",
+"designation": "α PsA",
+"magnitude": 1.17,
+"raHours": 22.96085,
+"decDeg": -29.6222
+},
+{
+"id": "HIP62434",
+"name": "Mimosa",
+"designation": "β Cru",
+"magnitude": 1.25,
+"raHours": 12.79535,
+"decDeg": -59.6888
+},
+{
+"id": "HIP102098",
+"name": "Deneb",
+"designation": "α Cyg",
+"magnitude": 1.25,
+"raHours": 20.69053,
+"decDeg": 45.2803
+},
+{
+"id": "HIP71681",
+"name": "Toliman",
+"designation": "α2 Cen",
+"magnitude": 1.35,
+"raHours": 14.65975,
+"decDeg": -60.8372
+},
+{
+"id": "HIP49669",
+"name": "Regulus",
+"designation": "α Leo",
+"magnitude": 1.36,
+"raHours": 10.13953,
+"decDeg": 11.9672
+},
+{
+"id": "HIP33579",
+"name": "Adhara",
+"designation": "ε CMa",
+"magnitude": 1.5,
+"raHours": 6.9771,
+"decDeg": -28.9721
+},
+{
+"id": "HIP36850",
+"name": "Castor",
+"designation": "α Gem",
+"magnitude": 1.58,
+"raHours": 7.57663,
+"decDeg": 31.8883
+},
+{
+"id": "HIP61084",
+"name": "Gacrux",
+"designation": "γ Cru",
+"magnitude": 1.59,
+"raHours": 12.51943,
+"decDeg": -57.1132
+},
+{
+"id": "HIP85927",
+"name": "Shaula",
+"designation": "λ Sco",
+"magnitude": 1.62,
+"raHours": 17.56015,
+"decDeg": -37.1038
+},
+{
+"id": "HIP25336",
+"name": "Bellatrix",
+"designation": "γ Ori",
+"magnitude": 1.64,
+"raHours": 5.41885,
+"decDeg": 6.3497
+},
+{
+"id": "HIP25428",
+"name": "Elnath",
+"designation": "β Tau",
+"magnitude": 1.65,
+"raHours": 5.4382,
+"decDeg": 28.6075
+},
+{
+"id": "HIP45238",
+"name": "Miaplacidus",
+"designation": "β Car",
+"magnitude": 1.67,
+"raHours": 9.21999,
+"decDeg": -69.7172
+},
+{
+"id": "HIP26311",
+"name": "Alnilam",
+"designation": "ε Ori",
+"magnitude": 1.69,
+"raHours": 5.60356,
+"decDeg": -1.2019
+},
+{
+"id": "HIP109268",
+"name": "Alnair",
+"designation": "α Gru",
+"magnitude": 1.73,
+"raHours": 22.13722,
+"decDeg": -46.961
+},
+{
+"id": "HIP26727",
+"name": "Alnitak",
+"designation": "ζ Ori",
+"magnitude": 1.74,
+"raHours": 5.67931,
+"decDeg": -1.9426
+},
+{
+"id": "HIP39953",
+"name": "Regor",
+"designation": "γ2 Vel",
+"magnitude": 1.75,
+"raHours": 8.15887,
+"decDeg": -47.3366
+},
+{
+"id": "HIP62956",
+"name": "Alioth",
+"designation": "ε UMa",
+"magnitude": 1.76,
+"raHours": 12.90049,
+"decDeg": 55.9598
+},
+{
+"id": "HIP15863",
+"name": "Mirfak",
+"designation": "α Per",
+"magnitude": 1.79,
+"raHours": 3.40538,
+"decDeg": 49.8612
+},
+{
+"id": "HIP90185",
+"name": "Kaus Australis",
+"designation": "ε Sgr",
+"magnitude": 1.79,
+"raHours": 18.40287,
+"decDeg": -34.3846
+},
+{
+"id": "HIP54061",
+"name": "Dubhe",
+"designation": "α UMa",
+"magnitude": 1.81,
+"raHours": 11.06213,
+"decDeg": 61.751
+},
+{
+"id": "HIP34444",
+"name": "Wezen",
+"designation": "δ CMa",
+"magnitude": 1.83,
+"raHours": 7.13986,
+"decDeg": -26.3932
+},
+{
+"id": "HIP67301",
+"name": "Alkaid",
+"designation": "η UMa",
+"magnitude": 1.85,
+"raHours": 13.79235,
+"decDeg": 49.3133
+},
+{
+"id": "HIP41037",
+"name": "Avior",
+"designation": "ε Car",
+"magnitude": 1.86,
+"raHours": 8.37523,
+"decDeg": -59.5095
+},
+{
+"id": "HIP86228",
+"name": "Sargas",
+"designation": "θ Sco",
+"magnitude": 1.86,
+"raHours": 17.62198,
+"decDeg": -42.9978
+},
+{
+"id": "HIP28360",
+"name": "Menkalinan",
+"designation": "β Aur",
+"magnitude": 1.9,
+"raHours": 5.99215,
+"decDeg": 44.9474
+},
+{
+"id": "HIP82273",
+"name": "Atria",
+"designation": "α TrA",
+"magnitude": 1.91,
+"raHours": 16.81108,
+"decDeg": -69.0277
+},
+{
+"id": "HIP31681",
+"name": "Alhena",
+"designation": "γ Gem",
+"magnitude": 1.93,
+"raHours": 6.62853,
+"decDeg": 16.3993
+},
+{
+"id": "HIP42913",
+"name": "Alsephina",
+"designation": "δ Vel",
+"magnitude": 1.93,
+"raHours": 8.74506,
+"decDeg": -54.7088
+},
+{
+"id": "HIP100751",
+"name": "Peacock",
+"designation": "α Pav",
+"magnitude": 1.94,
+"raHours": 20.42746,
+"decDeg": -56.7351
+},
+{
+"id": "HIP11767",
+"name": "Polaris",
+"designation": "α UMi",
+"magnitude": 1.97,
+"raHours": 2.5303,
+"decDeg": 89.2641
+},
+{
+"id": "HIP30324",
+"name": "Mirzam",
+"designation": "β CMa",
+"magnitude": 1.98,
+"raHours": 6.37833,
+"decDeg": -17.9559
+},
+{
+"id": "HIP46390",
+"name": "Alphard",
+"designation": "α Hya",
+"magnitude": 1.99,
+"raHours": 9.45979,
+"decDeg": -8.6586
+}
+]

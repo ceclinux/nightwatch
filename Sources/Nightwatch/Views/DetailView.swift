@@ -122,7 +122,15 @@ struct DetailView: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(target.name).font(.system(size: 24, weight: .semibold)).lineLimit(2)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(target.name).font(.system(size: 24, weight: .semibold)).lineLimit(2)
+                let on = store.config.favourites.contains(target.id)
+                Button { store.config.toggleFavourite(target.id); store.saveConfig() } label: {
+                    Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 16, weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
+                }
+                .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
+                .accessibilityLabel(on ? "Remove from favourites" : "Add to favourites")
+            }
             Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
