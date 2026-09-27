@@ -151,8 +151,11 @@ Sidebar › macOS App › **1.0.0 Prepare for Submission**. *Add for Review is o
 2. From the same tagged commit, run `scripts/appstore.sh`. It stops with a pointer to this page if anything from the setup
    is missing, and refuses to package a build that still has the update check or a sandbox exception.
 3. `open -a Transporter build/appstore/Nightwatch-<version>.pkg`, then **Deliver** (step 7).
-4. In App Store Connect, create the new version, fill in what changed, and attach the build, then **Save**, **Add for
-   Review** and **Submit** (step 12). Review usually takes a day or two.
+4. In App Store Connect, create the new version and paste **What's New in This Version** (required for every update) from
+   `scripts/release-notes.sh --appstore <version>`. It prints the release-history row as plain bullets without the release
+   name, fails over Apple's 4,000 characters, and warns about download-only wording (GitHub, the DMG, the update check)
+   to edit out first. Attach the build, then **Save**, **Add for Review** and **Submit** (step 12). Review usually takes a
+   day or two.
 
 ## Listing text
 
