@@ -218,10 +218,18 @@ struct TargetsView: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                         ForEach(visible(at: clock.date)) { f in
                             let t = f.target
-                            Button { ui.selected = t } label: { card(t, notTonight: f.notTonight) }.buttonStyle(.plain)
+                            // Not a Button: the heart inside the card needs its own clicks, and a button inside a button's label
+                            // does not reliably get them. A heart overlaid outside the card was hidden under the Liquid Glass
+                            // (owner, 27 September 2026), so it lives inside, beside the chips.
+                            card(t, notTonight: f.notTonight)
+                                .contentShape(Rectangle())
+                                .onTapGesture { ui.selected = t }
+                                .accessibilityElement(children: .combine)
                                 .accessibilityLabel(f.notTonight.map { "\(t.name), \($0)" }
                                                     ?? store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
-                                .overlay(alignment: .topLeading) { heart(t).padding(14) }   // outside the card's button, so it clicks alone
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction { ui.selected = t }
+                                .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
                         }
                     }.padding(20)
                 }
@@ -258,6 +266,7 @@ struct TargetsView: View {
         VStack(alignment: .leading, spacing: 8) {
             ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { chips(t).padding(8) }
                 .opacity(notTonight == nil ? 1 : 0.45)
+                .overlay(alignment: .topLeading) { heart(t).padding(8) }   // after the dimming, so a greyed favourite's heart stays bright
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(t.catalogueID).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
                 Text(t.cardLine).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
