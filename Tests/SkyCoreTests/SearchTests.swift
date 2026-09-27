@@ -21,6 +21,8 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(m61.matches("4303") && m61.matches("M61") && m61.matches("ngc 43"))
     let veil = target("NGC6992", name: "NGC 6992 · C33 · Eastern Veil", group: .nebulae, commonName: "Eastern Veil")
     #expect(veil.matches("veil") && veil.matches("eastern veil") && veil.matches("C33") && veil.matches("Peg"))   // words: anywhere
+    let little = target("NGC7814", name: "NGC 7814 · C43 · Little Sombrero Galaxy", group: .galaxies, caldwell: 43, commonName: "Little Sombrero Galaxy")
+    #expect(little.matches("sombrero") && little.matches("little sombrero") && little.matches("C43"))
 }
 
 @Test func cardLineCarriesTheCaldwellNumber() {

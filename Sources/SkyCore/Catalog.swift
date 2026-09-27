@@ -93,6 +93,16 @@ public struct Catalog: Sendable {
         "SNR": "Supernova remnant", "DrkN": "Dark nebula"
     ]
 
+    /// Well-known names OpenNGC leaves out, by its Name, so they show on the card and the search finds them (v1.0.1: the owner
+    /// searched "sombrero" for C43). From Wikipedia's Caldwell catalogue table, and its NGC 7814 article for the Little Sombrero.
+    /// OpenNGC's own name wins where it has one.
+    static let extraNames: [String: String] = [
+        "NGC0188": "Polarissima Cluster", "IC0342": "Hidden Galaxy", "NGC0891": "Silver Sliver Galaxy",
+        "NGC7814": "Little Sombrero Galaxy", "NGC7479": "Superman Galaxy", "NGC0246": "Skull Nebula",
+        "NGC2362": "Tau Canis Majoris Cluster", "NGC6729": "R CrA Nebula", "NGC0300": "Sculptor Pinwheel Galaxy",
+        "NGC0055": "String of Pearls Galaxy", "NGC6752": "Great Peacock Globular", "NGC2516": "Southern Beehive Cluster"
+    ]
+
     static func hours(_ s: String) -> Double? {
         let p = s.split(separator: ":").compactMap { Double($0) }
         guard p.count == 3 else { return nil }
@@ -128,7 +138,8 @@ public struct Catalog: Sendable {
             let names = field(row, "Common names")
             out.append(DeepSkyObject(
                 id: field(row, "Name"),
-                commonName: names.isEmpty ? nil : names.split(separator: ",").first.map { String($0).trimmingCharacters(in: .whitespaces) },
+                commonName: names.isEmpty ? extraNames[field(row, "Name")]
+                    : names.split(separator: ",").first.map { String($0).trimmingCharacters(in: .whitespaces) },
                 messier: Int(field(row, "M")),
                 typeCode: type, group: group, raHours: ra, decDeg: dec,
                 majAxisArcmin: Double(field(row, "MajAx")), minAxisArcmin: Double(field(row, "MinAx")),

@@ -79,7 +79,7 @@ import Foundation
     #expect(tagged.count == 109)
     #expect(Set(tagged.compactMap(\.caldwell)) == Set(1...109))
     let c43 = try #require(tagged.first { $0.caldwell == 43 })
-    #expect(c43.id == "NGC7814" && c43.catalogueID == "NGC 7814" && c43.displayName == "NGC 7814 · C43")
+    #expect(c43.id == "NGC7814" && c43.catalogueID == "NGC 7814" && c43.displayName == "NGC 7814 · C43 · Little Sombrero Galaxy")
     let c20 = try #require(tagged.first { $0.caldwell == 20 })
     #expect(c20.catalogueID == "NGC 7000" && c20.displayName == "NGC 7000 · C20 · North America Nebula")
     let c14 = try #require(tagged.first { $0.caldwell == 14 })
@@ -87,4 +87,13 @@ import Foundation
     let m31 = try #require(try Catalog.bundled().objects.first { $0.messier == 31 })   // Messier names are unchanged
     #expect(m31.catalogueID == "M31" && m31.displayName == "M31 · NGC 224 · Andromeda Galaxy")
     #expect(DeepSkyObject.caldwellNumber(name: "C+12") == nil && DeepSkyObject.caldwellNumber(name: "Cl399") == nil)
+}
+
+/// Names OpenNGC lacks are filled in, so "sombrero" finds C43 (v1.0.1); OpenNGC's own names are never replaced.
+@Test func missingCommonNamesAreFilledIn() throws {
+    let objs = try Catalog.bundled().objects
+    func o(_ id: String) throws -> DeepSkyObject { try #require(objs.first { $0.id == id }) }
+    #expect(try o("NGC7814").commonName == "Little Sombrero Galaxy")
+    #expect(try o("NGC4594").commonName == "Sombrero Galaxy")
+    for id in Catalog.extraNames.keys { #expect(try o(id).commonName == Catalog.extraNames[id], "\(id)") }
 }
