@@ -1,8 +1,8 @@
 # Nightwatch
 
-![The Moon, first quarter, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
+![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
-*The Moon, DWARF Mini, Richard Sutcliffe.*
+*The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
 
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
