@@ -46,7 +46,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
   - A neutral chip says how much of the field of view the target fills.
   - Amber chips flag targets that the Moon washes out or sits within 15° of.
   - Caldwell objects carry their number: the card reads "NGC 7814" over "C43 · Galaxy", and the detail page "NGC 7814 · C43". The NGC or IC number stays first, since most are better known by it.
-- **Search:** by name or by Messier, Caldwell, NGC or IC number, ignoring spaces ("C 43", "NGC7814"). It covers the group on screen; a line under the header counts matches hidden by Include Moon-washed or Fits my field of view, and names the other groups with matches.
+- **Search:** by name, by kind ("galaxy", "globular cluster") or by Messier, Caldwell, NGC or IC number, ignoring spaces ("C 43", "NGC7814"). It covers the group on screen; a line under the header, in larger amber text than the night's status, says how many matches it found, how many are Moon-washed or do not fit the field of view, and which other groups have matches. While searching, those two switches do not hide a match: the ones they would hide are shown last.
   - Titles follow one pattern: catalogue ID, then name, then magnitude.
 - **Header:** a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
 - **Sidebar:** glass, with the filters as switches under an amber Moon line.

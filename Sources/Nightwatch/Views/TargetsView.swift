@@ -52,10 +52,8 @@ struct TargetsView: View {
             let usable = Planner.sorted(found.filter { $0.notTonight == nil }.map(\.target), by: ui.sort, now: now, span: span, site: site)
             return usable.map { FavouriteTarget(target: $0, notTonight: nil) } + found.filter { $0.notTonight != nil }
         case .group(let g):
-            let shown = targets.filter { $0.group == g }
-                .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
-                .filter { $0.matches(ui.search) }
-            return Planner.sorted(shown, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+            return RankedTarget.cards(targets, group: g, query: ui.search, fitsOnly: ui.fitsOnly, includeMoonWashed: ui.includeMoonWashed,
+                                      sort: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
         case .darkSites:
             return []
         }
@@ -212,17 +210,19 @@ struct TargetsView: View {
                 if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
+                // What the search found, under the night's state as before but in the callout size and the amber used for the Moon
+                // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
+                if ui.section != .favourites, !isEvents,
+                   let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
+                                              includeMoonWashed: ui.includeMoonWashed) {
+                    Text(hint).font(.callout).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
+                }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
                         Text("No favourites yet. Click the heart on any target to add it here.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
                         Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     }
-                } else if isEvents {
-                    EmptyView()
-                } else if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                                     includeMoonWashed: ui.includeMoonWashed) {
-                    Text(hint).font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {
@@ -279,7 +279,8 @@ struct TargetsView: View {
 
     private func chips(_ t: RankedTarget) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            if !ui.fitsOnly { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
+            // With Fits my field of view on, a fitting card needs no chip; one a search shows anyway says why it is last.
+            if !ui.fitsOnly || t.hiddenByFit(fitsOnly: true) { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
             else if nearMoon(t) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
         }

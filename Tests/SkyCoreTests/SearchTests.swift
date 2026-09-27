@@ -23,6 +23,9 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(veil.matches("veil") && veil.matches("eastern veil") && veil.matches("C33") && veil.matches("Peg"))   // words: anywhere
     let little = target("NGC7814", name: "NGC 7814 · C43 · Little Sombrero Galaxy", group: .galaxies, caldwell: 43, commonName: "Little Sombrero Galaxy")
     #expect(little.matches("sombrero") && little.matches("little sombrero") && little.matches("C43"))
+    // A kind of object finds every one of that kind: C43's card says "Galaxy" though its name does not.
+    #expect(c43.matches("galaxy") && c43.matches("Galax") && !c43.matches("nebula"))
+    #expect(target("NGC6205", name: "M13 · NGC 6205", group: .clusters, typeName: "Globular cluster").matches("globular"))
 }
 
 @Test func cardLineCarriesTheCaldwellNumber() {
@@ -32,25 +35,40 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(target("NGC0224", name: "M31", group: .galaxies, commonName: "Andromeda Galaxy").cardLine == "Andromeda Galaxy")
 }
 
-/// The owner searched for C43 under a full Moon and found nothing: say why instead of showing an empty grid.
-@Test func searchHintExplainsHiddenMatches() {
+/// The owner searched for C43 under a full Moon and missed the note under "No clear window tonight": the line now leads with
+/// what the search found, and the matches the switches would hide are shown last rather than hidden.
+@Test func searchHintSaysWhatTheSearchFound() {
     let m31 = target("NGC0224", name: "M31 · NGC 224", group: .galaxies)
     func hint(_ q: String, _ g: TargetGroup, fitsOnly: Bool = false, washed: Bool = false, in ts: [RankedTarget] = [c43, m31]) -> String? {
         Copy.searchHint(query: q, targets: ts, group: g, fitsOnly: fitsOnly, includeMoonWashed: washed)
     }
-    #expect(hint("C43", .galaxies) == "1 Moon-washed match hidden: turn on Include Moon-washed.")
-    #expect(hint("C43", .galaxies, washed: true) == nil)                                     // shown, nothing to explain
-    #expect(hint("C43", .galaxies, fitsOnly: true, washed: true) == "1 match hidden by Fits my field of view.")
-    #expect(hint("C43", .nebulae) == "Also in Galaxies (1).")
-    #expect(hint("NGC", .galaxies) == "1 Moon-washed match hidden: turn on Include Moon-washed.")   // M31 shows; C43 is hidden
+    #expect(hint("C43", .galaxies) == "1 match for “C43” in Galaxies. 1 Moon-washed, shown last.")
+    #expect(hint("C43", .galaxies, washed: true) == "1 match for “C43” in Galaxies.")
+    #expect(hint("C43", .galaxies, fitsOnly: true, washed: true) == "1 match for “C43” in Galaxies. 1 not fitting your field of view, shown last.")
+    #expect(hint("C43", .nebulae) == "No match for “C43” in Nebulae tonight. Also in Galaxies (1).")
+    #expect(hint(" NGC ", .galaxies) == "2 matches for “NGC” in Galaxies. 1 Moon-washed, shown last.")
     let c20 = target("NGC7000", name: "NGC 7000 · C20", group: .nebulae, washed: true, caldwell: 20)
-    #expect(hint("C", .clusters, in: [c43, c20]) == "Also in Nebulae (1), Galaxies (1).")
-    #expect(hint("C4", .galaxies, washed: false, in: [c43, target("x", name: "C4 · NGC 7023", group: .galaxies, washed: true)])
-            == "2 Moon-washed matches hidden: turn on Include Moon-washed.")
-    // Both filters hide it, so both are named.
-    #expect(hint("C43", .galaxies, fitsOnly: true) == "1 Moon-washed match hidden: turn on Include Moon-washed. 1 match hidden by Fits my field of view.")
-    #expect(hint("", .galaxies) == nil)
-    #expect(hint("zzz", .galaxies) == nil)
+    #expect(hint("C", .clusters, in: [c43, c20]) == "No match for “C” in Star clusters tonight. Also in Nebulae (1), Galaxies (1).")
+    // Both switches would hide it, so both are named.
+    #expect(hint("C43", .galaxies, fitsOnly: true) == "1 match for “C43” in Galaxies. 1 Moon-washed, shown last. 1 not fitting your field of view, shown last.")
+    #expect(hint("", .galaxies) == nil && hint("  ", .galaxies) == nil && hint("\n", .galaxies) == nil)
+    #expect(hint("zzz", .galaxies) == "No match for “zzz” in Galaxies tonight.")
+}
+
+/// Browsing, the switches hide; searching, every match shows with the would-be-hidden ones last.
+@Test func searchShowsHiddenMatchesLast() {
+    let m31 = target("NGC0224", name: "M31 · NGC 224", group: .galaxies)
+    let site = Site(name: "x", latitude: 54, longitude: -1, elevationM: 0, timeZoneID: "Europe/London", bortle: 4)
+    func ids(_ q: String, fitsOnly: Bool = false, washed: Bool = false) -> [String] {
+        RankedTarget.cards([c43, m31], group: .galaxies, query: q, fitsOnly: fitsOnly, includeMoonWashed: washed,
+                           sort: .brightness, now: Date(timeIntervalSince1970: 0), span: nil, site: site).map(\.id)
+    }
+    #expect(ids("") == ["NGC0224"])                          // browsing: the Moon-washed C43 is hidden
+    #expect(ids("", washed: true) == ["NGC7814", "NGC0224"]) // switch on: both, in sort order
+    #expect(ids("NGC") == ["NGC0224", "NGC7814"])            // searching: C43 shows, after the rest
+    #expect(ids("C43") == ["NGC7814"])
+    #expect(ids("C43", fitsOnly: true, washed: true) == ["NGC7814"])
+    #expect(ids("zzz").isEmpty)
 }
 
 @Test func cardLabelNamesTheCaldwellNumber() {

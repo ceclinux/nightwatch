@@ -91,7 +91,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 
   The heart on a card or a target's page adds it to Favourites, the first group in the sidebar. It lists every favourite, whether or not it is in tonight's list; one that is not usable tonight is dimmed with the reason ("Below 30° in tonight's window"). When a favourite is well placed on a clear night, it takes one of the popover's three best-target slots.
 
-  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness). Search finds a target by name or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); when a match is hidden by the filters or sits in another group, a line under the header says so.
+  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness). Search finds a target by name, by kind ("galaxy", "globular") or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); a line under the header, in larger amber text, says how many it found and which other groups have matches. While searching, matches the Moon-washed and field-of-view switches would hide still show, placed last.
 - On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. The app's red keeps your night vision, and on the popover and the target cards it marks clear sky only. Warnings are amber with a dot and words.
 
 ## Telescope
