@@ -51,7 +51,7 @@ struct EventArt: View {
         case .conjunction: "conjunctions"
         case .issPass: "iss"
         case .solarEclipse: "solar-eclipse"
-        case .lunarEclipse: "lunar-eclipse"   // the owner's own full Moon, 26 September 2026
+        case .lunarEclipse: "lunar-eclipse"
         }
     }
 

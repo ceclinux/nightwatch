@@ -60,6 +60,8 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     /// A conjunction's separation, and whether both bodies fit in the user's frame (`Events.fits`).
     public var separationDeg: Double? = nil
     public var fits: Bool? = nil
+    /// The card's line: `detail` without the best time, which the card shows on its title row (v1.0.1). Nil: `detail`.
+    public var brief: String? = nil
     /// A meteor shower at its peak tonight (the "At peak" chip).
     public var atPeak = false
     /// The IAU symbol of a shower's radiant constellation ("Tau"), for its artwork on the event page.
@@ -83,6 +85,7 @@ extension SkyEvent {
         clear = try c.decodeIfPresent(Bool.self, forKey: .clear)
         separationDeg = try c.decodeIfPresent(Double.self, forKey: .separationDeg)
         fits = try c.decodeIfPresent(Bool.self, forKey: .fits)
+        brief = try c.decodeIfPresent(String.self, forKey: .brief)
         atPeak = try c.decodeIfPresent(Bool.self, forKey: .atPeak) ?? false
         radiantConstellation = try c.decodeIfPresent(String.self, forKey: .radiantConstellation)
         path = try c.decodeIfPresent([SkyPathPoint].self, forKey: .path) ?? []
@@ -199,6 +202,7 @@ public enum Events {
                              detail: up ? "\(peakText) · radiant in \(where_), best \(Copy.hhmm(top.time, site: site))"
                                         : "\(peakText) · radiant in \(where_), below the horizon tonight",
                              time: dark.start, endTime: dark.end, raHours: s.raHours, decDeg: s.decDeg)
+            e.brief = up ? "\(peakText) · radiant in \(where_)" : e.detail
             e.best = up ? top.time : nil
             e.atPeak = days == 0 || days == 1
             e.radiantConstellation = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).symbol
@@ -282,6 +286,7 @@ public enum Events {
                     let top = highest(raHours: pa.raHours, decDeg: pa.decDeg, from: d.start, to: d.end, site: site)
                     if top.alt > 0 {
                         e.best = top.time
+                        e.brief = detail
                         detail += " · best \(Copy.hhmm(top.time, site: site))"
                         e.facts.append(EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"))
                     } else {
@@ -306,6 +311,7 @@ public enum Events {
                          detail: String(format: "mag %.1f · in %@ · best %@, %.0f° up", pos.magnitude, where_, Copy.hhmm(top.time, site: site), top.alt),
                          time: d.start, endTime: d.end, raHours: pos.raHours, decDeg: pos.decDeg)
         e.best = top.time
+        e.brief = String(format: "mag %.1f · in %@, %.0f° up at best", pos.magnitude, where_, top.alt)
         var mag = String(format: "%.1f", pos.magnitude)
         if let l = later {
             let change = l.magnitude - pos.magnitude   // smaller magnitude is brighter

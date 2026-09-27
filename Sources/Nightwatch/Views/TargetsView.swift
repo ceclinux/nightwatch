@@ -340,7 +340,8 @@ struct TargetsView: View {
         let eclipse = e.kind == .lunarEclipse || e.kind == .solarEclipse
         // "best" only when there is a best time: a shower whose radiant never rises has none.
         let when = store.site.map { s in eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? "" } ?? ""
-        return TargetCardFrame(title: e.title, subtitle: Self.eventKinds[e.kind] ?? "", trailing: when) {
+        // No kind label: the artwork already says what it is, and the room goes to the title (owner, 27 September 2026).
+        return TargetCardFrame(title: e.title, subtitle: "", trailing: when) {
             EventPicture(kind: e.kind)
         } corner: {
             EventChips(event: e)
@@ -348,7 +349,7 @@ struct TargetsView: View {
             EmptyView()
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(e.detail).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                Text(e.brief ?? e.detail).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan, let ra = e.raHours, let dec = e.decDeg,
                    e.kind == .meteorShower || e.kind == .comet || e.kind == .conjunction {
                     ViewabilityTimeline(target: Planner.skyTrack(id: e.id, name: e.title, raHours: ra, decDeg: dec, window: track, site: s,

@@ -76,6 +76,7 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     let best = try #require(sta.best)
     #expect(best >= night.darkStart! && best <= night.darkEnd!)
     #expect(sta.when == best)
+    #expect(sta.brief == "Peak night 4–5 November, in 38 days · radiant in \(radiant)")   // the card's line, without the best time
 }
 
 @Test func showerPeakWordingTonightAndAfter() throws {
@@ -146,6 +147,7 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
         let sep = try #require(e.separationDeg), fits = try #require(e.fits)
         #expect(fits == Events.fits(separationDeg: sep, fov: dwarfMini, includesMoon: e.title.contains("Moon")))
         #expect(e.detail.contains(fits ? "fits your field of view" : "wider than your field of view"))
+        if e.best != nil { #expect(e.brief.map { !$0.contains(" · best ") && e.detail.hasPrefix($0) } == true) }
         #expect(e.facts.map(\.label).starts(with: ["Separation", "Your field of view", "Best"]))
     }
 }
@@ -188,6 +190,7 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
                                       night: night, site: site))
     #expect(c.detail.hasPrefix("mag 9.1 · in Auriga · best "))
     #expect(c.facts.first?.value == "9.1, brightening (8.8 in a week)")
+    #expect(c.brief?.hasPrefix("mag 9.1 · in Auriga, ") == true && c.brief?.contains("best ") == false)
     let fading = Events.comet(designation: "x", pos: here, later: CometPosition(raHours: 5.3, decDeg: 46, magnitude: 9.6, deltaAU: 1.3, rAU: 1.6),
                               night: night, site: site)
     #expect(fading?.facts.first?.value == "9.1, fading (9.6 in a week)")
@@ -235,7 +238,7 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     x.best = x.time; x.facts = [EventFact("a", "b")]; x.clear = true; x.separationDeg = 1; x.fits = true
     x.atPeak = true; x.radiantConstellation = "Tau"; x.path = [SkyPathPoint(label: "Rises", time: x.time, azimuthDeg: 270, altitudeDeg: 0)]
     var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(x)) as! [String: Any]
-    for k in ["best", "facts", "clear", "separationDeg", "fits", "atPeak", "radiantConstellation", "path"] { json.removeValue(forKey: k) }
+    for k in ["best", "facts", "clear", "separationDeg", "fits", "atPeak", "radiantConstellation", "path", "brief"] { json.removeValue(forKey: k) }
     let old = try JSONDecoder().decode(SkyEvent.self, from: JSONSerialization.data(withJSONObject: json))
     #expect(old.facts.isEmpty && old.best == nil && old.title == "C/1" && !old.atPeak && old.path.isEmpty)
     #expect(try JSONDecoder().decode(SkyEvent.self, from: JSONEncoder().encode(x)) == x)
