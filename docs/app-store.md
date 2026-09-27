@@ -154,6 +154,24 @@ Sidebar › macOS App › **1.0.0 Prepare for Submission**. *Add for Review is o
 5. *Don't press Cancel Submission.* The text can still be edited while it waits; a different build means removing the
    version from review first.
 
+### If App Review asks for information
+
+*The first submission came back overnight as guideline 2.1 "Information Needed": Apple asks this of a developer account
+with little review history, not because anything is wrong.* It wants a screen recording made on a real Mac running the
+latest macOS, starting from launching the app, and written answers: purpose and audience, how to set up and use the app,
+the external services it uses, regional differences, and any regulation or protected material.
+
+1. Record with ⌘⇧5 › Record Entire Screen: launch from Applications, the popover, the Targets window, a target's page
+   with "How to shoot this", Settings and the widget. Record in the evening, or explain the time: a morning recording
+   after a cloudy night shows score 0 and empty tiles. Shrink it before attaching (the 1 min 49 s original was 240 MB):
+   `ffmpeg -i in.mov -vf "scale=1920:-2,fps=30" -c:v libx264 -crf 23 -pix_fmt yuv420p -an out.mp4` gave 5 MB.
+2. **Reply to App Review** with the answers and the recording attached. The box takes 4,000 characters, and *arrows,
+   ellipses and "›" did not survive the paste*: use plain ASCII ("->", "...", ">").
+3. Put the same information, shorter, in App Review Information › **Notes**, and **Save**.
+4. *Saving moves the version to "Ready for Review", which means added to a submission but not yet submitted.* Press
+   **Resubmit to App Review** (or **Update Review** on the version page), and it becomes "Waiting for Review". The build
+   stays the same.
+
 ## Each release
 
 1. Release the download as usual (`releasing.md`). Every release raises the build number, which the App Store requires.
