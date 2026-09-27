@@ -130,6 +130,35 @@ public enum ShootingTips {
         return ShootingTip(title: "How to shoot this with \(presetName == nil ? "your telescope" : "your \(name)")", rows: rows, source: source)
     }
 
+    /// "How to shoot this" for an event (v1.0.1). No maker publishes settings for these, so it is guidance without numbers.
+    public static func tip(for e: SkyEvent, fov: FieldOfView, presetName: String?, site: Site) -> ShootingTip {
+        var rows: [ShootingTip.Row] = []
+        switch e.kind {
+        case .meteorShower:
+            rows.append(.init("Kit", "A telescope's narrow field catches few meteors: use a camera with a wide lens on a tripod."))
+            rows.append(.init("Aim", "About 45° from the radiant, high in the darkest part of the sky."))
+            rows.append(.init("Exposure", "Shoot continuously, each frame short enough that the stars stay points (the 500 rule), and keep the frames that caught one."))
+        case .issPass:
+            rows.append(.init("Kit", "Too fast for a smart telescope to follow: photograph it as a streak with a wide lens on a tripod."))
+            rows.append(.init("Timing", "Start a long exposure, or a run of short ones, just before it appears at \(Copy.hhmm(e.time, site: site)), and stop as it goes."))
+        case .comet:
+            rows.append(.init("Filter", filterText(.broadband, dualBand: "A dual-band filter", broadband: "No filter, or a light-pollution filter only")))
+            rows.append(.init("Stacking", "It moves against the stars through the night, so keep the stack short, or align the frames on the comet when you stack."))
+        case .conjunction:
+            rows.append(.init("Framing", e.fits == true ? "Both fit in your field of view: centre the frame between them."
+                                              : "Wider than your field of view: use a wider lens, or shoot each on its own."))
+        case .lunarEclipse:
+            rows.append(.init("Mode", "Start in your telescope's Moon mode. The eclipsed Moon is far dimmer, so lengthen the exposure as it darkens."))
+        case .solarEclipse:
+            rows.append(.init("Safety", "Never point a telescope or camera at the Sun without a certified solar filter over the front."))
+        }
+        if let b = e.best, e.kind != .issPass { rows.append(.init("When", "Best at \(Copy.hhmm(b, site: site)).")) }
+        // Meteors and the ISS are camera work, so their title does not name the telescope.
+        let title = e.kind == .meteorShower || e.kind == .issPass ? "How to shoot this"
+                  : "How to shoot this with \(presetName.map { "your \($0)" } ?? "your telescope")"
+        return ShootingTip(title: title, rows: rows, source: nil)
+    }
+
     static func filterText(_ k: Kind, dualBand: String, broadband: String) -> String {
         switch k {
         case .emission: "\(dualBand): it passes the hydrogen-alpha and oxygen-III light an emission nebula gives off."

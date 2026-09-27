@@ -14,6 +14,7 @@ final class TargetsViewState: ObservableObject {
     @Published var includeMoonWashed = false
     @Published var search = ""
     @Published var selected: RankedTarget? = nil
+    @Published var selectedEvent: SkyEvent? = nil
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
 }
@@ -73,7 +74,7 @@ struct TargetsView: View {
             // while clicks landed on the real one (owner, 25 September 2026).
             List(sections, id: \.self, selection: Binding(get: { ui.section }, set: { s in
                 guard let s else { return }
-                DispatchQueue.main.async { ui.section = s; ui.selected = nil }
+                DispatchQueue.main.async { ui.section = s; ui.selected = nil; ui.selectedEvent = nil }
             })) { section in
                 sidebarRow(section).tag(section)
             }
@@ -81,7 +82,10 @@ struct TargetsView: View {
             .safeAreaInset(edge: .bottom) { filters }
             .navigationSplitViewColumnWidth(232)
         } detail: {
-            if let selected = ui.selected {
+            if let ev = ui.selectedEvent {
+                // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
+                EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
+            } else if let selected = ui.selected {
                 // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
                 DetailView(target: selected) { ui.selected = nil }.id(selected.id)
             } else {
@@ -133,6 +137,7 @@ struct TargetsView: View {
             ui.section = section
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
+            ui.selectedEvent = nil   // an open event page would hide the requested target
         }
         store.targetsRequest = nil
     }
@@ -272,15 +277,23 @@ struct TargetsView: View {
 
     private var eventsList: some View {
         List(store.events) { e in
-            HStack {
-                Image(systemName: e.kind == .issPass ? "airplane" : (e.kind == .meteorShower ? "sparkle" : (e.kind == .comet ? "comet" : "moon.stars"))).foregroundStyle(Theme.accent)
-                VStack(alignment: .leading) {
-                    Text(e.title).font(.callout.weight(.semibold))
-                    Text(e.detail).font(.caption).foregroundStyle(Theme.dim)
+            Button { ui.selectedEvent = e } label: {
+                HStack {
+                    Image(systemName: e.kind == .issPass ? "airplane" : (e.kind == .meteorShower ? "sparkle" : (e.kind == .comet ? "comet" : "moon.stars"))).foregroundStyle(Theme.accent)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading) {
+                        Text(e.title).font(.callout.weight(.semibold))
+                        Text(e.detail).font(.caption).foregroundStyle(Theme.dim)
+                    }
+                    Spacer()
+                    if let c = e.clear { Chip(text: c ? "Clear" : "Cloudy", icon: c ? "checkmark" : "cloud.fill", warning: !c) }
+                    if let s = store.site { Text(e.kind == .lunarEclipse || e.kind == .solarEclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : Copy.hhmm(e.when, site: s)).font(.caption).foregroundStyle(Theme.dim) }
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.dim).accessibilityHidden(true)
                 }
-                Spacer()
-                if let s = store.site { Text(e.kind == .lunarEclipse || e.kind == .solarEclipse ? e.time.formatted(date: .abbreviated, time: .shortened) : Copy.hhmm(e.time, site: s)).font(.caption).foregroundStyle(Theme.dim) }
-            }.padding(.vertical, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).padding(.vertical, 4)
+            .accessibilityLabel([e.title, e.detail, e.clear.map { $0 ? "clear" : "cloudy" }].compactMap { $0 }.joined(separator: ", "))
         }
         .overlay { if store.events.isEmpty { Text("No events tonight").foregroundStyle(Theme.dim) } }
     }

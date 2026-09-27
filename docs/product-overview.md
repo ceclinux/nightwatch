@@ -50,7 +50,12 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
   - Titles follow one pattern: catalogue ID, then name, then magnitude.
 - **Header:** a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
 - **Sidebar:** glass, with the filters as switches under an amber Moon line.
-- **Events:** meteor showers, eclipses, conjunctions, comets and ISS passes.
+- **Events:** meteor showers, eclipses, conjunctions, comets and ISS passes. Each row gives the best time and says whether tonight's forecast is clear or cloudy then; clicking it opens a page of facts and "How to shoot this" (guidance without numbers, as no maker publishes settings for these).
+  - Meteor showers: the peak night and how far off it is, the radiant's constellation, its best hour and height, the rate at peak from here (ZHR × the sine of the radiant's height, for a dark, moonless sky), the Moon, speed and parent comet.
+  - ISS passes: where it rises or appears, its highest point and where it sets or fades into Earth's shadow, with compass directions, and how long it is visible.
+  - Comets: magnitude and whether it is brightening or fading over a week, constellation, best time (in nautical twilight or darkness), distances and the Moon.
+  - Conjunctions: separation, best time, and whether both fit the user's field of view (allowing for the Moon's width).
+  - Eclipses: local begin, peak and end, the Moon's or Sun's height and whether it is visible from the site; solar eclipses carry a safety line.
 - **Detail page:** the image fills the window and the text sits on it in black caption boxes.
   - Deep-sky survey photos fill the page, fetched sharp at 1600 px. A pill says "Shown at your field of view", or, for an object bigger than the field, a dashed box marks what you would capture, with extra sky around it.
   - The Moon, planet photographs and constellation artwork are fitted above the caption.

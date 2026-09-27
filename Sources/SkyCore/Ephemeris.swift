@@ -48,7 +48,11 @@ public struct MoonState: Sendable, Equatable {
 }
 
 public enum EclipseKind: String, Codable, Sendable { case penumbral, partial, annular, total }
-public struct LunarEclipse: Sendable, Equatable { public let peak: Date; public let kind: EclipseKind; public let obscuration: Double }
+public struct LunarEclipse: Sendable, Equatable {
+    public let peak: Date; public let kind: EclipseKind; public let obscuration: Double
+    /// The partial phase's start and end, or the penumbral phase's when there is no partial phase.
+    public var begin: Date? = nil; public var end: Date? = nil
+}
 public struct SolarEclipse: Sendable, Equatable {
     public let peak: Date; public let kind: EclipseKind; public let obscuration: Double
     public let partialBegin: Date?; public let partialEnd: Date?
@@ -170,7 +174,9 @@ public enum Ephemeris {
     public static func nextLunarEclipse(after date: Date) -> LunarEclipse? {
         let e = Astronomy_SearchLunarEclipse(astro_time_t(date))
         guard e.status == ASTRO_SUCCESS, let kind = eclipseKind(e.kind) else { return nil }
-        return LunarEclipse(peak: e.peak.date, kind: kind, obscuration: e.obscuration)
+        let semi = (e.sd_partial > 0 ? e.sd_partial : e.sd_penum) * 60
+        return LunarEclipse(peak: e.peak.date, kind: kind, obscuration: e.obscuration,
+                            begin: e.peak.date.addingTimeInterval(-semi), end: e.peak.date.addingTimeInterval(semi))
     }
 
     public static func nextLocalSolarEclipse(after date: Date, site: Site) -> SolarEclipse? {

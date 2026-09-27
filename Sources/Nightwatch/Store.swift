@@ -218,7 +218,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
-        events = buildEvents(night: night, site: site, now: now)
+        events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
         Store.write(p, "plan.json")
         writeWidgetSnapshot()
         if canNotify {
@@ -385,21 +385,15 @@ final class Store: ObservableObject {
         var ev = Events.showers(night: night, site: site, showers: showers)
         ev += Events.eclipses(after: now, site: site, withinDays: 60)
         let mid = night.darkStart.map { $0.addingTimeInterval((night.darkEnd ?? $0).timeIntervalSince($0) / 2) } ?? night.sunset
-        ev += Events.conjunctions(at: mid, site: site, maxSeparationDeg: 3)
+        ev += Events.conjunctions(at: mid, site: site, maxSeparationDeg: 3, night: night, fov: config.fov)
         for (c, pos) in Comets.bright(comets, at: mid, limit: 12) {
-            let alt = Ephemeris.altAz(raHours: pos.raHours, decDeg: pos.decDeg, at: mid, site: site).alt
-            guard alt > 20 else { continue }
-            ev.append(SkyEvent(id: "comet-\(c.designation)", kind: .comet, title: c.designation,
-                               detail: String(format: "mag %.1f · alt %.0f°", pos.magnitude, alt), time: mid, endTime: nil, raHours: pos.raHours, decDeg: pos.decDeg))
+            let later = Comets.position(c, at: mid.addingTimeInterval(7 * 86_400))
+            if let e = Events.comet(designation: c.designation, pos: pos, later: later, night: night, site: site) { ev.append(e) }
         }
         if let tle, let passes = try? Satellites.visiblePasses(tle: tle, site: site, from: night.sunset, to: night.sunrise, minPeakElevation: 30) {
-            for p in passes {
-                ev.append(SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: "ISS pass",
-                                   detail: String(format: "max %.0f° at %@", p.maxElevationDeg, Copy.hhmm(p.peak, site: site)),
-                                   time: p.rise, endTime: p.set, raHours: nil, decDeg: nil))
-            }
+            ev += passes.map { Events.issPass($0, site: site) }
         }
-        return ev.sorted { $0.time < $1.time }
+        return ev.sorted { $0.when < $1.when }
     }
 
     // MARK: cache helpers

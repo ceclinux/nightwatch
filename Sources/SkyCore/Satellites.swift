@@ -15,6 +15,15 @@ public struct SatellitePass: Codable, Equatable, Sendable {
     public let set: Date
     public let maxElevationDeg: Double
     public let peakAzimuthDeg: Double
+    /// Where it rises and sets, degrees from north (v1.0.1).
+    public var riseAzimuthDeg: Double? = nil
+    public var setAzimuthDeg: Double? = nil
+    /// When it can actually be seen: above the horizon and sunlit. A pass often starts or ends in Earth's shadow, so these
+    /// can fall inside rise…set; set by `visiblePasses` only.
+    public var appears: Date? = nil
+    public var appearsAzimuthDeg: Double? = nil
+    public var vanishes: Date? = nil
+    public var vanishesAzimuthDeg: Double? = nil
 }
 
 public enum SatelliteError: Error { case malformedTLE }
@@ -35,15 +44,17 @@ public enum Satellites {
         var out: [SatellitePass] = []
         var t = from
         var rise: Date? = nil
-        var peakEl = -90.0, peakAz = 0.0, peakT = from
+        var peakEl = -90.0, peakAz = 0.0, peakT = from, riseAz = 0.0, lastAz = 0.0
         while t <= to {
             let top = try sat.topPosition(julianDays: t.julianDate, observer: observer)
             if top.elev > 0 {
-                if rise == nil { rise = t; peakEl = -90 }
+                if rise == nil { rise = t; peakEl = -90; riseAz = top.azim }
                 if top.elev > peakEl { peakEl = top.elev; peakAz = top.azim; peakT = t }
+                lastAz = top.azim
             } else if let r = rise {
                 if peakEl >= minPeakElevation {
-                    out.append(SatellitePass(rise: r, peak: peakT, set: t, maxElevationDeg: peakEl, peakAzimuthDeg: peakAz))
+                    out.append(SatellitePass(rise: r, peak: peakT, set: t, maxElevationDeg: peakEl, peakAzimuthDeg: peakAz,
+                                             riseAzimuthDeg: riseAz, setAzimuthDeg: lastAz))
                 }
                 rise = nil
             }
@@ -68,9 +79,23 @@ public enum Satellites {
     /// Passes the observer can see: observer past civil dusk (Sun below −6°) and satellite sunlit at peak.
     public static func visiblePasses(tle: TLE, site: Site, from: Date, to: Date, minPeakElevation: Double = 30) throws -> [SatellitePass] {
         let sat = Satellite(withTLE: try Elements(tle.line0, tle.line1, tle.line2))
+        let observer = LatLonAlt(site.latitude, site.longitude, site.elevationM / 1000)
         return try passes(tle: tle, site: site, from: from, to: to, minPeakElevation: minPeakElevation, stepSeconds: 30).filter { p in
             guard Ephemeris.sunAltitude(at: p.peak, site: site) < -6 else { return false }
             return try isSunlit(sat, at: p.peak)
+        }.map { p in
+            // The sunlit part of the pass, sampled every 10 s: evening passes fade into shadow, morning ones emerge from it.
+            var q = p
+            var t = p.rise
+            while t <= p.set {
+                let top = try sat.topPosition(julianDays: t.julianDate, observer: observer)
+                if top.elev > 0, try isSunlit(sat, at: t) {
+                    if q.appears == nil { q.appears = t; q.appearsAzimuthDeg = top.azim }
+                    q.vanishes = t; q.vanishesAzimuthDeg = top.azim
+                }
+                t = t.addingTimeInterval(10)
+            }
+            return q
         }
     }
 }
