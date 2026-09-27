@@ -73,6 +73,14 @@ public enum Ephemeris {
     private static let afterCrossing = 1.0 / 1440
 
     /// The night that begins on the local calendar date containing `localDate` at `site`.
+    /// The night Nightwatch plans for at `now`: the one in progress until its sunrise, then the coming evening's (v1.0.1).
+    /// The earlier rule, the night of the calendar day nine hours before, kept a finished night on show until 09:00, with
+    /// its hours already gone from the forecast (seen in the App Review recording, 27 September 2026).
+    public static func currentNight(now: Date, site: Site) throws -> Night {
+        let previous = try night(localDate: site.calendar.date(byAdding: .day, value: -1, to: now)!, site: site)
+        return now < previous.sunrise ? previous : try night(localDate: now, site: site)
+    }
+
     public static func night(localDate: Date, site: Site) throws -> Night {
         let cal = site.calendar
         let noon = cal.date(bySettingHour: 12, minute: 0, second: 0, of: localDate)!

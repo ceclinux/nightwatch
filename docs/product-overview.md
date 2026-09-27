@@ -28,7 +28,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 
 **Menu-bar icon.** A star whose state says whether a window is coming, open, or unknown (stale forecast).
 
-**Popover.** Liquid Glass on macOS 26 and later, a solid dark fill otherwise or with Reduce Transparency on. Top to bottom:
+**Popover.** Liquid Glass on macOS 26 and later, a solid dark fill otherwise or with Reduce Transparency on. "Tonight" is the night in progress until sunrise, then the coming night. Top to bottom:
 - **Header:** the site name, Bortle class and the equatorial set-up line (wedge tilt equals the site latitude, pointed at true north or south), with the Settings gear and a Quit button (⌘Q while the popover is open).
 - **Away bar:** when observing somewhere other than home, "Observing away from home · Back to <home>", which returns everything to home in one click.
 - **Score:** the sky score inside a 60-tick 12-hour clock bezel. Ticks glow red across the clear window, dim where it is dark but cloudy, and faint in daylight.

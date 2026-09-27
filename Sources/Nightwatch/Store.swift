@@ -210,7 +210,7 @@ final class Store: ObservableObject {
             return
         }
         let cal = site.calendar
-        guard let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: site),
+        guard let night = try? Ephemeris.currentNight(now: now, site: site),
               let next = try? Ephemeris.night(localDate: cal.date(byAdding: .day, value: 1, to: night.localDate)!, site: site) else { return }
         let fov = config.fov, rule = config.goRule
         let p = Planner.plan(night: night, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
@@ -376,7 +376,7 @@ final class Store: ObservableObject {
             fc = fresh; Store.writeFile(fresh, url)
         }
         guard let fc, now.timeIntervalSince(fc.fetchedAt) <= 24 * 3600,
-              let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: home) else { homePlan = nil; return }
+              let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }
         homePlan = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: home,
                                 fov: config.fov, rule: config.goRule, bright: config.brightNights)
     }
