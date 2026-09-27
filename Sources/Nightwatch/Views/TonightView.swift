@@ -199,37 +199,26 @@ struct TonightView: View {
         }
     }
 
-    /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown.
-    private func sourceBadge(_ f: Forecast) -> some View {
-        HStack(spacing: 4) {
+    /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown: the
+    /// mark itself is the link, as on the widgets (owner, 27 September 2026).
+    @ViewBuilder private func sourceBadge(_ f: Forecast) -> some View {
+        let name = Text(f.cloudSource ?? "Open-Meteo").font(.caption2).foregroundStyle(Theme.dim)
+        let badge = Group {
             if let m = f.attributionMarkURL, let url = URL(string: m) {
-                AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { EmptyView() }.frame(height: 10)
-            }
-            if let l = f.attributionLegalURL, let url = URL(string: l) {
-                // Apple requires the Weather mark AND a link to its legal page; the link's wording is ours, so it does not repeat
-                // "Apple Weather" beside the mark (owner, 27 September 2026). "Other data sources" is Apple's own phrase for it.
-                Link("Other data sources", destination: url).font(.caption2).foregroundStyle(Theme.dim)
-                    .help("Apple Weather's legal attribution and data sources")
-            } else {
-                Text(f.cloudSource ?? "Open-Meteo").font(.caption2).foregroundStyle(Theme.dim)
-            }
+                AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
+            } else { name }
         }
+        if let l = f.attributionLegalURL, let url = URL(string: l) {
+            Link(destination: url) { badge }
+                .help("Apple Weather's legal attribution and data sources")
+                .accessibilityLabel("Apple Weather, legal attribution and data sources")
+        } else { badge }
     }
 
-    /// Toggle "Notify at HH:MM" (the pre-window time) bound to the notify setting, "Refresh", and the provenance line.
+    /// One centre line, evenly spread as on the large widget: the cloud source, the update time, "Refresh". The notify switch
+    /// lives in Settings › Alerts (owner, 27 September 2026).
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Toggle(isOn: Binding(get: { store.config.notifyEnabled }, set: { store.config.notifyEnabled = $0; store.saveConfig() })) {
-                    Text(notifyLabel).font(.system(size: 12))
-                }
-                .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).fixedSize()
-                Spacer()
-                if store.refreshing { ProgressView().controlSize(.small) }
-                Button(store.copy.refresh) { Task { await store.refresh(force: true) } }
-                .buttonStyle(SecondaryButtonStyle())
-                .help("Fetch the forecast now and recompute tonight")
-            }
             if let u = store.availableUpdate {
                 HStack(spacing: 5) {
                     Circle().fill(Tokens.controlOn).frame(width: 6, height: 6).accessibilityHidden(true)
@@ -238,20 +227,25 @@ struct TonightView: View {
                 }
                 .font(.system(size: 10.5))
             }
-            if let f = store.forecast, let s = store.site {
-                HStack(spacing: 6) {
-                    if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
-                    Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
-                        .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
-                    Text("·").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+            HStack(alignment: .center, spacing: 0) {
+                if let f = store.forecast, let s = store.site {
+                    // The mark on the left: its weight looked odd in the middle (owner, 27 September 2026).
                     sourceBadge(f)
+                    Spacer(minLength: 8)
+                    HStack(spacing: 6) {
+                        if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
+                        Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
+                            .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+                    }
+                }
+                Spacer(minLength: 8)
+                HStack(spacing: 6) {
+                    if store.refreshing { ProgressView().controlSize(.small) }
+                    Button(store.copy.refresh) { Task { await store.refresh(force: true) } }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .help("Fetch the forecast now and recompute tonight")
                 }
             }
         }.padding(.top, 4)
-    }
-
-    private var notifyLabel: String {
-        guard let s = store.site else { return "Notify when clear" }
-        return Copy.notifyLabel(store.plan, site: s, settings: store.config.alerts)
     }
 }

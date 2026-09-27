@@ -80,7 +80,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
   - one notice line (aurora, or a clearer dark site nearby)
   - six tiles, with the dew tile turning amber when a heater is advised
   - the best three targets
-  - a "Notify at HH:MM" switch
+  - the Apple Weather mark (a link to its legal attribution), the update time and Refresh, on one line
   - Settings (the gear) and Quit (the power button, or ⌘Q) at the top
 - The target browser groups what is up during the window into nebulae, galaxies, star clusters, stars (the 49 named stars of magnitude 2 or brighter, for focusing and alignment), planets and Moon, events (meteor showers, eclipses, conjunctions, comets, ISS passes) and constellations, with DSS2 thumbnails. Every card has:
   - a timeline of the clear window, lit where the target is viewable and brighter where it is higher, with its best moment marked

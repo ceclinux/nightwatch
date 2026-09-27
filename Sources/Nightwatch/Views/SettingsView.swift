@@ -80,6 +80,9 @@ struct SettingsView: View {
                           Array(stride(from: 10.0, through: 60, by: 5))) { "\(Int($0))° altitude" }
             }
             Section("Alerts") {
+                // The master switch, moved here from the popover's footer (owner, 27 September 2026): "Notify at 20:30" tonight.
+                Toggle(store.site.map { Copy.notifyLabel(store.plan, site: $0, settings: store.config.alerts) } ?? "Notify when clear",
+                       isOn: bind(\.notifyEnabled))
                 Toggle("Evening heads-up (one hour before sunset)", isOn: bind(\.alerts.headsUp))
                 Toggle("Tomorrow preview when tonight is out", isOn: bind(\.alerts.tomorrowPreview))
                 choiceRow("Nudge before the window opens", bind(\.alerts.preWindowMinutes), Array(stride(from: 0, through: 120, by: 15))) {

@@ -99,7 +99,7 @@ public struct Copy: Sendable {
         return parts.joined(separator: ", ")
     }
 
-    /// The popover switch: "Notify at HH:MM" for the nudge before the window, unless quiet hours would drop that nudge.
+    /// The notify switch in Settings › Alerts: "Notify at HH:MM" for the nudge before the window, unless quiet hours would drop that nudge.
     public static func notifyLabel(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String {
         notifyTime(plan, site: site, settings: settings).map { "Notify at \($0)" } ?? "Notify when clear"
     }
