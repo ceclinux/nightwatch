@@ -123,12 +123,21 @@ what is missing, and each page below clears one or more of its lines. The answer
 - **App Distribution Methods**: **Public**. The Apple School Manager volume-price box makes no difference to a free app.
 - **Save**.
 
-### Step 11: Digital Services Act (optional)
+### Step 11: Digital Services Act
 
-App Information › App Store Regulations & Permits › Digital Services Act › **Set Up**. It is EU law, so it concerns only
-the 27 EU storefronts: until a trader status is declared they do not list the app, while the UK and everywhere else are
-unaffected. Declaring as a trader publishes an address and phone number on the product page. It is not part of review
-and can be done at any time. Not declared at the 1.0.0 submission (owner's decision, 26 September 2026).
+Business › **Agreements** › **Compliance** › Digital Services Act › **Complete Compliance Requirements** (for the whole
+account; App Information › App Store Regulations & Permits overrides it per app). It is EU law and concerns only the 27
+EU storefronts. Either answer keeps the app on sale there; only no answer at all gets it removed, and new submissions
+ask for it.
+
+- **Not a trader:** EU customers see a notice that EU consumer-protection rights don't apply. Nothing is published and
+  nothing is verified. The usual choice for a free, non-commercial app.
+- **Trader (an individual):** the address (a PO box will do), phone number and email are shown on the EU product page;
+  the email and phone are confirmed with two-factor codes, and a document proving the business name and address is
+  uploaded.
+
+It is not part of review and can be changed later. *We first thought "not a trader" meant leaving the EU; Apple's own
+page says otherwise.* ([Apple's guide](https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements))
 
 ### Step 12: the version page, then submit
 
