@@ -52,6 +52,10 @@ struct TonightView: View {
             }
             Spacer()
             Button { open("settings") } label: { Image(systemName: "gearshape") }.buttonStyle(.plain).foregroundStyle(Theme.dim)
+                .help("Settings").accessibilityLabel("Settings")
+            // A menu-bar app has no menu bar of its own, so Quit lives here (owner, 27 September 2026); ⌘Q works while open.
+            Button { NSApp.terminate(nil) } label: { Image(systemName: "power") }.buttonStyle(.plain).foregroundStyle(Theme.dim)
+                .keyboardShortcut("q").help("Quit Nightwatch").accessibilityLabel("Quit Nightwatch")
         }
     }
 
