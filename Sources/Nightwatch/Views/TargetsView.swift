@@ -17,6 +17,7 @@ final class TargetsViewState: ObservableObject {
     @Published var selectedEvent: SkyEvent? = nil
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
+    @Published var eventSort: EventSort = .time
 }
 
 struct TargetsView: View {
@@ -90,7 +91,6 @@ struct TargetsView: View {
                 DetailView(target: selected) { ui.selected = nil }.id(selected.id)
             } else {
                 switch ui.section {
-                case .group(.events): eventsList
                 case .darkSites: darkSitesList
                 case .group, .favourites: grid
                 }
@@ -124,8 +124,11 @@ struct TargetsView: View {
                 HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
                     .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
             }
-            Toggle("Fits my field of view", isOn: $ui.fitsOnly)
-            Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+            // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
+            if case .group(let g) = ui.section, g != .events {
+                Toggle("Fits my field of view", isOn: $ui.fitsOnly)
+                Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+            }
         }
         .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: 11)).padding(10)
     }
@@ -183,10 +186,17 @@ struct TargetsView: View {
                 HStack {
                     Text(ui.section == .favourites ? "Favourites" : selectedGroup.displayName).font(.title2.weight(.semibold))
                     Spacer()
-                    Picker("Sort", selection: $ui.sort) {
-                        ForEach(TargetSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    if isEvents {
+                        Picker("Sort", selection: $ui.eventSort) {
+                            ForEach(EventSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented).fixedSize()
+                    } else {
+                        Picker("Sort", selection: $ui.sort) {
+                            ForEach(TargetSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented).fixedSize()
                     }
-                    .pickerStyle(.segmented).fixedSize()
                 }
                 if let p = store.plan, let s = store.site {
                     ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
@@ -199,7 +209,7 @@ struct TargetsView: View {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if store.plan?.mode == .bright, ui.section != .favourites, selectedGroup != .planets {
+                if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if ui.section == .favourites {
@@ -208,6 +218,8 @@ struct TargetsView: View {
                     } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
                         Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     }
+                } else if isEvents {
+                    EmptyView()
                 } else if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
                                                      includeMoonWashed: ui.includeMoonWashed) {
                     Text(hint).font(.caption).foregroundStyle(Tokens.textSecondary)
@@ -215,6 +227,28 @@ struct TargetsView: View {
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
+                    if isEvents {
+                        if shownEvents.isEmpty {
+                            VStack(spacing: 10) {
+                                EventArt(name: "clear-sky").frame(width: 180, height: 180)
+                                Text(store.events.isEmpty ? "No events tonight" : "No event matches “\(ui.search.trimmingCharacters(in: .whitespaces))”")
+                                    .font(.callout).foregroundStyle(Tokens.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity).padding(.top, 40)
+                        } else {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                                ForEach(shownEvents) { e in
+                                    eventCard(e)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture { ui.selectedEvent = e }
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel(eventLabel(e))
+                                        .accessibilityAddTraits(.isButton)
+                                        .accessibilityAction { ui.selectedEvent = e }
+                                }
+                            }.padding(20)
+                        }
+                    } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                         ForEach(visible(at: clock.date)) { f in
                             let t = f.target
@@ -232,6 +266,7 @@ struct TargetsView: View {
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
                         }
                     }.padding(20)
+                    }
                 }
             }
         }
@@ -263,48 +298,65 @@ struct TargetsView: View {
 
     /// `notTonight`: a favourite that is not usable tonight, drawn dimmed with the reason in place of its timeline.
     private func card(_ t: RankedTarget, notTonight: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { chips(t).padding(8) }
-                .opacity(notTonight == nil ? 1 : 0.45)
-                .overlay(alignment: .topLeading) { heart(t).padding(8) }   // after the dimming, so a greyed favourite's heart stays bright
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text(t.catalogueID).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
-                Text(t.cardLine).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
-                Spacer(minLength: 4)
-                Text(t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
-            }
+        TargetCardFrame(dimmed: notTonight != nil, title: t.catalogueID, subtitle: t.cardLine,
+                        trailing: t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –") {
+            ThumbnailView(target: t)
+        } corner: {
+            chips(t)
+        } badge: {
+            heart(t)
+        } footer: {
             if let reason = notTonight {
                 Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)
             } else if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
                 ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
             }
         }
-        .padding(10)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 
-    private var eventsList: some View {
-        List(store.events) { e in
-            Button { ui.selectedEvent = e } label: {
-                HStack {
-                    Image(systemName: e.kind == .issPass ? "airplane" : (e.kind == .meteorShower ? "sparkle" : (e.kind == .comet ? "comet" : "moon.stars"))).foregroundStyle(Theme.accent)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading) {
-                        Text(e.title).font(.callout.weight(.semibold))
-                        Text(e.detail).font(.caption).foregroundStyle(Theme.dim)
-                    }
-                    Spacer()
-                    if let c = e.clear { Chip(text: c ? "Clear" : "Cloudy", icon: c ? "checkmark" : "cloud.fill", warning: !c) }
-                    if let s = store.site { Text(e.kind == .lunarEclipse || e.kind == .solarEclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : Copy.hhmm(e.when, site: s)).font(.caption).foregroundStyle(Theme.dim) }
-                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.dim).accessibilityHidden(true)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).padding(.vertical, 4)
-            .accessibilityLabel([e.title, e.detail, e.clear.map { $0 ? "clear" : "cloudy" }].compactMap { $0 }.joined(separator: ", "))
+    private var isEvents: Bool { ui.section == .group(.events) }
+
+    /// An event card's whole sentence for VoiceOver, as `Copy.cardLabel` is for a target: kind, name, what, when, chips.
+    private func eventLabel(_ e: SkyEvent) -> String {
+        [Self.eventKinds[e.kind], e.title, e.detail, e.atPeak ? "at peak" : nil, e.fits.map { $0 ? "fits your frame" : "wider than your frame" },
+         e.clear.map { $0 ? "clear then" : "cloudy then" }].compactMap { $0 }.joined(separator: ", ")
+    }
+
+    /// Tonight's events, searched and sorted.
+    private var shownEvents: [SkyEvent] {
+        let q = ui.search.trimmingCharacters(in: .whitespaces)
+        // The kind too, so the search prompt's "comet" finds a comet listed by its designation.
+        let found = q.isEmpty ? store.events : store.events.filter {
+            [$0.title, $0.detail, Self.eventKinds[$0.kind] ?? ""].contains { $0.localizedCaseInsensitiveContains(q) }
         }
-        .overlay { if store.events.isEmpty { Text("No events tonight").foregroundStyle(Theme.dim) } }
+        return Events.sorted(found, by: ui.eventSort)
+    }
+
+    private static let eventKinds: [SkyEventKind: String] = [.meteorShower: "Meteor shower", .comet: "Comet", .conjunction: "Conjunction",
+                                                              .issPass: "Space station", .lunarEclipse: "Lunar eclipse", .solarEclipse: "Solar eclipse"]
+
+    /// An event on the same card as a target: artwork, chips, title row, and the altitude timeline where it has a place in the sky.
+    private func eventCard(_ e: SkyEvent) -> some View {
+        let eclipse = e.kind == .lunarEclipse || e.kind == .solarEclipse
+        // "best" only when there is a best time: a shower whose radiant never rises has none.
+        let when = store.site.map { s in eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? "" } ?? ""
+        return TargetCardFrame(title: e.title, subtitle: Self.eventKinds[e.kind] ?? "", trailing: when) {
+            EventPicture(kind: e.kind)
+        } corner: {
+            EventChips(event: e)
+        } badge: {
+            EmptyView()
+        } footer: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(e.detail).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan, let ra = e.raHours, let dec = e.decDeg,
+                   e.kind == .meteorShower || e.kind == .comet || e.kind == .conjunction {
+                    ViewabilityTimeline(target: Planner.skyTrack(id: e.id, name: e.title, raHours: ra, decDeg: dec, window: track, site: s,
+                                                                 minAlt: e.kind == .meteorShower ? 0 : store.config.goRule.minAltitudeDeg),
+                                        track: track, lit: p.primary != nil, site: s)
+                }
+            }
+        }
     }
 }
 

@@ -87,7 +87,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
   - a chip saying how much of your field of view it fills
   - an amber chip when the Moon washes it out or sits close by
 
-  Events (meteor showers, eclipses, conjunctions, comets, ISS passes) say when and where to look and whether tonight is clear then, and each opens a page with the details and how to photograph it: the radiant, best hour and likely rate for a shower; where the ISS appears and fades; whether a close pair fits your field of view.
+  Events (meteor showers, eclipses, conjunctions, comets, ISS passes) say when and where to look and whether tonight is clear then, on the same cards and pages as the targets, and each opens a page with the details and how to photograph it: the radiant, best hour and likely rate for a shower; where the ISS appears and fades; whether a close pair fits your field of view.
 
   The heart on a card or a target's page adds it to Favourites, the first group in the sidebar. It lists every favourite, whether or not it is in tonight's list; one that is not usable tonight is dimmed with the reason ("Below 30° in tonight's window"). When a favourite is well placed on a clear night, it takes one of the popover's three best-target slots.
 

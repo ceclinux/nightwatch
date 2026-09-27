@@ -69,5 +69,6 @@ private func epochDate(_ tle: TLE) -> Date {
         let a = try #require(p.appears), v = try #require(p.vanishes)
         #expect(p.rise <= a && a <= p.peak.addingTimeInterval(10) && p.peak.addingTimeInterval(-10) <= v && v <= p.set)
         #expect(p.appearsAzimuthDeg != nil && p.vanishesAzimuthDeg != nil)
+        #expect((p.appearsElevationDeg ?? -1) > 0 && (p.vanishesElevationDeg ?? -1) > 0)   // for the compass drawing
     }
 }

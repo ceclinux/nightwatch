@@ -60,6 +60,12 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     /// A conjunction's separation, and whether both bodies fit in the user's frame (`Events.fits`).
     public var separationDeg: Double? = nil
     public var fits: Bool? = nil
+    /// A meteor shower at its peak tonight (the "At peak" chip).
+    public var atPeak = false
+    /// The IAU symbol of a shower's radiant constellation ("Tau"), for its artwork on the event page.
+    public var radiantConstellation: String? = nil
+    /// An ISS pass's track across the sky, for the compass drawing: where it appears, peaks and goes.
+    public var path: [SkyPathPoint] = []
     /// The time to show: `best`, else `time`.
     public var when: Date { best ?? time }
 }
@@ -77,7 +83,35 @@ extension SkyEvent {
         clear = try c.decodeIfPresent(Bool.self, forKey: .clear)
         separationDeg = try c.decodeIfPresent(Double.self, forKey: .separationDeg)
         fits = try c.decodeIfPresent(Bool.self, forKey: .fits)
+        atPeak = try c.decodeIfPresent(Bool.self, forKey: .atPeak) ?? false
+        radiantConstellation = try c.decodeIfPresent(String.self, forKey: .radiantConstellation)
+        path = try c.decodeIfPresent([SkyPathPoint].self, forKey: .path) ?? []
     }
+}
+
+/// One point of a path across the sky: azimuth from north, altitude above the horizon.
+public struct SkyPathPoint: Codable, Equatable, Sendable {
+    public let label: String
+    public let time: Date
+    public let azimuthDeg: Double
+    public let altitudeDeg: Double
+    public init(label: String, time: Date, azimuthDeg: Double, altitudeDeg: Double) {
+        self.label = label; self.time = time; self.azimuthDeg = azimuthDeg; self.altitudeDeg = altitudeDeg
+    }
+
+    /// Where this point sits on a sky chart of the given radius, as an offset from the centre (the zenith): north up, east to
+    /// the left, as the sky looks lying on your back with your head to the north; the horizon on the rim.
+    public func chartOffset(radius r: Double) -> (dx: Double, dy: Double) {
+        let d = r * (90 - max(0, min(90, altitudeDeg))) / 90
+        let a = azimuthDeg * .pi / 180
+        return (-d * sin(a), -d * cos(a))
+    }
+}
+
+/// How the Events page sorts (v1.0.1): the target sorts (altitude, size, brightness) do not apply to events.
+public enum EventSort: String, CaseIterable, Sendable {
+    case time = "Time"
+    case clearFirst = "Clear sky first"
 }
 
 public struct EventFact: Codable, Equatable, Sendable {
@@ -166,6 +200,8 @@ public enum Events {
                                         : "\(peakText) · radiant in \(where_), below the horizon tonight",
                              time: dark.start, endTime: dark.end, raHours: s.raHours, decDeg: s.decDeg)
             e.best = up ? top.time : nil
+            e.atPeak = days == 0 || days == 1
+            e.radiantConstellation = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).symbol
             let speed = s.velocityKms >= 55 ? "fast" : s.velocityKms <= 30 ? "slow" : "medium"
             e.facts = [
                 EventFact("Peak", days >= 0 && days <= 1 ? "Tonight, ZHR \(s.zhr)" : "Night of \(peakNight), ZHR \(s.zhr)"),
@@ -290,19 +326,42 @@ public enum Events {
         let emerges = start.timeIntervalSince(p.rise) > 30, fades = p.set.timeIntervalSince(end) > 30
         let first = emerges ? "Appears\(dir(p.appearsAzimuthDeg))" : "Rises\(dir(p.riseAzimuthDeg))"
         let last = fades ? "fades\(dir(p.vanishesAzimuthDeg))" : "sets\(dir(p.setAzimuthDeg))"
-        let highest = "\(Int(p.maxElevationDeg.rounded()))° up in the\(dir(p.peakAzimuthDeg))"
+        // The highest point it can be SEEN at: when a pass peaks in Earth's shadow (it appears after its peak, or fades before
+        // it), that is the end of the sunlit stretch nearer the peak.
+        let hi: (time: Date, az: Double, alt: Double)
+        if p.peak < start { hi = (start, p.appearsAzimuthDeg ?? p.peakAzimuthDeg, p.appearsElevationDeg ?? p.maxElevationDeg) }
+        else if p.peak > end { hi = (end, p.vanishesAzimuthDeg ?? p.peakAzimuthDeg, p.vanishesElevationDeg ?? p.maxElevationDeg) }
+        else { hi = (p.peak, p.peakAzimuthDeg, p.maxElevationDeg) }
+        let highest = "\(Int(hi.alt.rounded()))° up in the\(dir(hi.az))"
         var e = SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: "ISS pass",
-                         detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(p.peak, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
+                         detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(hi.time, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
                          time: start, endTime: end, raHours: nil, decDeg: nil)
-        e.best = p.peak
+        e.best = hi.time
+        let first_ = SkyPathPoint(label: emerges ? "Appears" : "Rises", time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
+                                  altitudeDeg: emerges ? (p.appearsElevationDeg ?? 0) : 0)
+        let last_ = SkyPathPoint(label: fades ? "Fades" : "Sets", time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,
+                                 altitudeDeg: fades ? (p.vanishesElevationDeg ?? 0) : 0)
+        // Seen only from its sunlit start to its end: a peak outside that stretch is not drawn.
+        e.path = hi.time == start || hi.time == end ? [first_, last_]
+            : [first_, SkyPathPoint(label: "Highest", time: hi.time, azimuthDeg: hi.az, altitudeDeg: hi.alt), last_]
         let minutes = max(1, Int((end.timeIntervalSince(start) / 60).rounded()))
         e.facts = [EventFact(emerges ? "Appears" : "Rises", "\(Copy.hhmm(start, site: site))\(dir(emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg))"
                                                           + (emerges ? ", out of Earth's shadow" : "")),
-                   EventFact("Highest", "\(Copy.hhmm(p.peak, site: site)), \(highest)"),
+                   EventFact("Highest", "\(Copy.hhmm(hi.time, site: site)), \(highest)"),
                    EventFact(fades ? "Fades" : "Sets", "\(Copy.hhmm(end, site: site))\(dir(fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg))"
                                                      + (fades ? ", into Earth's shadow" : "")),
                    EventFact("Visible for", "About \(minutes) minute\(minutes == 1 ? "" : "s")")]
         return e
+    }
+
+    /// Events by time, or clear ones first (then unknown, then cloudy), each by time.
+    public static func sorted(_ events: [SkyEvent], by sort: EventSort) -> [SkyEvent] {
+        switch sort {
+        case .time: return events.sorted { $0.when < $1.when }
+        case .clearFirst:
+            func rank(_ e: SkyEvent) -> Int { e.clear == true ? 0 : e.clear == nil ? 1 : 2 }
+            return events.sorted { (rank($0), $0.when) < (rank($1), $1.when) }
+        }
     }
 
     /// Marks each event clear or cloudy from the forecast hour containing its `when`; nil when no hour covers it.

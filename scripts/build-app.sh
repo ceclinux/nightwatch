@@ -20,6 +20,7 @@ for k in BuildMachineOSBuild DTCompiler DTPlatformBuild DTPlatformName DTPlatfor
 done
 cp -R .build/release/Nightwatch_SkyCore.bundle "$APP/Contents/Resources/"
 cp -R Resources/Constellations "$APP/Contents/Resources/"   # the owner's artwork; the widget does not need it
+cp -R Resources/Events "$APP/Contents/Resources/"           # the owner's event artwork (v1.0.1)
 cp NOTICE "$APP/Contents/Resources/NOTICE"
 
 # App icon from the Icon Composer document. With Xcode, actool compiles the Liquid Glass icon (Assets.car) plus a classic

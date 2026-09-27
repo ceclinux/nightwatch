@@ -24,6 +24,8 @@ public struct SatellitePass: Codable, Equatable, Sendable {
     public var appearsAzimuthDeg: Double? = nil
     public var vanishes: Date? = nil
     public var vanishesAzimuthDeg: Double? = nil
+    public var appearsElevationDeg: Double? = nil
+    public var vanishesElevationDeg: Double? = nil
 }
 
 public enum SatelliteError: Error { case malformedTLE }
@@ -90,8 +92,8 @@ public enum Satellites {
             while t <= p.set {
                 let top = try sat.topPosition(julianDays: t.julianDate, observer: observer)
                 if top.elev > 0, try isSunlit(sat, at: t) {
-                    if q.appears == nil { q.appears = t; q.appearsAzimuthDeg = top.azim }
-                    q.vanishes = t; q.vanishesAzimuthDeg = top.azim
+                    if q.appears == nil { q.appears = t; q.appearsAzimuthDeg = top.azim; q.appearsElevationDeg = top.elev }
+                    q.vanishes = t; q.vanishesAzimuthDeg = top.azim; q.vanishesElevationDeg = top.elev
                 }
                 t = t.addingTimeInterval(10)
             }

@@ -328,6 +328,16 @@ extension Planner {
         return r
     }
 
+    /// A fixed sky position tracked across `window`, for an event card's timeline (v1.0.1): the same viewable span and
+    /// altitude samples a target card uses.
+    public static func skyTrack(id: String, name: String, raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> RankedTarget {
+        let tr = track(raHours: raHours, decDeg: decDeg, window: window, site: site, minAlt: minAlt)
+        return described(RankedTarget(id: id, name: name, subtitle: "", group: .events, raHours: raHours, decDeg: decDeg, sizeArcmin: nil,
+                                      magnitude: nil, fit: .small, peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 90, moonWashed: false,
+                                      visibleFraction: tr.fraction),
+                         viewable: tr.viewable, site: site, typeName: "", catalogueID: name)
+    }
+
     /// Where a target comes from. Tonight's list and a favourite outside it are built from these the same way.
     enum Source {
         case object(DeepSkyObject), star(BrightStar), planet(Planet), moon, constellation(Constellation)

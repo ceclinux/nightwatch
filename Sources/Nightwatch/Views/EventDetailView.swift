@@ -2,51 +2,65 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-/// An event's page (v1.0.1): what it is, when and where to look, whether tonight is clear for it, and how to shoot it.
+/// An event's page (v1.0.1), laid out as a target's page is: the picture fills the space above a black caption box with the
+/// title, the facts and "How to shoot this". The picture is the event's artwork, the radiant's constellation for a meteor
+/// shower, and a drawing of the pass across the sky for the ISS (owner's choices, 27 September 2026).
 struct EventDetailView: View {
     @EnvironmentObject var store: Store
     let event: SkyEvent
     let onBack: () -> Void
+    @StateObject private var tipsUI = TipsState()
     private static let presets = (try? TelescopePresets.bundled()) ?? []
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Button(action: onBack) { Label("Events", systemImage: "chevron.left") }.buttonStyle(.plain).foregroundStyle(Theme.accent)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title).font(.system(size: 24, weight: .semibold))
-                    Text(event.detail).font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
-                    if let c = event.clear {
-                        Chip(text: c ? "Clear then" : "Cloudy then", icon: c ? "checkmark" : "cloud.fill", warning: !c).padding(.top, 4)
-                    }
-                }
-                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 8) {
-                    ForEach(event.facts, id: \.label) { f in
-                        GridRow {
-                            Text(f.label).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.dim)
-                            Text(f.value).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-                if let s = store.site {
-                    let preset = Self.presets.first { $0.id == store.config.fovPresetID }
-                    let tip = ShootingTips.tip(for: event, fov: store.config.fov, presetName: preset?.name, site: s)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
-                        ForEach(tip.rows, id: \.label) { r in
-                            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                                Text(r.label).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.dim).frame(width: 70, alignment: .leading)
-                                Text(r.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
-                    .padding(14)
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        DetailPage(back: "Events", onBack: onBack) {
+            EmptyView()
+        } hero: { _ in
+            hero
+        } tips: {
+            tips
+        } title: {
+            titleBlock
+        } stats: {
+            facts
+        }
+    }
+
+    @ViewBuilder private var hero: some View {
+        if event.kind == .issPass, !event.path.isEmpty, let s = store.site {
+            SkyPathView(path: event.path, site: s).frame(maxWidth: 420, maxHeight: 420)
+        } else if event.kind == .meteorShower, let id = event.radiantConstellation, let art = ConstellationArt(id: id) {
+            art
+        } else {
+            EventArt(kind: event.kind).clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    @ViewBuilder private var tips: some View {
+        if tipsUI.shown, let s = store.site {
+            let preset = Self.presets.first { $0.id == store.config.fovPresetID }
+            ShootingTipCard(tip: ShootingTips.tip(for: event, fov: store.config.fov, presetName: preset?.name, site: s))
+        }
+    }
+
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(event.title).font(.system(size: 24, weight: .semibold)).lineLimit(2)
+            Text(event.detail).font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85)).frame(maxWidth: 420, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            EventChips(event: event, onPage: true).padding(.top, 2)
+            if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help("How to photograph this event") }
+        }
+    }
+
+    private var facts: some View {
+        Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+            ForEach(event.facts, id: \.label) { f in
+                GridRow {
+                    Text(f.label).font(.system(size: 11)).foregroundStyle(Theme.dim)
+                    Text(f.value).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(maxWidth: 620, alignment: .leading)
-            .padding(24)
         }
-        .foregroundStyle(Theme.text)
     }
 }
