@@ -12,10 +12,12 @@ struct NightEntry: TimelineEntry {
 }
 
 enum SnapshotFile {
+    static var dir: URL? {
+        (Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String)
+            .flatMap { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) }
+    }
     static func load() -> WidgetSnapshot? {
-        guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
-              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
-              let data = try? Data(contentsOf: dir.appendingPathComponent("widget.json")) else { return nil }
+        guard let dir, let data = try? Data(contentsOf: dir.appendingPathComponent("widget.json")) else { return nil }
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
         return try? d.decode(WidgetSnapshot.self, from: data)
     }
@@ -88,6 +90,41 @@ struct Headline: View {
     }
 }
 
+/// Where the forecast came from, as its terms ask (v1.0.1): Apple's Weather mark, which is itself the link to Apple's legal page
+/// where the widget can hold a link (medium and large; a small widget is one click target, which opens Nightwatch,
+/// whose popover carries the link). Owner-approved mockup, 27 September 2026. Open-Meteo builds name Open-Meteo.
+struct WeatherAttribution: View {
+    let s: WidgetSnapshot
+    var link = true
+    var body: some View {
+        WeatherMark(s: s, link: link)
+        .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+    }
+}
+
+/// Apple's Weather mark, or the source's name when Apple Weather did not supply the forecast (Open-Meteo builds). With `link`
+/// the mark itself is the link to Apple's legal page (owner's decision, 27 September 2026: a separate "Sources" label read as
+/// a link to Open-Meteo and the rest, and crowded the footer).
+struct WeatherMark: View {
+    let s: WidgetSnapshot
+    var link = false
+    static func image(_ s: WidgetSnapshot) -> NSImage? {
+        s.weatherMarkFile.flatMap { f in SnapshotFile.dir.flatMap { NSImage(contentsOf: $0.appendingPathComponent(f)) } }
+    }
+    static func legal(_ s: WidgetSnapshot) -> URL? { s.weatherLegalURL.flatMap(URL.init(string:)) }
+    var body: some View {
+        if let m = Self.image(s) {
+            let mark = Image(nsImage: m).resizable().scaledToFit().frame(height: 9)
+            if link, let l = Self.legal(s) {
+                Link(destination: l) { mark }.accessibilityLabel("Apple Weather, legal attribution and data sources")
+            } else {
+                mark.accessibilityLabel("Apple Weather")
+            }
+        } else if let src = s.source { Text(src) }
+    }
+}
+
+
 /// "● Aurora amber" in AuroraWatch UK's own colour for the level (owner ruling, v0.6.1).
 struct AuroraMark: View {
     let text: String
@@ -118,6 +155,7 @@ struct SmallView: View {
                      : s.brightList ?? [s.siteName, s.notifyShort].compactMap { $0 }.joined(separator: " · "))
                     .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
             }
+            WeatherAttribution(s: s, link: false)
         }
     }
 }
@@ -134,6 +172,7 @@ struct MediumView: View {
             }
             Spacer(minLength: 0)
             ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false)
+            HStack { Spacer(minLength: 0); WeatherAttribution(s: s) }
         }
     }
 }
@@ -176,14 +215,16 @@ struct LargeView: View {
                 }
             } }
             Spacer(minLength: 0)
-            HStack {
-                Text(s.notify ?? "").font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
-                Spacer()
+            // Updated on the left, Apple's mark on the right, on one centre line. No "Notify when clear": it did not earn its
+            // place against a quieter footer (owner, 27 September 2026).
+            HStack(alignment: .center, spacing: 0) {
                 if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else {
-                Text(([s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))", s.source].compactMap { $0 }).joined(separator: " · "))
-                    .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
+                    Text(s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))")
                 }
+                Spacer(minLength: 8)
+                WeatherMark(s: s, link: true)
             }
+            .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
         }
     }
 }

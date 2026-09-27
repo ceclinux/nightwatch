@@ -249,6 +249,10 @@ final class Store: ObservableObject {
     }
 
     /// Written after each patrol and after aurora changes the widget shows, from the current plan, forecast and aurora status.
+    static let weatherMarkName = "apple-weather-mark.png"
+    /// The mark URL already tried this session: a failed fetch is not retried until the next launch (no loop).
+    private var triedWeatherMark: String?
+
     private func writeWidgetSnapshot() {
         guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
               let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
@@ -256,8 +260,28 @@ final class Store: ObservableObject {
         let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
                                        bright: config.brightNights, alerts: config.alerts, copy: copy,
                                        source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+        var s = snap
+        // Apple Weather's attribution (v1.0.1): the mark as a file the widget can read, fetched once per mark URL.
+        if let mark = fc.attributionMarkURL, let legal = fc.attributionLegalURL {
+            s.weatherLegalURL = legal
+            let file = dir.appendingPathComponent(Store.weatherMarkName), stamp = dir.appendingPathComponent(Store.weatherMarkName + ".url")
+            if FileManager.default.fileExists(atPath: file.path), (try? String(contentsOf: stamp, encoding: .utf8)) == mark {
+                s.weatherMarkFile = Store.weatherMarkName
+            } else if triedWeatherMark != mark, let url = URL(string: mark) {
+                triedWeatherMark = mark
+                Task { @MainActor in
+                    if let data = try? await fetcher.get(url) {
+                        await Task.detached {   // the disk writes off the main actor
+                            try? data.write(to: file, options: .atomic)
+                            try? mark.write(to: stamp, atomically: true, encoding: .utf8)
+                        }.value
+                    }
+                    writeWidgetSnapshot()   // once more, now with the mark (or without it, if the fetch failed)
+                }
+            }
+        }
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
-        guard let data = try? enc.encode(snap) else { return }
+        guard let data = try? enc.encode(s) else { return }
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
         widgetAurora = shownAurora(aurora)
         WidgetCenter.shared.reloadAllTimelines()

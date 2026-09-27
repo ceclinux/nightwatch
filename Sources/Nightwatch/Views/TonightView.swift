@@ -206,7 +206,10 @@ struct TonightView: View {
                 AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { EmptyView() }.frame(height: 10)
             }
             if let l = f.attributionLegalURL, let url = URL(string: l) {
-                Link("Apple Weather", destination: url).font(.caption2).foregroundStyle(Theme.dim)
+                // Apple requires the Weather mark AND a link to its legal page; the link's wording is ours, so it does not repeat
+                // "Apple Weather" beside the mark (owner, 27 September 2026). "Other data sources" is Apple's own phrase for it.
+                Link("Other data sources", destination: url).font(.caption2).foregroundStyle(Theme.dim)
+                    .help("Apple Weather's legal attribution and data sources")
             } else {
                 Text(f.cloudSource ?? "Open-Meteo").font(.caption2).foregroundStyle(Theme.dim)
             }

@@ -67,6 +67,8 @@ struct NightwatchApp: App {
         guard store.scheduler == nil, !store.booting else { return }
         store.booting = true
         AppDelegate.onURL = { [store] url in
+            // A web link from the widget (Apple Weather's legal page) opens in the browser, whichever way macOS routes it.
+            if url.scheme == "https" || url.scheme == "http" { NSWorkspace.shared.open(url); return }
             guard let link = WidgetLink(url: url) else { return }
             switch link {
             case .targets: store.targetsRequest = TargetsRequest(section: nil, siteID: nil)

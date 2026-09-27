@@ -32,7 +32,6 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var barsLabel: String
     public var targets: [WidgetTarget]
     public var tomorrow: String?
-    public var notify: String?
     /// The small widget's second line: "notify 20:30" on a clear night, "Moon 62%, Saturn" on a bright one (the canvas).
     public var notifyShort: String?
     public var brightList: String?
@@ -40,6 +39,10 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var source: String?
     /// "Updated 21:10" in the site's time zone and 24-hour form, as the popover shows it.
     public var updated: String?
+    /// Apple Weather's attribution (v1.0.1): the Weather mark, saved by the app into the App Group as this file (a widget
+    /// cannot fetch it), and the legal page of other data sources. Nil unless Apple Weather supplied the forecast.
+    public var weatherMarkFile: String? = nil
+    public var weatherLegalURL: String? = nil
     /// AuroraWatch UK's level when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
     public var aurora: AuroraStatus?
@@ -70,7 +73,6 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
                              best: "Best \(hm(t.peakTime)) · \(Int(t.peakAltDeg.rounded()))° up", group: t.group)
             },
             tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { "Tomorrow \(hm($0.start))–\(hm($0.end))" } : nil,
-            notify: Copy.notifyLabel(plan, site: site, settings: alerts),
             notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
             source: source, updated: "Updated \(hm(fetchedAt))",
@@ -96,7 +98,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         }, barsLabel: "Clear sky by hour.",
         targets: [WidgetTarget(id: "M13", catalogueID: "M13", name: "Hercules Cluster", best: "Best 21:30 · 71° up", group: .clusters),
                   WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)],
-        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05", aurora: nil)
+        tomorrow: nil, notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05", aurora: nil)
 
     /// "Forecast 7 h old" once the snapshot's forecast is more than six hours old at `now` (the alerts' stale rule); else nil.
     public func staleText(now: Date) -> String? {
