@@ -82,6 +82,18 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
                                                                      timeZoneID: "Europe/London", bortle: 4)).hasPrefix("NGC 7814 C43 Galaxy, "))   // the kind, as the card shows, when there is no name
 }
 
+/// With no clear window the card says when the target is up in darkness anyway, and so does its sentence (owner, 28 Sep 2026).
+@Test func cardLabelOnANightWithNoWindow() {
+    let site = Site(name: "x", latitude: 54, longitude: -1, elevationM: 0, timeZoneID: "UTC", bortle: 4)
+    var t = c43; t.catalogueID = "NGC 7814"
+    t.viewable = ClearWindow(start: utc(2026, 11, 20, 20, 0), end: utc(2026, 11, 21, 3, 0))
+    // The fixture peaks at 50° at 00:00 UTC.
+    #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site)
+            .hasSuffix("no clear window, up in darkness from 20:00 to 03:00, highest at 00:00, 50 degrees up"))
+    t.viewable = nil
+    #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site).hasSuffix("no clear window, too low in darkness tonight"))
+}
+
 /// Plans cached before Caldwell numbers existed have no "caldwell" key and must still load.
 @Test func aCachedTargetWithoutACaldwellNumberDecodes() throws {
     var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(c43)) as! [String: Any]

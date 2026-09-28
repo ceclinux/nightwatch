@@ -79,7 +79,7 @@ public enum AlertEngine {
             guard let g = goAt, let w = tonight.primary, agreed, now >= g, now < w.end else { return false }
             if s.goFired == true, s.stage == .doubted { s.stage = .goSent; return true }
             s.goFired = true
-            note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
+            note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site, alerts: settings))
             s.stage = .goSent
             return true
         }
@@ -120,7 +120,7 @@ public enum AlertEngine {
             if !goIfDue(), now >= headsUpAt {
                 if tonight.qualifies, settings.headsUp, agreed {
                     let (start, hours) = window(tonight)
-                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
+                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site, alerts: settings))
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
                     note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site, agreement: false))

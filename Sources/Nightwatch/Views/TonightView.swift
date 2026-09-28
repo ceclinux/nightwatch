@@ -83,7 +83,8 @@ struct TonightView: View {
                         Text(Copy.brightList(plan.brightTargets)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                     if let why = Copy.heldBack(plan.limiting) {
-                        HStack(spacing: 5) { WarningDot(size: 4.5); Text(why) }
+                        // No dot: every line under the verdict reads the same way (owner, 28 September 2026).
+                        Text(why)
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
@@ -95,21 +96,22 @@ struct TonightView: View {
                     if let why = noWindowReason(plan, site) {
                         Text(why).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
+                    // No "Tomorrow" line: after sunrise the popover shows tomorrow night itself (owner, 28 September 2026).
                     agreementLine(plan, site)
-                    if let t = store.tomorrow, let w = t.primary {
-                        Text("Tomorrow \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
-                    }
                 }
             }
         }
     }
 
-    /// Open-Meteo's second opinion (v0.5): a tick when it agrees, an amber dot when it does not; hidden without one.
+    /// Open-Meteo's second opinion (v0.5). When it agrees, a small line with a tick. When it disagrees, one plain grey line
+    /// that says what it means ("Less certain: a second forecast sees cloud from 00:00."): no box, no dot, no coloured text
+    /// (owner, 28 September 2026).
     @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
-        if let a = plan.agreement {
+        if let advice = Copy.advice(plan, site: site, alerts: store.config.alerts) {
+            Text(advice.line).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+        } else if let a = plan.agreement {
             HStack(spacing: 5) {
-                if Copy.agreementWarns(a) { WarningDot(size: 4.5) }
-                else { Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true) }
+                Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true)
                 Text(Copy.agreementText(a, site: site))
             }
             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)

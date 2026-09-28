@@ -169,6 +169,35 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
     #expect(!copy.notificationBody(plan: p, site: testSite).contains("Open-Meteo"))
 }
 
+/// A disagreement says what to do (owner, 28 September 2026): "Check again at …" with no window, "Less certain" with one.
+@Test func adviceWhenTheForecastsDisagree() throws {
+    let a = utc(2026, 11, 20, 23, 0), b = utc(2026, 11, 21, 2, 0), early = utc(2026, 11, 20, 12, 0)
+    var alerts = AlertSettings(); alerts.preWindowMinutes = 30
+    // No window from Apple Weather; Open-Meteo clear 23:00–02:00: check again at the nudge time before it.
+    var none = try plan(primaryCloud: Array(repeating: 90, count: 15))
+    none.agreement = .clearRun(a, b)
+    let check = try #require(Copy.advice(none, site: testSite, alerts: alerts, now: early))
+    #expect(check.line == "Check again at 22:30: a second forecast sees 23:00–02:00 clear.")
+    // Once that time has passed, look now.
+    #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 20, 22, 45))?.line == "Check the sky now: a second forecast sees 23:00–02:00 clear.")
+    // After the run has ended there is nothing to check, until the next refresh brings a new plan.
+    #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 21, 2, 0)) == nil)
+    // A window, and Open-Meteo sees cloud part-way: less certain, never "don't go".
+    var window = try plan(primaryCloud: primary)
+    window.agreement = .cloudFrom(a)
+    let less = try #require(Copy.advice(window, site: testSite, alerts: alerts, now: early))
+    #expect(less.line == "Less certain: a second forecast sees cloud from 23:00.")
+    #expect(less.sentence == "A second forecast sees cloud from 23:00, so this window is less certain than usual.")
+    window.agreement = .noWindow
+    #expect(Copy.advice(window, site: testSite, alerts: alerts)?.line == "Less certain: a second forecast sees no clear window.")
+    // Agreement needs no advice.
+    window.agreement = .agree
+    #expect(Copy.advice(window, site: testSite, alerts: alerts) == nil)
+    // Notifications carry the same sentence.
+    window.agreement = .cloudFrom(a)
+    #expect(Copy().notificationBody(plan: window, site: testSite).hasSuffix(" A second forecast sees cloud from 23:00, so this window is less certain than usual."))
+}
+
 @Test func aBrightWindowNeverSuggestsARunElsewhere() throws {
     // The bright rule also needs a target 15° up, which cloud alone cannot show, so a cloudy bright window reads "no clear window".
     let night = try Ephemeris.night(localDate: utc(2026, 7, 30, 12, 0), site: testSite)

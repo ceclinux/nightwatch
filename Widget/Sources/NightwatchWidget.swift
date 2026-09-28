@@ -82,8 +82,10 @@ struct Headline: View {
             Text(s.headline).font(.system(size: 15, weight: .medium)).foregroundStyle(Tokens.textPrimary)
                 .lineLimit(compact ? 1 : 2).minimumScaleFactor(compact ? 0.7 : 0.8)
             if let w = s.window { Text(w).font(.system(size: 13)).foregroundStyle(Tokens.textPrimary) }
-            if let r = s.reason { NoteLine(text: r, warns: s.reasonWarns, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
-            if let a = s.agreement { NoteLine(text: a, warns: s.agreementWarns, tick: true, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
+            // No dot on the reason line, as in the popover (owner, 28 September 2026).
+            if let r = s.reason { NoteLine(text: r, warns: false, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
+            // A disagreement is the popover's plain line; agreement keeps its tick (owner, 28 September 2026).
+            if let a = s.agreement { NoteLine(text: a, warns: false, tick: !s.agreementWarns, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
             if let t = s.tomorrow, !(compact && s.reason != nil) { NoteLine(text: t, warns: false) }
             if showStale, let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true) }
         }

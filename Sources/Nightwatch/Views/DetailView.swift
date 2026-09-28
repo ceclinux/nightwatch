@@ -7,6 +7,8 @@ import SkyCore
 struct DetailView: View {
     @EnvironmentObject var store: Store
     let target: RankedTarget
+    /// The night the Targets window shows: tonight, or tomorrow night when chosen (owner, 28 September 2026).
+    let plan: NightPlan?
     let onBack: () -> Void
     @StateObject private var hero = ThumbnailLoader()
     @StateObject private var tipsUI = TipsState()
@@ -118,7 +120,7 @@ struct DetailView: View {
     }
 
     @ViewBuilder private var stats: some View {
-        if let s = store.site, let plan = store.plan, let w = plan.primary {
+        if let s = store.site, let plan, let w = plan.primary {
             VStack(alignment: .leading, spacing: 8) {
                 TileRow(spacing: 6) {
                     StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")

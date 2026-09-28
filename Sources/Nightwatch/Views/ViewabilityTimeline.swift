@@ -3,7 +3,7 @@ import NightwatchUI
 import SkyCore
 
 /// A card's viewability timeline (handover timeline table). The track spans tonight's clear window, or darkness when there
-/// is none. The card, not this view, carries the screen-reader sentence (Copy.cardLabel). The viewable span is lit from accent.clear.low to accent.clear following altitude, with a white best-moment marker.
+/// is none, when the span the target is up is drawn grey. The card, not this view, carries the screen-reader sentence (Copy.cardLabel). The viewable span is lit from accent.clear.low to accent.clear following altitude, with a white best-moment marker.
 struct ViewabilityTimeline: View {
     let target: RankedTarget
     let track: ClearWindow
@@ -31,6 +31,13 @@ struct ViewabilityTimeline: View {
                     ForEach(hourTicks, id: \.self) { t in
                         Rectangle().fill(Color.white.opacity(0.27)).frame(width: 0.75, height: 3).offset(x: x(t, w), y: 5)
                     }
+                    if !lit, let v = target.viewable {
+                        // No clear window: when it is up in darkness anyway, in grey, with its highest point (owner, 28 September 2026).
+                        Capsule().fill(Tokens.barCloudy).frame(width: max(3, x(v.end, w) - x(v.start, w)), height: 3)
+                            .offset(x: min(x(v.start, w), w - 3))
+                        Circle().fill(Tokens.textSecondary).frame(width: 5.5, height: 5.5)
+                            .offset(x: x(target.peakTime, w) - 2.75, y: -1.25)
+                    }
                     if lit, let v = target.viewable {
                         let stops = Planner.timelineStops(target.altitudeSamples)
                         Capsule()
@@ -50,8 +57,9 @@ struct ViewabilityTimeline: View {
             HStack {
                 Text(caption).foregroundStyle(Tokens.textSecondary)
                 Spacer()
-                if lit, target.viewable != nil {
-                    Text("Best \(Copy.hhmm(target.peakTime, site: site)) · \(Int(target.peakAltDeg.rounded()))°").fontWeight(.medium).foregroundStyle(Tokens.textPrimary)
+                if target.viewable != nil {
+                    Text("\(lit ? "Best" : "Highest") \(Copy.hhmm(target.peakTime, site: site)) · \(Int(target.peakAltDeg.rounded()))°")
+                        .fontWeight(.medium).foregroundStyle(lit ? Tokens.textPrimary : Tokens.textSecondary)
                 }
             }
             .font(.system(size: 9))
@@ -60,8 +68,7 @@ struct ViewabilityTimeline: View {
     }
 
     private var caption: String {
-        guard lit else { return "Not in clear sky tonight" }
-        guard let v = target.viewable else { return "Viewable outside the clear window" }
-        return "Viewable \(Copy.hhmm(v.start, site: site))–\(Copy.hhmm(v.end, site: site))"
+        guard let v = target.viewable else { return lit ? "Viewable outside the clear window" : "Too low in darkness tonight" }
+        return "\(lit ? "Viewable" : "Up in darkness") \(Copy.hhmm(v.start, site: site))–\(Copy.hhmm(v.end, site: site))"
     }
 }

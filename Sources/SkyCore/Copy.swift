@@ -27,9 +27,13 @@ public struct Copy: Sendable {
         targets.map { $0.id == "moon" ? "Moon \($0.subtitle.prefix { $0 != " " })" : $0.name }.joined(separator: ", ")
     }
 
-    /// `agreement`: append Open-Meteo's line (v0.5); the tomorrow preview passes false.
-    public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true) -> String {
-        let line = agreement ? plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" : ""
+    /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
+    /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
+    public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
+        let line: String
+        if !agreement { line = "" }
+        else if let advice = Copy.advice(plan, site: site, alerts: alerts) { line = " " + advice.sentence }
+        else { line = plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" }
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
@@ -94,7 +98,12 @@ public struct Copy: Sendable {
         if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
         parts.append(frameChip(t))
         if t.moonWashed { parts.append("Moon-washed") } else if nearMoon { parts.append("Near Moon") }
-        if !lit { parts.append("not in clear sky tonight") }
+        if !lit {
+            // No clear window: when it is up in darkness anyway, as the card now shows (owner, 28 September 2026).
+            if let v = t.viewable {
+                parts.append("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
+            } else { parts.append("no clear window, too low in darkness tonight") }
+        }
         else if let v = t.viewable {
             parts.append("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
         } else { parts.append("viewable outside the clear window") }
@@ -136,6 +145,39 @@ public struct Copy: Sendable {
     /// Amber dot when Open-Meteo disagrees; a tick when it agrees.
     public static func agreementWarns(_ a: Agreement) -> Bool {
         switch a { case .agree, .agreeNoWindow: false; default: true }
+    }
+
+    /// When the second opinion disagrees, one plain line that says what it means instead of a bare fact about Open-Meteo
+    /// (owner, 28 September 2026: no box, no dot, no coloured text, so the popover keeps its simplicity). With no window and
+    /// Open-Meteo clear, when to check again; with a window, that it is less certain. The verdict still comes from Apple
+    /// Weather alone, and a clear night is a notification, not a guarantee. nil when they agree.
+    public struct Advice: Equatable, Sendable {
+        /// The popover's and widgets' line: "Less certain: a second forecast sees cloud from 00:00."
+        public let line: String
+        /// The notifications' sentence: "A second forecast sees cloud from 00:00, so this window is less certain than usual."
+        public let sentence: String
+    }
+
+    public static func advice(_ plan: NightPlan, site: Site, alerts: AlertSettings, now: Date = Date()) -> Advice? {
+        guard let a = plan.agreement, agreementWarns(a) else { return nil }
+        func range(_ x: Date, _ y: Date) -> String { "\(hhmm(x, site: site))–\(hhmm(y, site: site))" }
+        if plan.primary == nil, case .clearRun(let x, let y) = a {
+            // Nothing to check once Open-Meteo's run is over: the plan only changes at the next refresh.
+            guard now < y else { return nil }
+            // Check again at the nudge time before Open-Meteo's run: the same lead the user chose for the nudge.
+            let check = x.addingTimeInterval(-Double(alerts.preWindowMinutes) * 60)
+            let sees = "a second forecast sees \(range(x, y)) clear."
+            return Advice(line: (check > now ? "Check again at \(hhmm(check, site: site))" : "Check the sky now") + ": " + sees,
+                          sentence: "A second forecast sees \(range(x, y)) clear.")
+        }
+        let sees: String = switch a {
+        case .cloudFrom(let t): "sees cloud from \(hhmm(t, site: site))"
+        case .clearFrom(let t): "sees it clear only from \(hhmm(t, site: site))"
+        case .clearRun(let x, let y): "sees it clear \(range(x, y)) instead"
+        case .noWindow, .agree, .agreeNoWindow: "sees no clear window"
+        }
+        return Advice(line: "Less certain: a second forecast \(sees).",
+                      sentence: "A second forecast \(sees), so this window is less certain than usual.")
     }
 
     /// "Sun 27 Sep": the one way a date is written in the interface (owner, 28 September 2026).

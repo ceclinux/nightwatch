@@ -18,14 +18,23 @@ final class TargetsViewState: ObservableObject {
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
     @Published var eventSort: EventSort = .time
+    /// Tonight | Tomorrow night: planning for tomorrow night while tonight has no clear window (owner, 28 September 2026).
+    @Published var tomorrow = false
 }
 
 struct TargetsView: View {
     @EnvironmentObject var store: Store
     @StateObject private var ui = TargetsViewState()
 
+    /// Tomorrow night can be planned from the window when tonight has no clear window and tomorrow night has one.
+    private var canPlanTomorrow: Bool { store.plan != nil && store.plan?.primary == nil && store.tomorrow?.primary != nil }
+    /// Events are tonight's only, so their page always reads tonight.
+    private var showingTomorrow: Bool { ui.tomorrow && canPlanTomorrow && !isEvents }
+    /// The night the whole window shows: groups, counts, search, favourites and pages all switch together.
+    private var plan: NightPlan? { showingTomorrow ? store.tomorrow : store.plan }
+
     /// On a bright night only the Moon and planets are suggested, so they stand in for the ranked list.
-    private var targets: [RankedTarget] { store.plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
+    private var targets: [RankedTarget] { plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
 
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
@@ -38,14 +47,14 @@ struct TargetsView: View {
 
     private var sections: [BrowserSection] { [.favourites] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
 
-    private var favourites: [FavouriteTarget] { store.plan?.favourites ?? [] }
+    private var favourites: [FavouriteTarget] { plan?.favourites ?? [] }
 
 
     /// The filtered, sorted cards at `now`. "Best now" sorts by altitude at that instant, so the grid passes a clock tick.
     /// Favourites ignore the two filters, since every favourite is always shown: usable ones sorted, then the greyed rest.
     private func visible(at now: Date) -> [FavouriteTarget] {
         guard let site = store.site else { return [] }
-        let span = store.plan.flatMap { $0.primary ?? $0.darkSpan }
+        let span = plan.flatMap { $0.primary ?? $0.darkSpan }
         switch ui.section {
         case .favourites:
             let found = favourites.filter { $0.target.matches(ui.search) }
@@ -57,6 +66,14 @@ struct TargetsView: View {
         case .darkSites:
             return []
         }
+    }
+
+    /// "Best now" ranks by height at this moment inside the window. With no window tonight it reads "Highest" (owner,
+    /// 28 September 2026), and for tomorrow night, whose hours have not begun, "Best".
+    private func sortLabel(_ sort: TargetSort) -> String {
+        guard sort == .bestNow else { return sort.rawValue }
+        if showingTomorrow { return "Best" }
+        return plan?.primary == nil ? "Highest" : sort.rawValue
     }
 
     private func isFavourite(_ t: RankedTarget) -> Bool { store.config.favourites.contains(t.id) }
@@ -86,7 +103,7 @@ struct TargetsView: View {
                 EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
             } else if let selected = ui.selected {
                 // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
-                DetailView(target: selected) { ui.selected = nil }.id(selected.id)
+                DetailView(target: selected, plan: plan) { ui.selected = nil }.id(selected.id)
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
@@ -119,7 +136,7 @@ struct TargetsView: View {
     /// means more cards (owner, 28 September 2026); "Doesn't fit my frame" on is the old "Fits my field of view" off.
     private var filters: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let p = store.plan, let s = store.site, let m = Planner.moonTonight(p), m != .down {
+            if let p = plan, let s = store.site, let m = Planner.moonTonight(p), m != .down {
                 HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
                     .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
             }
@@ -137,6 +154,7 @@ struct TargetsView: View {
     private func consumeRequest() {
         guard let r = store.targetsRequest else { return }
         if let section = r.section {
+            ui.tomorrow = false   // a request from the popover or widget is about tonight
             ui.section = section
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
@@ -185,6 +203,13 @@ struct TargetsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(ui.section == .favourites ? "Favourites" : selectedGroup.displayName).font(.title2.weight(.semibold))
+                    if canPlanTomorrow && !isEvents {
+                        Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
+                            .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
+                    }
+                    // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
+                    // Tonight, so it never jumps to tomorrow by itself on a later refresh.
+                    Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                     Spacer()
                     if isEvents {
                         Picker("Sort", selection: $ui.eventSort) {
@@ -193,15 +218,22 @@ struct TargetsView: View {
                         .pickerStyle(.segmented).fixedSize()
                     } else {
                         Picker("Sort", selection: $ui.sort) {
-                            ForEach(TargetSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                            ForEach(TargetSort.allCases, id: \.self) { Text(sortLabel($0)).tag($0) }
                         }
                         .pickerStyle(.segmented).fixedSize()
                     }
                 }
-                if let p = store.plan, let s = store.site {
+                if let p = plan, let s = store.site {
                     ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
-                    if p.darkSpan == nil {
+                    if showingTomorrow, let w = p.primary {
+                        Text("Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s)): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))")
+                            .font(.caption).foregroundStyle(Tokens.textSecondary)
+                    } else if p.darkSpan == nil {
                         Text("No astronomical darkness tonight.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    } else if p.primary == nil, canPlanTomorrow, let w = store.tomorrow?.primary {
+                        // Said once here instead of on every card (owner, 28 September 2026).
+                        Text("\(store.copy.noWindow) Tomorrow night looks clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)).")
+                            .font(.callout).foregroundStyle(Tokens.statusWarning)
                     } else if p.primary == nil {
                         Text(store.copy.noWindow).font(.caption).foregroundStyle(Tokens.textSecondary)
                     }
@@ -209,7 +241,7 @@ struct TargetsView: View {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
+                if plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 // What the search found, under the night's state as before but in the callout size and the warning colour used for the Moon
@@ -262,7 +294,7 @@ struct TargetsView: View {
                                 .onTapGesture { ui.selected = t }
                                 .accessibilityElement(children: .combine)
                                 .accessibilityLabel(f.notTonight.map { "\(t.name), \($0)" }
-                                                    ?? store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
+                                                    ?? store.site.map { Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
                                 .accessibilityAddTraits(.isButton)
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
@@ -275,7 +307,7 @@ struct TargetsView: View {
     }
 
     private func nearMoon(_ t: RankedTarget) -> Bool {
-        guard let p = store.plan else { return false }
+        guard let p = plan else { return false }
         return t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: Planner.moonTonight(p).map { $0 != .down } ?? false)
     }
 
@@ -311,7 +343,7 @@ struct TargetsView: View {
         } footer: {
             if let reason = notTonight {
                 Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)
-            } else if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
+            } else if let s = store.site, let p = plan, let track = p.primary ?? p.darkSpan {
                 ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
             }
         }
