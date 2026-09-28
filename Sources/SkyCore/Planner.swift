@@ -179,10 +179,11 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// The Caldwell number, for the card line and search; the catalogue ID stays the NGC or IC number.
     public var caldwell: Int? = nil
 
-    /// The card's line under the catalogue ID: "C43 · Galaxy", "C20 · North America Nebula", "Andromeda Galaxy".
-    public var cardLine: String {
-        [caldwell.map { "C\($0)" }, commonName ?? typeName].compactMap { $0 }.joined(separator: " · ")
-    }
+    /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
+    public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
+    /// A card's second line, so the name people know is never cut (owner, 28 September 2026): "Little Sombrero Galaxy",
+    /// the kind when there is no name ("Galaxy"), or a star's designation ("α Cyg").
+    public var cardName: String { commonName ?? typeName }
 
     /// The Targets search, ignoring case. A catalogue number ("C43", "C 43", "NGC7814", "m 31") must begin one of the name's
     /// " · " parts once spaces are removed, so "C43" does not find NGC 4303; a bare number ("7814") must begin one part's
@@ -201,9 +202,9 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
         return parts.contains { $0.hasPrefix(q) }
     }
 
-    /// Hidden while Include Moon-washed is off. Shared by the Targets grid and its search hint so the two cannot disagree.
+    /// Hidden while Show › Washed out by the Moon is off. Shared by the Targets grid and its search hint so the two cannot disagree.
     public func hiddenByMoon(includeMoonWashed: Bool) -> Bool { moonWashed && !includeMoonWashed }
-    /// Hidden while Fits my field of view is on.
+    /// Hidden while Show › Doesn't fit my frame is off.
     public func hiddenByFit(fitsOnly: Bool) -> Bool { fitsOnly && fit != .fits }
 
     /// A group's cards, sorted. While searching every match shows, the ones the two switches would hide placed last: someone

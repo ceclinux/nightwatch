@@ -60,7 +60,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         let picks = plan.mode == .bright ? plan.brightTargets : plan.best
         return WidgetSnapshot(
             siteName: site.name, fetchedAt: fetchedAt, score: plan.score, mode: plan.mode, headline: headline,
-            window: w.map { "\(hm($0.start)) → \(hm($0.end)) · \(String(format: "%.1f h", $0.hours))" },
+            window: w.map { "\(hm($0.start))–\(hm($0.end)) · \(String(format: "%.1f h", $0.hours))" },
             windowShort: w.map { (plan.mode == .bright ? "Bright " : "Clear ") + "\(hm($0.start))–\(hm($0.end))" },
             reason: reason, reasonWarns: w != nil && reason != nil,
             agreement: plan.agreement.map { Copy.agreementText($0, site: site) },
@@ -90,7 +90,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
     public static let sample = WidgetSnapshot(
         siteName: "Dark Site", fetchedAt: Date(), score: 78, mode: .dark, headline: "Clear window tonight",
-        window: "21:10 → 01:40 · 4.5 h", windowShort: "Clear 21:10–01:40", reason: "Held back by a 40% moon", reasonWarns: true,
+        window: "21:10–01:40 · 4.5 h", windowShort: "Clear 21:10–01:40", reason: "Held back by a 40% moon", reasonWarns: true,
         agreement: "Open-Meteo agrees", agreementWarns: false,
         slots: Array(repeating: .cloudy, count: 10) + Array(repeating: .clear, count: 27) + Array(repeating: .partCloud, count: 11) + Array(repeating: .daylight, count: 12),
         bezelLabel: "Sky score 78", bars: [20, 35, 80, 92, 88, 76, 40, 25].enumerated().map { i, c in

@@ -11,9 +11,12 @@ extension Color {
 public enum Tokens {
     public static let textPrimary = Color(hex: 0xE8EAEF)                 // text.primary
     public static let textSecondary = Color(hex: 0xA8AEBE)               // text.secondary
-    public static let accentClear = Color(hex: 0xFF453A)                 // accent.clear: the app red, chosen to keep night vision (owner ruling)
-    public static let accentClearLow = Color(hex: 0x7A231E)              // accent.clear.low
-    public static let statusWarning = Color(hex: 0xF5B041)               // status.warning
+    // The accent follows the colour chosen in System Settings, and Nightwatch sets none of its own, so Multicolour gives
+    // macOS blue (owner, 28 September 2026: the red and the orange clashed, and glare at the telescope mattered less than
+    // expected). Warnings keep a colour of their own that sits with any accent.
+    public static let accentClear = Color.accentColor                    // accent.clear: the System Settings accent
+    public static let accentClearLow = Color.accentColor.opacity(0.35)   // accent.clear.low
+    public static let statusWarning = Color(hex: 0xEDB40D)               // status.warning (owner, 28 September 2026)
     public static let controlOn = Color(hex: 0x0A84FF)                   // control.on: system blue, never green
     public static let glassTint = Color(hex: 0x0C0E16, opacity: 0.62)    // glass.tint
     public static let glassHairline = Color.white.opacity(0.12)          // glass.hairline
@@ -29,10 +32,8 @@ public enum Tokens {
     public static let targetsTrack = Color(hex: 0x272A34)                // targets.track
     public static let bestLine = Color(hex: 0xCDD2DC)                    // handover type table: the target "Best" line
 
-    /// accent.clear.low blended towards accent.clear by u (0…1). Done by hand: Color.mix is macOS 15.
+    /// accent.clear.low towards accent.clear by u (0…1): the accent's opacity, since the accent is only known at run time.
     public static func clearBlend(_ u: Double) -> Color {
-        let u = min(1, max(0, u))
-        func lerp(_ a: Double, _ b: Double) -> Double { (a + (b - a) * u) / 255 }
-        return Color(.sRGB, red: lerp(0x7A, 0xFF), green: lerp(0x23, 0x45), blue: lerp(0x1E, 0x3A), opacity: 1)
+        Color.accentColor.opacity(0.35 + 0.65 * min(1, max(0, u)))
     }
 }

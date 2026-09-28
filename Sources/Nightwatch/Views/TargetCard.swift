@@ -8,8 +8,12 @@ import SkyCore
 struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: View {
     var dimmed = false
     let title: String
+    /// Beside the title, dimmer: a target's Caldwell number.
+    var note: String? = nil
+    /// The second line, the name people know (owner, 28 September 2026); empty for an event, whose title is its name.
     let subtitle: String
-    let trailing: String
+    /// Right of the title: a magnitude or an event's time; nil shows nothing, never a placeholder such as "mag –".
+    let trailing: String?
     @ViewBuilder let picture: () -> Picture
     @ViewBuilder let corner: () -> Corner
     @ViewBuilder let badge: () -> Badge
@@ -20,12 +24,17 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             picture().frame(height: 110).overlay(alignment: .topTrailing) { corner().padding(8) }
                 .opacity(dimmed ? 0.45 : 1)
                 .overlay(alignment: .topLeading) { badge().padding(8) }   // after the dimming, so a greyed favourite's heart stays bright
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                // Priority rather than a fixed size: an event's title can be long ("Partial solar eclipse from …").
-                Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
-                Text(subtitle).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
-                Spacer(minLength: 4)
-                Text(trailing).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    // Priority rather than a fixed size: an event's title can be long ("Partial solar eclipse from …").
+                    Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
+                    if let note { Text(note).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1) }
+                    Spacer(minLength: 4)
+                    if let trailing { Text(trailing).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize() }
+                }
+                if !subtitle.isEmpty {
+                    Text(subtitle).font(.system(size: 11.5)).foregroundStyle(Tokens.textPrimary).lineLimit(1).minimumScaleFactor(0.8)
+                }
             }
             footer()
         }

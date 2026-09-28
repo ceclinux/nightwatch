@@ -89,7 +89,7 @@ public struct Copy: Sendable {
     /// "NGC 6992 Eastern Veil, viewable from 00:00 to 03:28, best at 00:00, 57 degrees up" (spec §7).
     /// The card's whole sentence, chips and magnitude included, because the label replaces the card's contents for a screen reader.
     public static func cardLabel(_ t: RankedTarget, lit: Bool, nearMoon: Bool, site: Site) -> String {
-        let name = [t.catalogueID, t.caldwell.map { "C\($0)" }, t.commonName].compactMap { $0 }.joined(separator: " ")
+        let name = [t.catalogueID, t.cardNote, t.cardName].compactMap { $0 }.joined(separator: " ")   // as the card reads
         var parts = [name]
         if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
         parts.append(frameChip(t))
@@ -136,6 +136,12 @@ public struct Copy: Sendable {
     /// Amber dot when Open-Meteo disagrees; a tick when it agrees.
     public static func agreementWarns(_ a: Agreement) -> Bool {
         switch a { case .agree, .agreeNoWindow: false; default: true }
+    }
+
+    /// "Sun 27 Sep": the one way a date is written in the interface (owner, 28 September 2026).
+    public static func dayMonth(_ date: Date, site: Site) -> String {
+        let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "EEE d MMM"; f.locale = Locale(identifier: "en_GB")
+        return f.string(from: date)
     }
 
     public static func hhmm(_ date: Date, site: Site) -> String {

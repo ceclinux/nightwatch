@@ -73,26 +73,26 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
   | Star with a slash | The forecast is more than six hours old, for example while offline |
 
 - The popover (v0.4 "Jingo") shows:
-  - the sky score inside a 12-hour clock bezel whose ticks glow red across tonight's clear window
+  - the sky score inside a 12-hour clock bezel whose ticks glow in your accent colour across tonight's clear window
   - the window time, with a "Held back by…" line naming what costs the score points (a bright Moon, dew, wind, seeing, cloud)
   - on a build signed for Apple Weather, a second-opinion line from Open-Meteo (v0.5 "The Fifth Elephant"): "Open-Meteo agrees", "Open-Meteo agrees: no clear window", or where it differs ("sees cloud from 00:00", "sees it clear from 21:00", "has a clear run 23:00–02:00", "sees no clear window"). The same sentence ends the evening heads-up and the nudge before the window. Settings › Alerts › "Alert only when Open-Meteo agrees" holds an alert back when Open-Meteo is not clear enough inside the window. Nothing is logged: the second opinion lives in the forecast cache and is replaced on every refresh
   - clear-sky bars, one per hour of darkness, taller for clearer
   - one notice line (aurora, or a clearer dark site nearby)
-  - six tiles, with the dew tile turning amber when a heater is advised
+  - six tiles, with the dew tile turning yellow when a heater is advised
   - the best three targets
   - the Apple Weather mark (a link to its legal attribution), the update time and Refresh, on one line
   - Settings (the gear) and Quit (the power button, or ⌘Q) at the top
 - The target browser groups what is up during the window into nebulae, galaxies, star clusters, stars (the 49 named stars of magnitude 2 or brighter, for focusing and alignment), planets and Moon, events (meteor showers, eclipses, conjunctions, comets, ISS passes) and constellations, with DSS2 thumbnails. Every card has:
   - a timeline of the clear window, lit where the target is viewable and brighter where it is higher, with its best moment marked
   - a chip saying how much of your field of view it fills
-  - an amber chip when the Moon washes it out or sits close by
+  - a yellow chip when the Moon washes it out or sits close by
 
   Events (meteor showers, eclipses, conjunctions, comets, ISS passes) say when and where to look and whether tonight is clear then, on the same cards and pages as the targets, and each opens a page with the details and how to photograph it: the radiant, best hour and likely rate for a shower; where the ISS appears and fades; whether a close pair fits your field of view.
 
   The heart on a card or a target's page adds it to Favourites, the first group in the sidebar. It lists every favourite, whether or not it is in tonight's list; one that is not usable tonight is dimmed with the reason ("Below 30° in tonight's window"). When a favourite is well placed on a clear night, it takes one of the popover's three best-target slots.
 
-  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness). Search finds a target by name, by kind ("galaxy", "globular") or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); a line under the header, in larger amber text, says how many it found and which other groups have matches. While searching, matches the Moon-washed and field-of-view switches would hide still show, placed last.
-- On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. The app's red keeps your night vision, and on the popover and the target cards it marks clear sky only. Warnings are amber with a dot and words.
+  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness). Search finds a target by name, by kind ("galaxy", "globular") or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); a line under the header, in larger yellow text, says how many it found and which other groups have matches. While searching, matches the Moon-washed and field-of-view switches would hide still show, placed last.
+- On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. Clear sky is drawn in the accent colour chosen in System Settings (blue with Multicolour), and nothing else uses it on the popover and the target cards. Warnings are yellow, with a dot and words.
 
 ## Telescope
 

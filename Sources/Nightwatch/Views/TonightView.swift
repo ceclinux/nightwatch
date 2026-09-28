@@ -12,7 +12,7 @@ struct TonightView: View {
             if store.isAway { awayBar }
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
-                ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site), source: store.forecast?.cloudSource ?? "Open-Meteo")
+                ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site))
                 notice(site)
                 tiles(plan, site)
                 best(plan, site)
@@ -46,7 +46,7 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
                 if let s = store.site, let p = store.plan {
-                    Text("\(p.night.key) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
+                    Text("\(Copy.dayMonth(p.night.localDate, site: s)) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
                         .font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)   // wedge angle = site latitude; the vendor app does the alignment
                 }
             }
@@ -78,7 +78,7 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let w = plan.primary {
                     Text(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight").font(.system(size: 15, weight: .medium))
-                    Text("\(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").font(.system(size: 13))
+                    Text("\(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").font(.system(size: 13))
                     if plan.mode == .bright {
                         Text(Copy.brightList(plan.brightTargets)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
@@ -97,7 +97,7 @@ struct TonightView: View {
                     }
                     agreementLine(plan, site)
                     if let t = store.tomorrow, let w = t.primary {
-                        Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+                        Text("Tomorrow \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                 }
             }

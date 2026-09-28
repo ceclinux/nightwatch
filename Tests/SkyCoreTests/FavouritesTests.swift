@@ -35,7 +35,7 @@ private func favourites(_ ids: [String], catalog: Catalog = Catalog(objects: [])
     let ranked = Planner.rank(catalog: Catalog(objects: []), constellations: [], stars: try BrightStars.bundled(), window: window,
                               site: sheffield, fov: dwarfMini, rule: GoRule())
     let deneb = try #require(ranked.first { $0.catalogueID == "Deneb" })   // near the zenith on a September night
-    #expect(deneb.group == .stars && deneb.typeName == "Star" && deneb.cardLine == "α Cyg" && !deneb.moonWashed)
+    #expect(deneb.group == .stars && deneb.typeName == "Star" && deneb.cardName == "α Cyg" && !deneb.moonWashed)
     #expect(ranked.contains { $0.catalogueID == "Canopus" } == false)       // never rises at 53° N
     #expect(Planner.best(from: ranked).allSatisfy { $0.group != .stars })   // stars only reach the popover as a favourite
 }

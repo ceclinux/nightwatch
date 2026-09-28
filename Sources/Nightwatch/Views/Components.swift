@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-/// A popover stat tile: label over value, an optional amber hint, and a warning state (amber outline and dot).
+/// A popover stat tile: label over value, an optional warning-colour hint, and a warning state (warning-colour outline and dot).
 /// A missing value reads "No data" in the secondary colour. Values wrap rather than truncate.
 struct StatTile: View {
     let label: String
@@ -38,7 +38,7 @@ extension View {
     }
 }
 
-/// Amber dot and "{n} h ago" beside any timestamp older than the six-hour stale rule.
+/// A warning-colour dot and "{n} h ago" beside any timestamp older than the six-hour stale rule.
 struct StaleBadge: View {
     let fetchedAt: Date
     var body: some View {
@@ -48,7 +48,7 @@ struct StaleBadge: View {
     }
 }
 
-/// A small glass chip on a card: neutral text, or amber with an icon for a warning. Never red.
+/// A small glass chip on a card: neutral text, or the warning colour with an icon for a warning.
 struct Chip: View {
     let text: String
     var icon: String? = nil

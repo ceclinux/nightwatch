@@ -115,7 +115,8 @@ struct TargetsView: View {
         .font(.system(size: 12))
     }
 
-    /// Toggles with the Moon line above them, so "Include Moon-washed" has context (follow-on 5).
+    /// Switches with the Moon line above them, so the Moon one has context (follow-on 5). Both read "Show …", so on always
+    /// means more cards (owner, 28 September 2026); "Doesn't fit my frame" on is the old "Fits my field of view" off.
     private var filters: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let p = store.plan, let s = store.site, let m = Planner.moonTonight(p), m != .down {
@@ -124,8 +125,9 @@ struct TargetsView: View {
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Toggle("Fits my field of view", isOn: $ui.fitsOnly)
-                Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+                Text("SHOW").font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).padding(.top, 2)
+                Toggle("Doesn't fit my frame", isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
+                Toggle("Washed out by the Moon", isOn: $ui.includeMoonWashed)
             }
         }
         .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: 11)).padding(10)
@@ -210,7 +212,7 @@ struct TargetsView: View {
                 if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
-                // What the search found, under the night's state as before but in the callout size and the amber used for the Moon
+                // What the search found, under the night's state as before but in the callout size and the warning colour used for the Moon
                 // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
                 if ui.section != .favourites, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
@@ -279,7 +281,7 @@ struct TargetsView: View {
 
     private func chips(_ t: RankedTarget) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            // With Fits my field of view on, a fitting card needs no chip; one a search shows anyway says why it is last.
+            // With Doesn't fit my frame off, a fitting card needs no chip; one a search shows anyway says why it is last.
             if !ui.fitsOnly || t.hiddenByFit(fitsOnly: true) { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
             else if nearMoon(t) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
@@ -299,8 +301,8 @@ struct TargetsView: View {
 
     /// `notTonight`: a favourite that is not usable tonight, drawn dimmed with the reason in place of its timeline.
     private func card(_ t: RankedTarget, notTonight: String? = nil) -> some View {
-        TargetCardFrame(dimmed: notTonight != nil, title: t.catalogueID, subtitle: t.cardLine,
-                        trailing: t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –") {
+        TargetCardFrame(dimmed: notTonight != nil, title: t.catalogueID, note: t.cardNote, subtitle: t.cardName,
+                        trailing: t.magnitude.map { String(format: "mag %.1f", $0) }) {
             ThumbnailView(target: t)
         } corner: {
             chips(t)
@@ -342,7 +344,7 @@ struct TargetsView: View {
         // "best" only when there is a best time: a shower whose radiant never rises has none.
         let when = store.site.map { s in eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? "" } ?? ""
         // No kind label: the artwork already says what it is, and the room goes to the title (owner, 27 September 2026).
-        return TargetCardFrame(title: e.title, subtitle: "", trailing: when) {
+        return TargetCardFrame(title: e.title, subtitle: "", trailing: when.isEmpty ? nil : when) {
             EventPicture(kind: e.kind)
         } corner: {
             EventChips(event: e)

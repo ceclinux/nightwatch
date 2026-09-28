@@ -44,7 +44,7 @@ struct Provider: TimelineProvider {
     }
 }
 
-/// A grey line with a tick, or an amber one with a dot: the reason and agreement lines, as in the popover.
+/// A grey line with a tick, or a warning-colour one with a dot: the reason and agreement lines, as in the popover.
 struct NoteLine: View {
     let text: String
     let warns: Bool
