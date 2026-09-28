@@ -1,14 +1,12 @@
 # Nightwatch v0.2 Dark-Sky Sites Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** List dark-sky observing sites within a user-set radius, with tonight's conditions at each, in the target browser, the popover and Settings.
 
 **Architecture:** New pure modules in `SkyCore` (`Geo`, `LPGrid`, `DarkSites`, `SiteComparison`) with bundled data (`certified.json`, `gb.lpgrid`) built by two Python scripts. The app's `Store` fetches per-site forecasts through the existing `ForecastService` and `Planner`, and three views gain a group, a line and a section.
 
 **Tech Stack:** Swift 6.4 via Command Line Tools, SwiftPM, Swift Testing through `scripts/test.sh`, Python 3 with a virtual environment for the data scripts (numpy, tifffile), Wikidata SPARQL, VIIRS Nighttime Lights GeoTIFF.
 
-**Spec:** `docs/superpowers/specs/2026-09-23-dark-sky-sites-design.md` (the v0.1 spec `2026-09-23-nightwatch-design.md` still binds everything it covers)
+**Spec:** `docs/specs/2026-09-23-dark-sky-sites-design.md` (the v0.1 spec `2026-09-23-nightwatch-design.md` still binds everything it covers)
 
 ## Global Constraints
 
@@ -21,7 +19,7 @@
 - `.lpgrid` format: magic `LPG1`, float32 south latitude, float32 west longitude, float32 cell degrees, uint16 rows, uint16 cols (20 bytes, little-endian), then rows × cols float32, row 0 = southernmost, NaN = no data.
 - Certified entries need `source` URLs; the build script fails without one.
 - Attribution in NOTICE and About: DarkSky International, UK Dark Sky Discovery Sites, Wikidata (CC0), NOAA/NASA EOG VIIRS (CC BY 4.0).
-- Commit after every task; messages end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`; no "time-boxed", "deferred", "partial".
+- Commit after every task; no "time-boxed", "deferred", "partial".
 
 ---
 
@@ -397,7 +395,7 @@ Expected: all LPGrid tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/SkyCore/LPGrid.swift Tests/SkyCoreTests/LPGridTests.swift docs/superpowers/specs/2026-09-23-dark-sky-sites-design.md
+git add Sources/SkyCore/LPGrid.swift Tests/SkyCoreTests/LPGridTests.swift docs/specs/2026-09-23-dark-sky-sites-design.md
 git commit -m "feat(skycore): light-pollution grid format, lookup, darkest spots and darkness bands"
 ```
 

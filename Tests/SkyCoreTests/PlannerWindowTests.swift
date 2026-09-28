@@ -96,21 +96,21 @@ private func reasonHours(_ clouds: [Int], from t0: Date) -> [HourlyConditions] {
 }
 
 @Test func noWindowReasonExplainsShortDarkness() {
-    let site = Site(name: "S", latitude: 53.9, longitude: -1.7, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let site = Site(name: "S", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
     let t0 = utc(2026, 6, 20, 23, 0)
     let r = Planner.noWindowReason(darkHours: reasonHours([0, 0], from: t0), darkStart: t0, darkEnd: t0.addingTimeInterval(2 * 3600), rule: GoRule(), site: site)
     #expect(r == "Only 2.0 h of darkness; the rule needs 3 h.")
 }
 
 @Test func noWindowReasonExplainsCloudNeverBelowLimit() {
-    let site = Site(name: "S", latitude: 53.9, longitude: -1.7, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let site = Site(name: "S", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
     let t0 = utc(2026, 9, 24, 21, 0)
     let r = Planner.noWindowReason(darkHours: reasonHours([90, 60, 75, 100, 80, 95, 70, 88], from: t0), darkStart: t0, darkEnd: t0.addingTimeInterval(8 * 3600), rule: GoRule(), site: site)
     #expect(r == "Cloud never below 60% during darkness; the rule allows 25%.")
 }
 
 @Test func noWindowReasonExplainsShortClearRun() {
-    let site = Site(name: "S", latitude: 53.9, longitude: -1.7, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let site = Site(name: "S", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
     let t0 = utc(2026, 9, 24, 21, 0)   // 22:00 BST
     // clear at 23:00 and 00:00 UTC only: a 2-hour run starting 00:00 BST
     let r = Planner.noWindowReason(darkHours: reasonHours([90, 10, 20, 80, 10, 95, 70, 88], from: t0), darkStart: t0, darkEnd: t0.addingTimeInterval(8 * 3600), rule: GoRule(), site: site)

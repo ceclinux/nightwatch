@@ -40,9 +40,7 @@ No-issue: design document, no tracking issue for the spec itself.
 
 ## UAT
 
-**UAT:** Open `docs/superpowers/specs/2026-09-24-v0.3-feet-of-clay-design.md` → read sections 1, 3 and 4 → the success criteria match what was agreed (bright nights opt-in, Moon and planets only, no new copy, best-spot completion, PRs per task); nothing under "Out of scope" is something you expected in 0.3.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Open `docs/specs/2026-09-24-v0.3-feet-of-clay-design.md` → read sections 1, 3 and 4 → the success criteria match what was agreed (bright nights opt-in, Moon and planets only, no new copy, best-spot completion, PRs per task); nothing under "Out of scope" is something you expected in 0.3.
 
 ## #3: docs: v0.3 Feet of Clay implementation plan
 
@@ -54,9 +52,7 @@ No-issue: planning document, tracked by the spec.
 
 ## UAT
 
-**UAT:** Open `docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md` → skim the Global Constraints and the eight task headings → they match the spec's delivery order and every task ends in a PR with a UAT line.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Open `docs/plans/2026-09-24-v0.3-feet-of-clay.md` → skim the Global Constraints and the eight task headings → they match the spec's delivery order and every task ends in a PR with a UAT line.
 
 ## #4: feat(skycore): nautical twilight on Night
 
@@ -64,17 +60,15 @@ No-issue: planning document, tracked by the spec.
 
 Task 1 of the v0.3 plan. `Night` gains `nauticalStart` / `nauticalEnd` (Sun at −12°) and `hasNauticalDarkness`, computed through one shared crossings helper that the −18° darkness now uses too.
 
-Also fixes a latent bug found while testing: the search for the Sun climbing back through the threshold started at the exact instant it went down, and on nights where the Sun barely dips below the threshold it returned that same instant. At Home on the June solstice that gave a zero-length nautical night instead of 1.56 h. The −18° darkness code had the same pattern, so its short nights in mid-May and early August were exposed to it too. The return search now starts one minute after the crossing.
+Also fixes a latent bug found while testing: the search for the Sun climbing back through the threshold started at the exact instant it went down, and on nights where the Sun barely dips below the threshold it returned that same instant. In northern England on the June solstice that gave a zero-length nautical night instead of about 1.5 h. The −18° darkness code had the same pattern, so its short nights in mid-May and early August were exposed to it too. The return search now starts one minute after the crossing.
 
 Checked at Home after the fix (dark / nautical hours): 28 Apr 3.55 / 5.90, 10 May 0.97 / 4.76, 14 May none / 4.38, 20 Jun none / 1.56, 5 Aug 2.16 / 5.15, 24 Sep 7.95 / 9.39. 108 tests pass; release build clean; task review approved.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Run `scripts/test.sh` → 108 pass, including `nauticalTwilightExistsAtTheTestSiteInJuneWhenAstronomicalDoesNot` (1 to 2 h of nautical darkness on 20 June) and `noNauticalTwilightInPolarDay`.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #5: feat(skycore): BrightSettings on Config; 1 h bright minimum
 
@@ -82,17 +76,15 @@ No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet
 
 Task 2 of the v0.3 plan. `Config.brightNights` holds the bright-night mode setting: off by default, minimum clear run 1 h, clamped to 1 to 6 h on decode, and decoded leniently so older config files keep working.
 
-The same commit amends the v0.3 spec and plan from a 2 h to a 1 h default, per your ruling today: nautical darkness at Home lasts only 1.56 h at the June solstice, so 2 h would have silenced the mode in the weeks it exists for. Scotland gets no nautical darkness for about four weeks around midsummer, which you accepted.
+The same commit amends the v0.3 spec and plan from a 2 h to a 1 h default, per your ruling today: nautical darkness in northern England lasts only about 1.5 h at the June solstice, so 2 h would have silenced the mode in the weeks it exists for. Scotland gets no nautical darkness for about four weeks around midsummer, which you accepted.
 
 109 tests pass; release build clean; task review approved with no findings.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Run `scripts/test.sh` → 109 pass, including `brightSettingsDefaultAndLenientDecode`; in the PR's Files tab, the spec and plan say 1 h for the bright minimum and nowhere still say 2 h.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #6: feat(skycore): bright-night plan with a 15° target floor
 
@@ -104,13 +96,11 @@ Amends the spec and plan per your ruling today: 30° at the window midpoint woul
 
 Bright mode off, or any night where the dark rule can be met, returns exactly the 0.2.2 result. 116 tests pass (7 new); release build clean; task review found the code correct and two stale spec sentences plus one loose test, all fixed in the second commit.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Run `scripts/test.sh` → 116 pass, including `brightPlanOnAJulyNightWithTheMoonUp` (30 July: Moon first in the bright targets), `brightPlanNeedsATargetUp` (15 June: no window) and `darkPlanWinsWhenTheDarkRuleIsMet` (24 September unchanged).
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #7: feat(skycore): bright-night alert wording
 
@@ -125,13 +115,11 @@ Task 4 of the v0.3 plan. On a bright plan the notifications read:
 
 The same words in both wording modes, with no new Discworld lines, as you ruled. Dark-night notifications and the stand-down are unchanged. 118 tests pass (2 new); release build clean; task review approved with no findings.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Run `scripts/test.sh` → 118 pass, including `brightHeadsUpGoAndPreviewUseBrightWording`, which checks the heads-up, go and preview titles and the body string above.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #8: feat(app): bright-night verdict, targets and settings
 
@@ -148,13 +136,11 @@ Live-checked on the installed app. I temporarily set your config to bright night
 
 The review found one gap, now fixed in the second commit: a bright plan at a site with no nautical darkness (Scotland near midsummer) showed a bare no-window line; it now gets the "No astronomical darkness" verdict as the spec requires. 118 tests pass; release build clean.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Settings › Bright nights → the toggle is off and the minimum run reads 1.0 h; turn it on → tonight's popover is unchanged in late September (the dark rule is met), which is correct. To see a bright night now, set Go rule › minimum hours above tonight's darkness (e.g. 10) → the popover says "Bright night: Moon and planets" with the Moon and planets listed; set it back afterwards.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #9: feat(app): Clearer sky line lands on the dark-site card; cards compare with home
 
@@ -167,13 +153,11 @@ Task 6 of the v0.3 plan.
 
 118 tests pass; release build clean; task review approved with no findings on all six named risks (window already open, scroll timing, card ids, macOS 14 onChange, no @State, colour-rule parity). The landing and scroll were checked by review, not by clicking, since I can't drive the popover from here.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Targets › Dark sites → each card shows "Score N vs M at home · <band>, home Bortle 5". On a night when a site beats home by 20, click the popover's "Clearer sky …" line → Targets opens on Dark sites with that card at the top (also try it with the Targets window already open).
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #10: feat(app): prune the site forecast cache to current sites and 24 h
 
@@ -185,13 +169,11 @@ Checked on your Mac: the cache went from 16 files to 9 after one recompute. The 
 
 120 tests pass (2 new: the selection rule, and a real temporary folder including a missing one); release build clean; task review approved with no findings.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** After a Patrol, `ls ~/Library/Caches/Nightwatch/sites` → only files named after sites listed in Targets › Dark sites, none older than a day.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #11: docs: v0.3 adds aurora alerts (spec §4.6, plan Task 8)
 
@@ -209,8 +191,6 @@ No-issue: design amendment, tracked by the v0.3 spec and plan.
 ## UAT
 
 **UAT:** Read spec §4.6 and plan Task 8 → the source, rule, polling and wording match what you want; note anything to change (e.g. a different default threshold, or aurora ignoring quiet hours) before merging.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #12: feat(app): aurora alerts from AuroraWatch UK, gated on local cloud
 
@@ -230,13 +210,11 @@ Review found two issues, one fixed and one ruled against on live evidence: the m
 
 **One question for you:** AuroraWatch UK asks that the status be shown "with its correct colour and name". The name is shown verbatim; the colour uses Nightwatch's night-safe palette (yellow in amber-orange, amber and red in the red accent, never green) rather than their traffic-light colours. If you read their terms as requiring their own colours, say so and I'll change it.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** Settings › Aurora → toggle on, Alert from Amber → the caption names AuroraWatch UK; after dark, `cat ~/Library/Caches/Nightwatch/aurora.json` shows the current level within 5 minutes; when AuroraWatch UK next reports amber or red on a clear night outside quiet hours, the notification arrives and the popover shows the status line.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #13: docs: v0.3.0 README, overview, UAT and version
 
@@ -251,13 +229,11 @@ Task 9, the last v0.3 task.
 
 After you merge, I tag v0.3.0 "Feet of Clay" on the merge commit.
 
-No-issue: v0.3 plan task, tracked by docs/superpowers/plans/2026-09-24-v0.3-feet-of-clay.md.
+No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 ## UAT
 
 **UAT:** About window → "Version 0.3.0"; `docs/uat.md` ends with items 13 to 18; the README lists Bright nights and Aurora under "What it does".
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #14: docs: v0.4 Jingo, Liquid Glass redesign spec
 
@@ -276,8 +252,6 @@ No-issue: design document; the plan follows once this is merged.
 ## UAT
 
 **UAT:** Read sections 2 and 5 → the decisions match your rulings and the three assistant rulings are acceptable (comment on this PR if not), and nothing in section 10 is something you expected in 0.4.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #15: fix: v0.3.1, fixes from the v0.3.0 release review
 
@@ -306,8 +280,6 @@ No-issue: fixes from the v0.3.0 final review, tracked by the v0.3 ledger.
 
 **UAT:** Run `scripts/test.sh` → 129 pass; About window shows 0.3.1; README "What it does" mentions that quiet hours cover most of a midsummer night for aurora alerts.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #16: docs: v0.4 Jingo implementation plan
 
 *merged 2026-09-24 · `docs/v0.4-plan` → `main`*
@@ -334,15 +306,13 @@ No-issue: planning document for the v0.4 spec (#14).
 
 ## UAT
 
-**UAT:** Read docs/superpowers/plans/2026-09-24-v0.4-jingo.md → nine tasks, each with its tests, code and a UAT line, covering every section of the v0.4 spec.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Read docs/plans/2026-09-24-v0.4-jingo.md → nine tasks, each with its tests, code and a UAT line, covering every section of the v0.4 spec.
 
 ## #17: feat(app): v0.4 tokens and glass with solid fallback
 
 *merged 2026-09-24 · `feat/v0.4-t1-glass` → `main`*
 
-Task 1 of the v0.4 "Jingo" plan (docs/superpowers/plans/2026-09-24-v0.4-jingo.md).
+Task 1 of the v0.4 "Jingo" plan (docs/plans/2026-09-24-v0.4-jingo.md).
 
 - `Tokens.swift` holds the spec §4 colour tokens. `Theme` now maps onto them, so existing views compile unchanged.
 - `nightwatchGlass(in:fill:tint:)` applies Liquid Glass (`glassEffect`, `.regular` tinted) on macOS 26 or later with Reduce Transparency off. Otherwise it draws the solid fill. `GlassGroup` wraps groups in one `GlassEffectContainer`.
@@ -360,8 +330,6 @@ No-issue: implements task 1 of the v0.4 plan (#16).
 ## UAT
 
 **UAT:** Open the menu-bar popover on macOS 26 or later → the panel, the six tiles and the Targets cards are frosted glass; turn on System Settings › Accessibility › Display › Reduce transparency → the same layout on a solid dark fill.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #18: feat(skycore): v0.4 data: limiting factors, dew risk, viewability, frame fill, catalogue IDs
 
@@ -392,8 +360,6 @@ No-issue: implements task 2 of the v0.4 plan (#16).
 
 **UAT:** Run scripts/test.sh → 141 tests pass; open Targets → IDs read with one spacing pattern, e.g. "IC 1340", and nothing else looks different yet.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #19: feat: v0.4 clock bezel, headline block and reason line
 
 *merged 2026-09-24 · `feat/v0.4-t3-bezel` → `main`*
@@ -419,8 +385,6 @@ No-issue: implements task 3 of the v0.4 plan (#16).
 
 **UAT:** Open the popover → the sky score sits in a 60-tick bezel whose ticks glow red across tonight's clear window, dim where it is dark but cloudy, faint in daylight; with a bright Moon up, the line under the window time reads "Held back by a N% moon".
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #20: feat: v0.4 clear-sky bars, notice row and stat tiles
 
 *merged 2026-09-24 · `feat/v0.4-t4-bars-tiles` → `main`*
@@ -442,8 +406,6 @@ No-issue: implements task 4 of the v0.4 plan (#16).
 ## UAT
 
 **UAT:** Open the popover → the cloud strip is now clear-sky bars (taller = clearer) with the window hours red; the Moon tile shows the Moon, "N%" and "Sets HH:MM"; on a damp night the Dew risk tile has an amber outline and "Dew heater advised".
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #21: feat: v0.4 best-tonight cards, notify switch, Patrol and stale badge
 
@@ -469,8 +431,6 @@ No-issue: implements task 5 of the v0.4 plan (#16).
 
 **UAT:** Open the popover → three cards read e.g. "NGC 7000 / North America Nebula / Best 21:30 · 72° up"; the footer switch reads "Notify at HH:MM" and turning it off stops alerts; Patrol refreshes and the update time changes.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #22: feat: v0.4 viewability timeline on Targets cards
 
 *merged 2026-09-24 · `feat/v0.4-t6-timeline` → `main`*
@@ -494,8 +454,6 @@ No-issue: implements task 6 of the v0.4 plan (#16).
 
 **UAT:** Open Targets → every card shows a track across tonight's clear window with the viewable part lit red, brighter where the target is higher, a white dot at the best moment and "Viewable 21:10–01:40 · Best 23:20 · 64°" beneath.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #23: feat: v0.4 frame-fill chip and card titles
 
 *merged 2026-09-24 · `feat/v0.4-t7-chips-titles` → `main`*
@@ -516,8 +474,6 @@ No-issue: implements task 7 of the v0.4 plan (#16).
 ## UAT
 
 **UAT:** Open Targets → titles read "IC 1340  Eastern Veil" with a magnitude on every card; the old red "Fits frame" badge is now a neutral "Fills N% of frame" chip that disappears when "Fits my field of view" is on; Moon-washed shows as an amber chip.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #24: feat: v0.4 Targets header strip and sort, glass sidebar, filter switches
 
@@ -544,8 +500,6 @@ No-issue: implements task 8 of the v0.4 plan (#16).
 ## UAT
 
 **UAT:** Open Targets → the header shows a slim clear-sky strip and a Best now / Altitude / Size / Brightness control that reorders the cards; the sidebar is glass with a white highlight and the arrow keys move through it; the filters are switches under an amber "Moon N% · sets HH:MM" line.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #25: docs: v0.4.0 docs, version, contrast tool, final-review fixes
 
@@ -576,8 +530,6 @@ No-issue: implements task 9 of the v0.4 plan (#16).
 
 **UAT:** Open About → version 0.4.0; then open the popover over a white window and run `swift scripts/contrast.swift` → text.primary, text.secondary and status.warning each print "pass".
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #26: fix: v0.4 tile contrast, measured live
 
 *merged 2026-09-25 · `fix/v0.4-tile-contrast` → `main`*
@@ -604,8 +556,6 @@ No-issue: fixes the v0.4 contrast criterion found by UAT 26.
 
 **UAT:** Open the popover → the six tiles are a shade lighter than the panel (not the pale grey of the first 0.4.0 build) and their grey labels read clearly; run `swift scripts/contrast.swift --wait 60` from this session or Terminal and open the popover → all three tokens print "pass".
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #27: fix: tiles in a row share the tallest tile's height
 
 *merged 2026-09-25 · `fix/v0.4-tile-heights` → `main`*
@@ -628,8 +578,6 @@ No-issue: owner-requested layout fix to v0.4.
 
 **UAT:** Open the popover → in each row of tiles all three tiles are the same height (Dark, Moon, Seeing; then Wind, Dew risk, Transparency), labels top-left.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #28: chore: version 0.4.1
 
 *merged 2026-09-25 · `chore/v0.4.1` → `main`*
@@ -641,8 +589,6 @@ No-issue: version bump for the v0.4.1 tag requested by the owner.
 ## UAT
 
 **UAT:** Open About → version 0.4.1.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #29: docs: v0.5 "The Fifth Elephant" spec: forecast agreement
 
@@ -667,9 +613,7 @@ No-issue: planning document for v0.5.
 
 ## UAT
 
-**UAT:** Read docs/superpowers/specs/2026-09-25-v0.5-fifth-elephant-agreement-design.md → the five line wordings, the opt-in setting and the "nothing logged" rule match what you want; merge to start the plan and build.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Read docs/specs/2026-09-25-v0.5-fifth-elephant-agreement-design.md → the five line wordings, the opt-in setting and the "nothing logged" rule match what you want; merge to start the plan and build.
 
 ## #30: docs: v0.5 "The Fifth Elephant" implementation plan
 
@@ -694,9 +638,7 @@ No-issue: planning document for v0.5 (#29).
 
 ## UAT
 
-**UAT:** Read docs/superpowers/plans/2026-09-25-v0.5-fifth-elephant.md → five tasks with tests, code and a UAT line each, covering every section of the v0.5 spec.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Read docs/plans/2026-09-25-v0.5-fifth-elephant.md → five tasks with tests, code and a UAT line each, covering every section of the v0.5 spec.
 
 ## #31: feat(skycore): v0.5 Open-Meteo second opinion beside Apple Weather
 
@@ -720,8 +662,6 @@ No-issue: implements task 1 of the v0.5 plan (#30).
 ## UAT
 
 **UAT:** Run scripts/test.sh → 165 pass; after a Patrol on the signed build, ~/Library/Caches/Nightwatch/forecast.json contains "secondOpinion" with source "Open-Meteo".
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #32: feat(skycore): v0.5 agreement assessment
 
@@ -751,8 +691,6 @@ No-issue: implements task 2 of the v0.5 plan (#30).
 
 **UAT:** Run scripts/test.sh → 181 pass, including the 16 agreement tests (agree, cloud later, clearing later, clear elsewhere, no window, missing hour, bright window, cache round trip).
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #33: feat: v0.5 agreement line in the popover and alerts
 
 *merged 2026-09-25 · `feat/v0.5-t3-line` → `main`*
@@ -776,8 +714,6 @@ No-issue: implements task 3 of the v0.5 plan (#30).
 ## UAT
 
 **UAT:** Open the popover → under the window time a line reads "Open-Meteo agrees" with a tick, or an amber-dot line such as "Open-Meteo sees cloud from 00:00"; the evening heads-up ends with the same sentence.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #34: feat: v0.5 opt-in "Alert only when Open-Meteo agrees"
 
@@ -805,8 +741,6 @@ No-issue: implements task 4 of the v0.5 plan (#30).
 
 **UAT:** Settings › Alerts shows "Alert only when Open-Meteo agrees" (enabled on the signed build, off by default); with it on, a night where Open-Meteo sees no clear window in Apple's window sends no heads-up.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #35: docs: v0.5.0 docs, version, final-review fixes
 
 *merged 2026-09-25 · `docs/v0.5-release` → `main`*
@@ -833,13 +767,11 @@ No-issue: implements task 5 of the v0.5 plan (#30).
 
 **UAT:** Open About → version 0.5.0; open the popover → tonight shows "Open-Meteo agrees: no clear window" under the reason (or the line for tonight's forecast), in grey with a tick.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #36: docs: v0.6 "Night Watch" spec: desktop widgets
 
 *merged 2026-09-25 · `docs/v0.6-spec` → `main`*
 
-Spec for v0.6: desktop widgets from the approved mockups (https://claude.ai/artifact/LX1iqZsdcoh2FpQbogzzyu).
+Spec for v0.6: desktop widgets from the approved mockups.
 
 - Small, medium and large widgets, as mocked, plus the no-window, bright, stale and disagree states.
 - The widget draws a snapshot the app writes after each patrol. It never fetches weather and never disagrees with the popover.
@@ -859,9 +791,7 @@ No-issue: planning document for v0.6.
 
 ## UAT
 
-**UAT:** Read docs/superpowers/specs/2026-09-25-v0.6-night-watch-widgets-design.md → the three-layer roles, the snapshot approach, the Xcode build rule and the spike list match what you want; merge to start the spike.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Read docs/specs/2026-09-25-v0.6-night-watch-widgets-design.md → the three-layer roles, the snapshot approach, the Xcode build rule and the spike list match what you want; merge to start the spike.
 
 ## #37: docs: v0.6 spec: widget spike results
 
@@ -879,8 +809,6 @@ No-issue: spike findings for the v0.6 spec (#36).
 ## UAT
 
 **UAT:** Read spec §4 "Spike results" → it matches what you saw: the widget showed "Hello from the app" on the desktop, and your clicks reached the app.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #38: feat: app icon (star over a red-lit horizon); version 0.5.1
 
@@ -908,8 +836,6 @@ No-issue: owner request, an app icon so Nightwatch is findable in the widget gal
 
 **UAT:** Look at /Applications in Finder (or Spotlight "Nightwatch") → the app shows the star-over-horizon icon, not a blank one; About shows version 0.5.1.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #39: feat: porthole app icon; version 0.5.2
 
 *merged 2026-09-25 · `feat/icon-porthole` → `main`*
@@ -929,8 +855,6 @@ No-issue: owner's chosen icon artwork.
 
 **UAT:** Look at Nightwatch in /Applications or Spotlight → the porthole icon; About shows 0.5.2.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #40: docs: v0.6 "Night Watch" implementation plan
 
 *merged 2026-09-25 · `docs/v0.6-plan` → `main`*
@@ -949,9 +873,7 @@ No-issue: planning document for v0.6 (#36).
 
 ## UAT
 
-**UAT:** Read docs/superpowers/plans/2026-09-25-v0.6-night-watch.md → five tasks, each with tests or a live check and a UAT line, covering the spec.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**UAT:** Read docs/plans/2026-09-25-v0.6-night-watch.md → five tasks, each with tests or a live check and a UAT line, covering the spec.
 
 ## #41: fix: Targets sidebar clicks; All targets as a button
 
@@ -971,8 +893,6 @@ No-issue: owner-reported UI fixes.
 ## UAT
 
 **UAT:** Open Targets and click each sidebar section → the clicked row is selected; open the popover → "All targets →" is a filled button like Patrol and opens Targets.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #42: refactor: v0.6 NightwatchUI library and data-driven bars
 
@@ -995,8 +915,6 @@ No-issue: implements task 1 of the v0.6 plan (#40).
 ## UAT
 
 **UAT:** Open the popover and Targets → they look exactly as in 0.5.2 (bezel, bars with hour labels and peak %, tiles, header strip).
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #43: feat(skycore): v0.6 WidgetSnapshot, written after each patrol
 
@@ -1024,8 +942,6 @@ No-issue: implements task 2 of the v0.6 plan (#40).
 ## UAT
 
 **UAT:** Run scripts/test.sh → 199 pass, including the seven WidgetSnapshot tests.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #44: feat: Nightwatch desktop widgets (small, medium, large)
 
@@ -1057,8 +973,6 @@ No-issue: implements task 3 of the v0.6 plan (#40).
 
 **UAT:** Run scripts/build-app.sh → right-click the desktop › Edit Widgets… › Nightwatch → add small, medium and large → each shows tonight's score and verdict with nothing cut off, and the small one is centred.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #45: feat: widget click-through to Targets and to a target
 
 *merged 2026-09-25 · `feat/v0.6-t4-clickthrough` → `main`*
@@ -1081,8 +995,6 @@ No-issue: implements task 4 of the v0.6 plan (#40).
 ## UAT
 
 **UAT:** Click the widget → the Targets window opens in front, centred. On a clear night, click a target row on the large widget → that target's detail opens.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #46: v0.6.0 Night Watch: version, docs and release-review fixes
 
@@ -1114,8 +1026,6 @@ No-issue: implements task 5 of the v0.6 plan (#40).
 
 **UAT:** Open About → version 0.6.0. The README explains adding the widget and turning on desktop widgets. The large widget's "Updated HH:MM" matches the popover's update time.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #47: feat: aurora line in AuroraWatch UK's own colours
 
 *merged 2026-09-25 · `fix/aurora-colours` → `main`*
@@ -1134,8 +1044,6 @@ No-issue: owner ruling on aurora colours (pending since v0.3).
 
 **UAT:** Settings › Aurora on, threshold Yellow. On a night when AuroraWatch UK reports yellow or above → the popover's aurora line is in AuroraWatch's colour for that level (for example "Aurora: amber" in orange #ff9900).
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #48: release: v0.6.1 Night Watch, patch 1
 
 *merged 2026-09-25 · `release/v0.6.1` → `main`*
@@ -1149,8 +1057,6 @@ No-issue: release bump requested by the owner ("Tag it").
 ## UAT
 
 **UAT:** Run scripts/build-app.sh → About shows version 0.6.1.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #49: feat: constellation artwork for all 88 constellations (v0.6.2)
 
@@ -1177,8 +1083,6 @@ No-issue: owner-supplied constellation artwork, design approved in conversation.
 ## UAT
 
 **UAT:** Open Targets › Constellations → every card shows its figure with the star points on top, not a stick drawing → open one → the same art, larger, with no field-of-view note.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #50: feat: stand down only when both forecasts lose the window; Hold fire when they split (v0.6.3)
 
@@ -1208,8 +1112,6 @@ No-issue: owner ruling on the stand-down wording, given in conversation.
 ## UAT
 
 **UAT:** On a signed build, after a heads-up, when only one forecast loses the window → one "Hold fire. Forecasts disagree" notification saying what each sees. When both lose it → "Stand down. Clouds moving in" / "Apple Weather and Open-Meteo both see cloud."
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #51: feat: full-window target detail pages (v0.6.4)
 
@@ -1242,8 +1144,6 @@ No-issue: owner-approved detail-page mockup, given in conversation.
 
 **UAT:** Targets → open NGC 1491, NGC 7000, Cassiopeia and Saturn → each image fills the page with its text in black caption boxes, and NGC 7000's dashed box sits wholly above the caption.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #52: fix: dark-site button says Observe from here
 
 *merged 2026-09-25 · `fix/observe-from-here` → `main`*
@@ -1263,8 +1163,6 @@ No-issue: owner request in conversation.
 
 **UAT:** Targets › Dark sites → every card's button reads "Observe from here" → click it → the popover header changes to that site.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #53: fix: build-app.sh restarts the widget process on install
 
 *merged 2026-09-25 · `fix/widget-reload` → `main`*
@@ -1283,8 +1181,6 @@ No-issue: stale widget process found while diagnosing the owner's off-centre rep
 ## UAT
 
 **UAT:** Run scripts/build-app.sh → the small Nightwatch widget on the desktop redraws, with the score and text centred left to right.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #54: feat: Where you observe - home, Back to home, Add a site (v0.6.5)
 
@@ -1323,8 +1219,6 @@ No-issue: owner-approved sites mockup, plus the owner's Settings feedback, given
 
 **UAT:** In the popover while away, click "Back to <home>" → the header changes to Home. Settings › Where you observe → star a site, then "Add a site…" and add one → it is saved and selected. Every numeric setting is a menu showing its value.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #55: feat: aurora on the widgets, aurora alert sound, large widget fits (v0.6.6)
 
 *merged 2026-09-25 · `feat/aurora-widget` → `main`*
@@ -1352,8 +1246,6 @@ No-issue: owner-approved aurora mockup, given in conversation.
 ## UAT
 
 **UAT:** With aurora alerts on, when AuroraWatch UK reaches your level after dark → the widgets show "● Aurora <level>" in AuroraWatch's colour, and the notification plays a sound. On a clear night the large widget's footer is fully visible.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #56: feat: signed, notarised download tooling; data-licence credits
 
@@ -1388,8 +1280,6 @@ No-issue: owner request to distribute via website and GitHub releases, and to ho
 
 **UAT:** After the setup in docs/releasing.md, tag v0.6.6 and run `scripts/release.sh --publish` → it ends "accepted source=Notarized Developer ID", and the GitHub release has Nightwatch-0.6.6.dmg, which opens on another Mac without a warning.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #57: docs: copy the Developer ID profile where the release script looks
 
 *merged 2026-09-25 · `docs/releasing-profile` → `main`*
@@ -1405,8 +1295,6 @@ No-issue: found during the owner's first release setup.
 ## UAT
 
 **UAT:** Follow docs/releasing.md step 2 on a fresh setup → `scripts/release.sh` finds the profile, with no "no Developer ID provisioning profile" error.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #58: docs: product overview up to 0.6.6, the first public download
 
@@ -1433,8 +1321,6 @@ No-issue: owner request to update the product overview.
 
 **UAT:** Read docs/product-overview.md on GitHub → the Install section starts with the download link, and the 0.6.6 row says it was the first public download.
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 ## #59: privacy: remove the owner's home location from code, tests and docs
 
 *merged 2026-09-25 · `privacy/remove-home-location` → `main`*
@@ -1453,8 +1339,6 @@ No-issue: owner privacy request.
 ## UAT
 
 **UAT:** On GitHub, search the repository for the town name → no results in the code or docs on main.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 ## #60: fix: Targets page repaints on sidebar clicks; constellations' Moon separation
 
@@ -1475,6 +1359,4 @@ No-issue: found by the owner during screenshots.
 ## UAT
 
 **UAT:** Targets → click every sidebar group, open cards, go back and switch again → the page always matches the highlighted group. Open Cygnus → Moon sep. is a real angle, not 0°.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

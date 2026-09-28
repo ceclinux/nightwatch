@@ -1,14 +1,12 @@
 # Nightwatch Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** A silent macOS menu-bar app that notifies when tonight is clear enough for a multi-hour imaging session and lists what to observe, grouped by phenomenon with thumbnails.
 
 **Architecture:** One SwiftPM package. `SkyCore` (pure logic: forecast, ephemeris, catalogue, events, planner, alert state machine, settings) is fully unit-tested against fixtures and oracles. `Nightwatch` (SwiftUI `MenuBarExtra`, no Dock icon) wires a 30-minute scheduler, CoreLocation, notifications and views on top. Astronomy Engine is vendored as a C target; SatelliteKit is the one external Swift dependency.
 
 **Tech Stack:** Swift 6.4 toolchain via Command Line Tools (no Xcode), SwiftPM, SwiftUI, Swift Testing, Astronomy Engine (C, MIT), SatelliteKit 2.1.2 (MIT), Open-Meteo, 7Timer ASTRO, OpenNGC, d3-celestial constellation GeoJSON, CDS hips2fits, MPC comet elements, CelesTrak TLE.
 
-**Spec:** `docs/superpowers/specs/2026-09-23-nightwatch-design.md`
+**Spec:** `docs/specs/2026-09-23-nightwatch-design.md`
 
 ## Global Constraints
 

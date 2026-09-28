@@ -2,7 +2,6 @@
 .DS_Store
 *.xcodeproj
 .swiftpm/
-.superpowers/
 Nightwatch.app/
 build/
 .venv/
