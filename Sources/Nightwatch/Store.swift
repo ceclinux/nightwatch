@@ -411,6 +411,7 @@ final class Store: ObservableObject {
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
         widgetAurora = shownAurora(aurora)
         WidgetCenter.shared.reloadAllTimelines()
+        SiriIndex.update()   // Siri and Spotlight read the same night (#72)
     }
 
     /// After a site change and before the new site's forecast arrives, the widget shows "Open Nightwatch…" rather than the
