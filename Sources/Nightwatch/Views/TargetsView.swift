@@ -225,7 +225,7 @@ struct TargetsView: View {
             }
             ScrollViewReader { proxy in
                 GlassGroup(spacing: 12) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2), spacing: 12) {
                         ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
                         ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
                     }.padding(20)
@@ -545,6 +545,8 @@ struct DarkSiteCard: View {
             } else {
                 Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
             }
+            // Cards in a row share the tallest one's height, with the buttons along the bottom (owner UAT, 29 September 2026).
+            Spacer(minLength: 0)
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
@@ -554,6 +556,7 @@ struct DarkSiteCard: View {
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
