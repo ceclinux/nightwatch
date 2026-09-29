@@ -51,6 +51,13 @@ The widget comes with a signed build only, since it shares its snapshot with the
 
 To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widgets won't stay on the desktop, turn on System Settings › Desktop & Dock › Widgets › Show widgets › On Desktop.
 
+If the widget shows only grey bars after you replace an older copy of Nightwatch with a newer one, macOS is still holding the old version on record and throws away what the new widget draws. Nightwatch can't correct this from inside its sandbox. Run these two commands in Terminal, and the widget fills in within a minute; if it doesn't, remove it and add it again:
+
+```bash
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R -trusted /Applications/Nightwatch.app
+killall chronod
+```
+
 ## Tests
 
     scripts/test.sh
@@ -106,7 +113,7 @@ On a clear night the Targets window opens with Tonight's plan: the night's best 
 
 ## Dark-sky sites
 
-The Targets window's "Dark sites" group lists two kinds of place: certified sites (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites) from a bundled list of 76 places compiled from Wikidata and hand-verified UK and Ireland entries, and up to five computed "dark spots" from a bundled light-pollution grid, each named after the nearest town or village from Apple Maps ("Dark spot near Blubberhouses"; the coordinates if Apple Maps has no name for the place). Each card shows distance, bearing, a darkness band or Bortle class, tonight's clear window and a score. Forecasts are fetched for the nearest eight sites. "Observe from here" observes from that site without saving it: the popover and the Dark sites page offer "Back to" your home site, and Settings › Where you observe can Keep it. When a listed site scores 20 or more above home, the popover shows one line naming it.
+The Targets window's "Dark sites" group lists two kinds of place: certified sites (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites) from a bundled list of 76 places compiled from Wikidata and hand-verified UK and Ireland entries, and up to five computed "dark spots" from a bundled light-pollution grid, each named after the nearest town or village from Apple Maps ("Dark spot near Kielder"; the coordinates if Apple Maps has no name for the place). Each card shows distance, bearing, a darkness band or Bortle class, tonight's clear window and a score. Forecasts are fetched for the nearest eight sites. "Observe from here" observes from that site without saving it: the popover and the Dark sites page offer "Back to" your home site, and Settings › Where you observe can Keep it. When a listed site scores 20 or more above home, the popover shows one line naming it.
 
 Each card compares tonight's score and sky with home ("Score 61 vs 37 at home · Dark, home Bortle 5"), and the popover's "Clearer sky" line opens that site's card. Cached site forecasts are kept only for the sites currently listed and for a day.
 

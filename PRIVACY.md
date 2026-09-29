@@ -1,6 +1,6 @@
 # Nightwatch privacy policy
 
-*Last updated 26 September 2026. Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 29 September 2026. Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
 
 Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
@@ -10,7 +10,7 @@ tracking. The developer collects no data about you: nothing is sent to the devel
 - **Your settings:** your saved sites, telescope, alert choices and so on.
 - **Your location**, if you let Nightwatch use it. It is used to work out sunset, darkness and what is visible from where
   you are.
-- **Caches:** forecasts, tonight's plan and sky-survey images, plus a record of which alerts tonight has already sent, so
+- **Caches:** forecasts, tonight's plan, sky-survey images and the place names of computed dark spots, plus a record of which alerts tonight has already sent, so
   none is sent twice.
 
 It is kept in Nightwatch's own folders on your Mac:
@@ -36,8 +36,8 @@ nearby dark-sky sites if that feature is on). They go to:
   identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
 - **Apple Maps**, for the name of the nearest town or village to each computed dark spot, if that feature is on. Each
-  spot is looked up once and the name kept. macOS makes these requests on Nightwatch's behalf, as it does for Apple
-  Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
+  spot is looked up once and the answer kept; a lookup that fails is tried again an hour later. macOS makes these
+  requests on Nightwatch's behalf, as it does for Apple Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
 
 Other requests carry nothing about you or your location:
 

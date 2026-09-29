@@ -421,7 +421,7 @@ final class Store: ObservableObject {
         // Up to ~700k distance checks at 300 km: off the main actor.
         let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
         guard gen == darkSitesGeneration else { return }
-        let sites = await namedSpots(found)
+        let sites = await namedSpots(found, now: now)
         guard gen == darkSitesGeneration else { return }
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
@@ -446,16 +446,34 @@ final class Store: ObservableObject {
         CachePruning.prune(directory: Store.siteCacheDir, keepIDs: Set(sites.map(\.id)), now: now)
     }
 
-    /// Computed dark spots carry the nearest place's name rather than coordinates (owner, 29 September 2026), looked up once
-    /// from Apple Maps and kept. A spot whose lookup fails keeps its coordinates and is tried again at the next refresh.
-    private func namedSpots(_ sites: [DarkSite]) async -> [DarkSite] {
-        var names: [String: String] = Store.read("spot-names.json") ?? [:]
-        let known = names.count
-        for s in sites where s.isComputed && names[s.id] == nil {
-            if let place = await PlaceNames.nearest(to: s.coordinate), let name = DarkSites.spotName(place: place) { names[s.id] = name }
+    /// Apple Maps' place for each computed dark spot, by spot id; "" where it has none. Kept in one place so overlapping
+    /// refreshes add to it rather than overwrite each other.
+    private lazy var spotPlaces: [String: String] = Store.read("spot-places.json") ?? [:]
+    private var spotLookupFailedAt: Date?
+    private var lookingUpSpots = false
+
+    /// Computed dark spots carry the nearest town's name rather than coordinates (owner, 29 September 2026), looked up once
+    /// from Apple Maps and kept, together with "no name here". The lookups run together, 5 s at most, so a refresh is never
+    /// held up for long. A spot whose lookup fails keeps its coordinates, and failed lookups are tried again after an hour.
+    /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
+    private func namedSpots(_ sites: [DarkSite], now: Date) async -> [DarkSite] {
+        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil }
+        if !missing.isEmpty, !lookingUpSpots, now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
+            lookingUpSpots = true
+            let results = await withTaskGroup(of: (String, String?, Bool).self) { group in
+                for s in missing {
+                    group.addTask {
+                        do { return (s.id, try await PlaceNames.nearest(to: s.coordinate), true) } catch { return (s.id, nil, false) }
+                    }
+                }
+                return await group.reduce(into: []) { $0.append($1) }
+            }
+            lookingUpSpots = false
+            for (id, place, answered) in results where answered { spotPlaces[id] = place ?? "" }
+            if results.contains(where: { !$0.2 }) { spotLookupFailedAt = now }
+            Store.write(spotPlaces, "spot-places.json")
         }
-        if names.count != known { Store.write(names, "spot-names.json") }
-        return sites.map { s in names[s.id].map(s.named) ?? s }
+        return sites.map { s in spotPlaces[s.id].flatMap(DarkSites.spotName(place:)).map(s.named) ?? s }
     }
 
     /// "Observe from here" on a dark-site card: observe from it without saving it (v0.6.5). A saved site at the same place

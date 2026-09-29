@@ -71,7 +71,7 @@ public enum DarkSites {
         return out.sorted { $0.distanceKm < $1.distanceKm }
     }
 
-    /// "Dark spot near Blubberhouses" from Apple Maps' "Blubberhouses, North Yorkshire": the town alone, as the card already
+    /// "Dark spot near Kielder" from Apple Maps' "Kielder, Northumberland": the town alone, as the card already
     /// gives the distance and direction. Nil for a blank place, and the spot keeps its coordinates.
     public static func spotName(place: String) -> String? {
         let town = place.split(separator: ",").first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""

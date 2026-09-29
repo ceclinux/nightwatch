@@ -44,13 +44,13 @@ import Foundation
 }
 
 @Test func darkSpotNamedAfterNearestTown() {
-    #expect(DarkSites.spotName(place: "Blubberhouses, North Yorkshire") == "Dark spot near Blubberhouses")
+    #expect(DarkSites.spotName(place: "Kielder, Northumberland") == "Dark spot near Kielder")
     #expect(DarkSites.spotName(place: "Newtonmore") == "Dark spot near Newtonmore")
     #expect(DarkSites.spotName(place: " , ") == nil)
     #expect(DarkSites.spotName(place: "") == nil)
-    let spot = DarkSite(id: "spot-1", name: "Dark spot 54.000, -1.800", kind: "spot", coordinate: Coordinate(latitude: 54, longitude: -1.8),
+    let spot = DarkSite(id: "spot-1", name: "Dark spot 55.230, -2.580", kind: "spot", coordinate: Coordinate(latitude: 55.23, longitude: -2.58),
                         distanceKm: 20, bearingDeg: 300, band: .dark, bortle: nil, source: nil, isComputed: true)
-    let named = spot.named("Dark spot near Blubberhouses")
-    #expect(named.name == "Dark spot near Blubberhouses")
+    let named = spot.named("Dark spot near Kielder")
+    #expect(named.name == "Dark spot near Kielder")
     #expect(named.id == spot.id && named.coordinate == spot.coordinate && named.band == spot.band && named.isComputed)
 }
