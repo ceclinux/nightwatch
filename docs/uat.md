@@ -68,3 +68,4 @@ Run on each Mac after `scripts/build-app.sh`.
 64. What the numbers mean: choosing a term scrolls its section to the top; the title bar matches the Targets window. The Targets toolbar button shows its whole label. → pass.
 65. Settings › Telescope offers "DwarfLab Draco" (1.65 × 1.24°). With it chosen, an emission nebula's "How to shoot this" names the Hα + O III filter, says DWARFLAB has not yet published an exposure or gain, and shows no copy icon; Tonight's plan gives each target the time it is well placed, and a plan over 5 h mentions a spare battery. → pass.
 66. Targets › Dark skies: each computed spot reads "Dark spot near <town>" rather than coordinates. → pass.
+67. macOS 27: "Siri, find the Crescent Nebula in Nightwatch" (or "search Nightwatch for M31") → the Targets window opens with that text in its search field and the matching targets listed. → pass.

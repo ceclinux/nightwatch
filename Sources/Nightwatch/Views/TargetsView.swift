@@ -6,7 +6,7 @@ enum BrowserSection: Hashable { case favourites, eyes, group(TargetGroup), darkS
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
-struct TargetsRequest: Equatable { let section: BrowserSection?; let siteID: String?; var targetID: String? = nil }
+struct TargetsRequest: Equatable { let section: BrowserSection?; let siteID: String?; var targetID: String? = nil; var search: String? = nil }
 
 final class TargetsViewState: ObservableObject {
     @Published var section: BrowserSection = .group(.nebulae)
@@ -191,6 +191,17 @@ struct TargetsView: View {
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
             ui.selectedEvent = nil   // an open event page would hide the requested target
+        }
+        if let text = r.search {   // Siri's in-app search: the whole list, filtered, rather than one page
+            ui.tomorrow = false
+            ui.selected = nil
+            ui.selectedEvent = nil
+            ui.search = text
+            // The search covers the section on screen: open the one holding a match unless this one has one.
+            let found = (targets + favourites.map(\.target)).filter { $0.matches(text) }
+            if case .group(let g) = ui.section, found.contains(where: { $0.group == g }) {} else if let first = found.first {
+                ui.section = .group(first.group)
+            }
         }
         store.targetsRequest = nil
     }

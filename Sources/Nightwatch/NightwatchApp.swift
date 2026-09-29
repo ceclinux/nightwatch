@@ -100,6 +100,7 @@ struct NightwatchApp: App {
                 // A favourite the magnitude cut left out can be in the popover's best three: it is found among the favourites.
                 let group = store.plan.flatMap { p in (p.targets + p.brightTargets + p.favourites.map(\.target)).first { $0.id == id }?.group }
                 store.targetsRequest = TargetsRequest(section: .group(group ?? .nebulae), siteID: nil, targetID: id)
+            case .search(let text): store.targetsRequest = TargetsRequest(section: nil, siteID: nil, search: text)
             }
         }
         AppDelegate.onAction = { [store] id, night in
