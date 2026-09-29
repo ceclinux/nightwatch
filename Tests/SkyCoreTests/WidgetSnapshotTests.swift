@@ -180,6 +180,9 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let (p, t) = try plans(november, Array(repeating: 100, count: 24))
     let cloudy = snap(p, t, fetchedAt: november)
     #expect(Copy.siriBest(cloudy, session: nil, site: testSite).hasSuffix("No targets are suggested tonight."))
+    var clearTomorrow = cloudy
+    clearTomorrow.tomorrow = "Tomorrow 22:00–01:00"
+    #expect(Copy.siriBest(clearTomorrow, session: nil, site: testSite).hasSuffix("No targets are suggested tonight. Tomorrow night looks clear 22:00–01:00."))
     var s = cloudy
     s.targets = [WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)]
     #expect(Copy.siriBest(s, session: nil, site: testSite) == "Tonight's best targets: Andromeda Galaxy, best 00:40 · 64° up.")

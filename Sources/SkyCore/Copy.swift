@@ -295,7 +295,11 @@ public struct Copy: Sendable {
             let list = session.items.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.target.peakTime, site: site))" }
             return "Tonight's plan: " + list.joined(separator: ", then ") + "."
         }
-        guard !s.targets.isEmpty else { return [sentence(s.headline), "No targets are suggested tonight."].joined(separator: " ") }
+        // On a cloudy night with a clear one tomorrow, say so, as the Targets window does (owner's UAT, 29 September 2026).
+        guard !s.targets.isEmpty else {
+            let tomorrow = s.tomorrow.map { "Tomorrow night looks clear \($0.replacingOccurrences(of: "Tomorrow ", with: ""))." }
+            return ([sentence(s.headline), "No targets are suggested tonight."] + [tomorrow].compactMap { $0 }).joined(separator: " ")
+        }
         // `best` already reads "Best 00:40 · 64° up"; lower-cased after the name.
         return "Tonight's best targets: " + s.targets.map { "\($0.name), \($0.best.prefix(1).lowercased() + $0.best.dropFirst())" }
             .joined(separator: "; ") + "."

@@ -12,6 +12,8 @@ tracking. The developer collects no data about you: nothing is sent to the devel
   [Apple's privacy policy](https://www.apple.com/legal/privacy/)); Nightwatch's developer cannot see them.
 - **Your location**, if you let Nightwatch use it. It is used to work out sunset, darkness and what is visible from where
   you are.
+- **Spotlight:** tonight's summary and tonight's targets are added to this Mac's own Spotlight index, so Spotlight and
+  Siri can find them. They are replaced at every refresh.
 - **Caches:** forecasts, tonight's plan, sky-survey images and the place names of computed dark spots, plus a record of which alerts tonight has already sent, so
   none is sent twice.
 
