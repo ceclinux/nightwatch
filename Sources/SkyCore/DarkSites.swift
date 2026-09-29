@@ -27,6 +27,11 @@ public struct DarkSite: Codable, Equatable, Sendable, Identifiable {
     public let source: String?
     public let isComputed: Bool
     public var compass: String { Geo.compass(bearingDeg) }
+    /// The same site under another name: a computed dark spot once its nearest place is known.
+    public func named(_ name: String) -> DarkSite {
+        DarkSite(id: id, name: name, kind: kind, coordinate: coordinate, distanceKm: distanceKm, bearingDeg: bearingDeg,
+                 band: band, bortle: bortle, source: source, isComputed: isComputed)
+    }
 
     public init(id: String, name: String, kind: String, coordinate: Coordinate, distanceKm: Double, bearingDeg: Double,
                 band: DarknessBand?, bortle: Int?, source: String?, isComputed: Bool) {
@@ -64,6 +69,13 @@ public enum DarkSites {
             }
         }
         return out.sorted { $0.distanceKm < $1.distanceKm }
+    }
+
+    /// "Dark spot near Blubberhouses" from Apple Maps' "Blubberhouses, North Yorkshire": the town alone, as the card already
+    /// gives the distance and direction. Nil for a blank place, and the spot keeps its coordinates.
+    public static func spotName(place: String) -> String? {
+        let town = place.split(separator: ",").first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+        return town.isEmpty ? nil : "Dark spot near \(town)"
     }
 
     public static func toSite(_ s: DarkSite, timeZoneID: String) -> Site {

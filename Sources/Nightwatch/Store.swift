@@ -419,7 +419,9 @@ final class Store: ObservableObject {
         let home = Coordinate(latitude: site.latitude, longitude: site.longitude)
         let radiusKm = config.darkSites.radiusKm, certified = certified, grids = grids
         // Up to ~700k distance checks at 300 km: off the main actor.
-        let sites = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
+        let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
+        guard gen == darkSitesGeneration else { return }
+        let sites = await namedSpots(found)
         guard gen == darkSitesGeneration else { return }
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
@@ -442,6 +444,18 @@ final class Store: ObservableObject {
         sitePlans = SiteComparison.sorted(plans)
         bestAway = (homePlan ?? plan).map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil   // against home, as the cards are
         CachePruning.prune(directory: Store.siteCacheDir, keepIDs: Set(sites.map(\.id)), now: now)
+    }
+
+    /// Computed dark spots carry the nearest place's name rather than coordinates (owner, 29 September 2026), looked up once
+    /// from Apple Maps and kept. A spot whose lookup fails keeps its coordinates and is tried again at the next refresh.
+    private func namedSpots(_ sites: [DarkSite]) async -> [DarkSite] {
+        var names: [String: String] = Store.read("spot-names.json") ?? [:]
+        let known = names.count
+        for s in sites where s.isComputed && names[s.id] == nil {
+            if let place = await PlaceNames.nearest(to: s.coordinate), let name = DarkSites.spotName(place: place) { names[s.id] = name }
+        }
+        if names.count != known { Store.write(names, "spot-names.json") }
+        return sites.map { s in names[s.id].map(s.named) ?? s }
     }
 
     /// "Observe from here" on a dark-site card: observe from it without saving it (v0.6.5). A saved site at the same place

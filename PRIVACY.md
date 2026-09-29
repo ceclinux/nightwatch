@@ -35,6 +35,9 @@ nearby dark-sky sites if that feature is on). They go to:
 - **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion. No name, account or device
   identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
+- **Apple Maps**, for the name of the nearest town or village to each computed dark spot, if that feature is on. Each
+  spot is looked up once and the name kept. macOS makes these requests on Nightwatch's behalf, as it does for Apple
+  Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
 
 Other requests carry nothing about you or your location:
 
@@ -45,7 +48,7 @@ Other requests carry nothing about you or your location:
 - **GitHub**, once a day, to check for a newer version. This is in the download from GitHub or delphi-dolphin.com
   only, and Settings › Updates turns it off. The Mac App Store version has no update check: the App Store updates it.
 
-Nightwatch's own requests (all of the above except Apple Weather) identify themselves as Nightwatch and its version, as
+Nightwatch's own requests (all of the above except Apple Weather and Apple Maps) identify themselves as Nightwatch and its version, as
 the services ask. These services receive your IP
 address as part of any internet request, and their own privacy policies apply. Nightwatch shares nothing else with them
 or with anyone.

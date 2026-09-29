@@ -42,3 +42,15 @@ import Foundation
     let site = DarkSites.toSite(s, timeZoneID: "Europe/London")
     #expect(site.name == "Elan Valley" && site.latitude == 52.27 && site.bortle == 2)
 }
+
+@Test func darkSpotNamedAfterNearestTown() {
+    #expect(DarkSites.spotName(place: "Blubberhouses, North Yorkshire") == "Dark spot near Blubberhouses")
+    #expect(DarkSites.spotName(place: "Newtonmore") == "Dark spot near Newtonmore")
+    #expect(DarkSites.spotName(place: " , ") == nil)
+    #expect(DarkSites.spotName(place: "") == nil)
+    let spot = DarkSite(id: "spot-1", name: "Dark spot 54.000, -1.800", kind: "spot", coordinate: Coordinate(latitude: 54, longitude: -1.8),
+                        distanceKm: 20, bearingDeg: 300, band: .dark, bortle: nil, source: nil, isComputed: true)
+    let named = spot.named("Dark spot near Blubberhouses")
+    #expect(named.name == "Dark spot near Blubberhouses")
+    #expect(named.id == spot.id && named.coordinate == spot.coordinate && named.band == spot.band && named.isComputed)
+}
