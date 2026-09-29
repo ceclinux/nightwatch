@@ -113,3 +113,20 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
         #expect(line(preset, group, type, id) == nil)
     }
 }
+
+@Test func dracoNamesItsFiltersAndGivesNoNumbersDwarflabHasNotPublished() {
+    let em = ShootingTips.tip(for: target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: 120, site: site)
+    #expect(em.title == "How to shoot this with your DwarfLab Draco")
+    #expect(em.rows.first { $0.label == "Filter" }?.text.hasPrefix("Hα + O III dual-narrowband filter") == true)
+    #expect(em.rows.first { $0.label == "Exposure" }?.text.contains("not yet published") == true)
+    #expect(em.rows.first { $0.label == "Frames" }?.text == "It is up and clear for 2 h tonight.")
+    #expect(em.source == "Filters from DWARFLAB's Draco product page; it has published no exposure settings yet.")
+    #expect(em.copyLine == nil)   // no maker numbers, so no copy icon
+    let galaxy = ShootingTips.tip(for: target("NGC0224", .galaxies, "Galaxy"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: nil, site: site)
+    #expect(galaxy.rows.first { $0.label == "Filter" }?.text.hasPrefix("Astronomy filter") == true)
+    #expect(!galaxy.rows.contains { $0.label == "Frames" })
+    let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: 60, site: site)
+    #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
+    #expect(ShootingTips.stackMinutes(presetID: "draco") == nil)
+    #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco") == "Hα + O III")
+}

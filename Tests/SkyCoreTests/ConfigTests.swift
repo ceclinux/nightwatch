@@ -4,7 +4,9 @@ import Foundation
 
 @Test func presetsLoad() throws {
     let p = try TelescopePresets.bundled()
-    #expect(p.count == 4)
+    #expect(p.count == 5)
+    let draco = try #require(p.first { $0.id == "draco" })
+    #expect(draco.widthDeg == 1.65 && draco.heightDeg == 1.24)
     #expect(p.first { $0.id == "dwarf-mini" }?.widthDeg == 2.1)
 }
 

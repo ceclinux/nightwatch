@@ -103,7 +103,7 @@ killall chronod
 
 ## Telescope
 
-Any. Pick a preset (DWARF Mini, DWARF 3, Seestar S50, APS-C at 200 mm) or type your field of view in degrees.
+Any. Pick a preset (DWARF Mini, DWARF 3, Draco, Seestar S50, APS-C at 200 mm) or type your field of view in degrees.
 
 Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
 

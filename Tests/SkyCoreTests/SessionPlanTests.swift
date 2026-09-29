@@ -107,7 +107,7 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
 
 @Test func thePresetsCarryTheMakersBatteryFigures() throws {
     let b = Dictionary(uniqueKeysWithValues: try TelescopePresets.bundled().map { ($0.id, $0.batteryHours) })
-    #expect(b["dwarf-mini"] == 4 && b["dwarf-3"] == 5.5 && b["seestar-s50"] == 6)
+    #expect(b["dwarf-mini"] == 4 && b["dwarf-3"] == 5.5 && b["draco"] == 5 && b["seestar-s50"] == 6)
     #expect(b["dslr-apsc-200"] == .some(nil))
 }
 

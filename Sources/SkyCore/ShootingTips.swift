@@ -55,6 +55,8 @@ public enum ShootingTips {
         switch presetID {
         case "dwarf-mini", "dwarf-3":
             return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
+        case "draco":   // filter names only: DWARFLAB has published no frame counts for it
+            return k == .emission ? "Hα + O III" : (k == .broadband ? "Astronomy filter" : "Hα + O III or Astronomy filter")
         case "seestar-s50":
             let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
             return filter + "1,000 × 10 s"
@@ -103,6 +105,22 @@ public enum ShootingTips {
                 } else {
                     rows.append(.init("Frames", "200–400 recommended."))
                 }
+            }
+        case "draco":
+            // #69: DWARFLAB publishes the Draco's filters but, as of 29 September 2026, no manual with exposure, gain or
+            // frame figures, so the tip names the filters and gives the rest without numbers (and no copy icon).
+            switch k {
+            case .moon:
+                rows.append(.init("Exposure", "The Moon is bright: use short exposures and check the histogram."))
+            case .planet:
+                rows.append(.init("Expect", "A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points."))
+            case .constellation:
+                rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
+            default:
+                source = "Filters from DWARFLAB's Draco product page; it has published no exposure settings yet."
+                rows.append(.init("Filter", filterText(k, dualBand: "Hα + O III dual-narrowband filter", broadband: "Astronomy filter")))
+                rows.append(.init("Exposure", "Single frames can run up to 300 s; DWARFLAB has not yet published a recommended exposure or gain."))
+                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) tonight.")) }
             }
         case "seestar-s50":
             source = "Filters and frame length from ZWO's Seestar S50 FAQ."

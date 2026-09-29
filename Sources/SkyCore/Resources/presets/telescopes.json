@@ -1,6 +1,7 @@
 [
   {"id":"dwarf-mini","name":"DwarfLab DWARF Mini","widthDeg":2.1,"heightDeg":1.2,"source":"telescopicwatch.com review, 150 mm f/5, IMX662","batteryHours":4},
   {"id":"dwarf-3","name":"DwarfLab DWARF 3","widthDeg":2.93,"heightDeg":1.65,"source":"skiesandscopes.com","batteryHours":5.5},
+  {"id":"draco","name":"DwarfLab Draco","widthDeg":1.65,"heightDeg":1.24,"source":"dwarflab.com FAQ, 90 mm f/3.8, 340 mm, OV50Q40 (1.649 x 1.238 deg)","batteryHours":5},
   {"id":"seestar-s50","name":"ZWO Seestar S50","widthDeg":1.29,"heightDeg":0.73,"source":"seestar.com FAQ, 250 mm f/5, IMX462","batteryHours":6},
   {"id":"dslr-apsc-200","name":"APS-C camera, 200 mm lens","widthDeg":6.7,"heightDeg":4.5,"source":"computed from 23.5 x 15.6 mm sensor"}
 ]
