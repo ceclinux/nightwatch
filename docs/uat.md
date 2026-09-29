@@ -37,7 +37,7 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Refresh the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 1.0.0.
+36. About shows version 1.0.1.
 37. Targets › Constellations: every card shows its figure artwork with the star plot on top, not a stick figure; opening one shows the same art larger, with no "dashed = your field of view" note. → pass.
 38. Signed build, after a heads-up or nudge: when Apple Weather and Open-Meteo both lose the window, "Cancelled. Clouds moving in" arrives with "Apple Weather and Open-Meteo both see cloud."; when only one does, "Less certain. Forecasts disagree" arrives at most once a night, saying what each sees; if both clear again before the nudge, the nudge still fires. → pass.
 39. Targets: open a nebula, a large nebula (NGC 7000), a constellation and a planet. Each image fills the page with its text in black caption boxes. The large nebula's dashed box sits fully inside the clear space above the caption. On a clear night the caption shows the four figures and a labelled altitude chart, red only inside the window. → pass.
