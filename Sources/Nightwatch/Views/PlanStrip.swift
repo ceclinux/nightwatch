@@ -10,6 +10,8 @@ struct PlanStrip: View {
     let session: SessionPlan
     let site: Site
     let constellations: [Constellation]
+    /// Three, or two in a narrow window (#60).
+    var columns = 3
     let onSelect: (RankedTarget) -> Void
 
     private var title: String { plan.night.key == store.plan?.night.key ? "Tonight's plan" : "Tomorrow night's plan" }
@@ -24,7 +26,7 @@ struct PlanStrip: View {
                 }
             }
             bar
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), alignment: .leading, spacing: 10) {
                 ForEach(Array(session.slots.enumerated()), id: \.element.id) { i, slot in slotCard(slot, index: i) }
             }
             if let left = Copy.planLeftover(session, site: site) {
@@ -35,7 +37,7 @@ struct PlanStrip: View {
             }
         }
         .padding(14)
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 11), fill: Tokens.targetsCard)
     }
 
@@ -93,6 +95,6 @@ struct PlanStrip: View {
         }
         .padding(10)
         .background(Tokens.targetsBackground, in: RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
     }
 }

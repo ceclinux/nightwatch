@@ -29,9 +29,7 @@ struct StatTile: View {
 
 /// Black caption backing for text laid over an image (the detail page, v0.6.4), so white text stays legible on any photo.
 extension View {
-    func captionBacking(cornerRadius: CGFloat = 6) -> some View {
-        background(Color.black.opacity(0.62), in: RoundedRectangle(cornerRadius: cornerRadius))
-    }
+    func captionBacking(cornerRadius: CGFloat = 6) -> some View { modifier(CaptionBacking(cornerRadius: cornerRadius)) }
     /// An 11 pt label in a caption backing: the detail page's back button and field-of-view note.
     func captionPill() -> some View {
         font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).padding(.horizontal, 9).padding(.vertical, 5).captionBacking()
@@ -86,3 +84,54 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
 }
 
+
+/// The black box behind text on a photograph: see-through normally, all but solid under Reduce Transparency or Increase
+/// Contrast (#60), so the text never sits on a bright part of the image.
+struct CaptionBacking: ViewModifier {
+    let cornerRadius: CGFloat
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+    func body(content: Content) -> some View {
+        content.background(Color.black.opacity(reduceTransparency || contrast == .increased ? 0.92 : 0.62),
+                           in: RoundedRectangle(cornerRadius: cornerRadius))
+    }
+}
+
+extension ScrollViewProxy {
+    /// Scrolls to `id`, gliding unless Reduce Motion is on, when it jumps (#60).
+    func scroll(to id: some Hashable, reduceMotion: Bool) {
+        if reduceMotion { scrollTo(id, anchor: .top) } else { withAnimation { scrollTo(id, anchor: .top) } }
+    }
+}
+
+/// Reports the usable height of the screen its window is on, when it appears and whenever the window changes screen
+/// (#60): the popover opens on the screen of the menu bar clicked, which need not be the one with focus.
+struct WindowScreenReader: NSViewRepresentable {
+    let onHeight: (CGFloat) -> Void
+    func makeNSView(context: Context) -> ReaderView { ReaderView(onHeight: onHeight) }
+    func updateNSView(_ view: ReaderView, context: Context) { view.onHeight = onHeight }
+
+    final class ReaderView: NSView {
+        var onHeight: (CGFloat) -> Void
+        private var observer: NSObjectProtocol?
+        init(onHeight: @escaping (CGFloat) -> Void) { self.onHeight = onHeight; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { nil }
+        deinit { observer.map(NotificationCenter.default.removeObserver) }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observer.map(NotificationCenter.default.removeObserver)
+            guard let window else { return }
+            report(window)
+            observer = NotificationCenter.default.addObserver(forName: NSWindow.didChangeScreenNotification, object: window, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { if let w = self?.window { self?.report(w) } }
+            }
+        }
+
+        private func report(_ window: NSWindow) {
+            guard let screen = window.screen ?? NSScreen.main else { return }
+            let h = screen.visibleFrame.height
+            DispatchQueue.main.async { self.onHeight(h) }   // after this update, not inside it
+        }
+    }
+}

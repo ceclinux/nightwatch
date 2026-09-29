@@ -7,6 +7,9 @@ public struct ShootingTip: Equatable, Sendable {
     public var title: String
     public var rows: [Row]
     public var source: String?
+    /// The settings as one line to paste into the telescope's app (#61): target, telescope and numbers only. Nil where the
+    /// maker publishes no numbers, and then no copy icon is shown.
+    public var copyLine: String? = nil
     public struct Row: Equatable, Sendable {
         public var label: String
         public var text: String
@@ -153,7 +156,41 @@ public enum ShootingTips {
         if let v = t.viewable, k != .constellation {
             rows.append(.init("When", "Start at \(Copy.hhmm(v.start, site: site)), when it is clear and high enough; it is best at \(Copy.hhmm(t.peakTime, site: site))."))
         }
-        return ShootingTip(title: "How to shoot this with \(presetName == nil ? "your telescope" : "your \(name)")", rows: rows, source: source)
+        var tip = ShootingTip(title: "How to shoot this with \(presetName == nil ? "your telescope" : "your \(name)")", rows: rows, source: source)
+        tip.copyLine = copyNumbers(k, presetID: presetID).map { numbers in
+            let what = [t.catalogueID, t.commonName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
+            return "\(what.isEmpty ? t.name : what) · \(presetName ?? name): \(numbers)"
+        }
+        return tip
+    }
+
+    /// The numbers the card gives, without the explanations; nil where it gives none.
+    static func copyNumbers(_ k: Kind, presetID: String?) -> String? {
+        switch presetID {
+        case "dwarf-mini", "dwarf-3":
+            switch k {
+            case .moon: return "Moon mode, about 1/250 s at gain 0, Astro filter, 20–30 images"
+            case .planet, .constellation, .star: return nil
+            default:
+                let filter = k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")
+                return "\(filter) filter, 15–60 s at gain 60–80, 200–400 frames"
+            }
+        case "seestar-s50":
+            switch k {
+            case .emission: return "light-pollution filter on, 10 s frames"
+            case .broadband: return "light-pollution filter off, 10 s frames"
+            case .nebulaUnknown: return "light-pollution filter on if it glows red, off if not, 10 s frames"
+            default: return nil
+            }
+        case "dslr-apsc-200":
+            switch k {
+            case .moon, .planet, .star, .constellation: return nil
+            case .emission, .nebulaUnknown: return "dual-band or light-pollution filter, 60–120 s on a star tracker, under about 1.5 s without one"
+            default: return "60–120 s on a star tracker, under about 1.5 s without one"
+            }
+        default:
+            return nil
+        }
     }
 
     /// "How to shoot this" for an event (v1.0.1). No maker publishes settings for these, so it is guidance without numbers.

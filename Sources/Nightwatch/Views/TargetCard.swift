@@ -41,7 +41,7 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             footer()
         }
         .padding(10)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 }
@@ -165,8 +165,12 @@ struct ShootingTipCard: View {
     let tip: ShootingTip
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
-                .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
+            HStack(alignment: .top, spacing: 8) {
+                Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
+                    .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let line = tip.copyLine { CopyButton(text: line, label: "Copy settings", done: "Settings copied") }   // #61
+            }
             ForEach(tip.rows, id: \.label) { r in
                 HStack(alignment: .top, spacing: 8) {
                     Text(r.label).font(.system(size: 11)).foregroundStyle(Theme.dim).frame(width: 64, alignment: .leading)
@@ -178,6 +182,37 @@ struct ShootingTipCard: View {
         .padding(12)
         .frame(width: 360, alignment: .leading)
         .captionBacking(cornerRadius: 10)
+    }
+}
+
+/// The system's copy icon (#61, owner-approved mock-up): copies `text`, then shows a tick for two seconds so the copy is
+/// seen without a tooltip, and tells VoiceOver. Keyboard-reachable. The one pattern for anything worth copying.
+struct CopyButton: View {
+    let text: String
+    let label: String
+    let done: String
+    @State private var copied = false
+    @State private var copies = 0   // each click's own two seconds: an earlier click never cuts a later tick short
+
+    var body: some View {
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            copied = true
+            copies += 1
+            let this = copies
+            AccessibilityNotification.Announcement(done).post()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { if copies == this { copied = false } }
+        } label: {
+            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 12, weight: copied ? .bold : .regular))
+                .foregroundStyle(copied ? Tokens.accentClear : Theme.text)
+                .frame(width: 28, height: 28)
+                .background(copied ? Tokens.accentClear.opacity(0.25) : Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)   // constant: the announcement says it was copied, once
     }
 }
 

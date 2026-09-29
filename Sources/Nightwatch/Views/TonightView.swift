@@ -6,7 +6,30 @@ struct TonightView: View {
     @EnvironmentObject var store: Store
     @Environment(\.openWindow) private var openWindow
 
+    /// The popover's height as laid out, to know when it is taller than the screen (#60).
+    @State private var contentHeight: CGFloat = 0
+    /// The usable height of the screen the popover is on, not the one with focus (a menu-bar app often has no key window).
+    @State private var screenHeight: CGFloat = .greatestFiniteMagnitude
+
+    /// Taller than the screen (a small display, or the Larger Text resolutions): it scrolls rather than losing its footer.
+    /// Otherwise exactly as before, with no scroll view at all.
     var body: some View {
+        Group {
+            if contentHeight > screenHeight {
+                ScrollView { content }.frame(height: screenHeight)
+            } else {
+                content
+            }
+        }
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassHairline, lineWidth: 1))
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 13))
+        .foregroundStyle(Theme.text)
+        .preferredColorScheme(.dark)
+        .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
+        .background(WindowScreenReader { screenHeight = $0 - 24 })
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             if store.isAway { awayBar }
@@ -22,11 +45,8 @@ struct TonightView: View {
             footer
         }
         .padding(EdgeInsets(top: 16, leading: 16, bottom: 22, trailing: 16))   // extra at the foot: the window otherwise sits tight on the footer row
-        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassHairline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 13))
-        .foregroundStyle(Theme.text)
-        .preferredColorScheme(.dark)
-        .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
     }
 
     /// One click back to home after "Observe from here" or choosing another site (v0.6.5).
@@ -38,7 +58,7 @@ struct TonightView: View {
             Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(SecondaryButtonStyle())
         }
         .padding(8)
-        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var header: some View {

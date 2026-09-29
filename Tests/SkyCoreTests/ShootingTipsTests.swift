@@ -61,3 +61,55 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let old = try JSONDecoder().decode(Config.self, from: Data(#"{"sites":[]}"#.utf8))
     #expect(old.welcomed && old.checkForUpdates)
 }
+
+// Copy the settings (#61): one line, the target, the telescope and the card's own numbers; none where there are no numbers.
+@Test func theCopiedLineMatchesTheCardForEachPreset() {
+    var nebula = target("NGC6888", .nebulae, "Emission nebula"); nebula.catalogueID = "NGC 6888"; nebula.commonName = "Crescent Nebula"
+    let dwarf = ShootingTips.tip(for: nebula, presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 180, site: site)
+    #expect(dwarf.copyLine == "NGC 6888 Crescent Nebula · DwarfLab DWARF Mini: Duo-Band filter, 15–60 s at gain 60–80, 200–400 frames")
+    #expect(dwarf.rows.contains { $0.text.contains("15–60 s per frame at gain 60–80") } && dwarf.rows.contains { $0.text.hasPrefix("200–400") })
+    let seestar = ShootingTips.tip(for: nebula, presetID: "seestar-s50", presetName: "ZWO Seestar S50", stackMinutes: 60, site: site)
+    #expect(seestar.copyLine?.hasSuffix("ZWO Seestar S50: light-pollution filter on, 10 s frames") == true)
+    #expect(seestar.rows.contains { $0.text.hasPrefix("Light-pollution filter on") } && seestar.rows.contains { $0.text.hasPrefix("10 s frames") })
+    let camera = ShootingTips.tip(for: nebula, presetID: "dslr-apsc-200", presetName: "APS-C camera, 200 mm lens", stackMinutes: 60, site: site)
+    #expect(camera.copyLine?.hasSuffix(": dual-band or light-pollution filter, 60–120 s on a star tracker, under about 1.5 s without one") == true)
+    // No numbers, no line: a custom telescope, a planet, a star.
+    #expect(ShootingTips.tip(for: nebula, presetID: nil, presetName: nil, stackMinutes: 60, site: site).copyLine == nil)
+    #expect(ShootingTips.tip(for: target("planet-jupiter", .planets, "Planet"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini",
+                             stackMinutes: 60, site: site).copyLine == nil)
+    #expect(ShootingTips.tip(for: target("HIP1", .stars, "Star"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini",
+                             stackMinutes: 60, site: site).copyLine == nil)
+}
+
+@Test func everyPresetAndKindCopiesWhatItsCardSays() {
+    // Each copied line's numbers appear on the card it came from, for every preset and every kind of target.
+    let kinds: [(TargetGroup, String, String)] = [(.nebulae, "Emission nebula", "NGC7000"), (.galaxies, "Galaxy", "NGC0224"),
+                                                  (.nebulae, "Nebula", "NGC1999"), (.planets, "Moon", "moon"), (.planets, "Planet", "planet-mars"),
+                                                  (.constellations, "Constellation", "Cyg"), (.stars, "Star", "HIP1")]
+    let presets: [(String?, String?)] = [("dwarf-mini", "DwarfLab DWARF Mini"), ("dwarf-3", "DwarfLab DWARF 3"), ("seestar-s50", "ZWO Seestar S50"),
+                                         ("dslr-apsc-200", "APS-C camera, 200 mm lens"), (nil, nil)]
+    for (preset, name) in presets {
+        for (group, type, id) in kinds {
+            let tip = ShootingTips.tip(for: target(id, group, type), presetID: preset, presetName: name, stackMinutes: 120, site: site)
+            guard let line = tip.copyLine else { continue }
+            let card = tip.rows.map(\.text).joined(separator: " ").lowercased()
+            let numbers = line.components(separatedBy: ": ").dropFirst().joined(separator: ": ")
+            for figure in numbers.components(separatedBy: CharacterSet(charactersIn: "0123456789–/").inverted).filter({ !$0.isEmpty }) {
+                #expect(card.contains(figure), "\(preset ?? "custom") \(type): \(figure) is not on the card")
+            }
+        }
+    }
+    // Which get a line at all: numbers only where the card has them.
+    func line(_ preset: String?, _ group: TargetGroup, _ type: String, _ id: String) -> String? {
+        ShootingTips.tip(for: target(id, group, type), presetID: preset, presetName: "x", stackMinutes: 120, site: site).copyLine
+    }
+    #expect(line("dwarf-3", .galaxies, "Galaxy", "NGC0224")?.hasSuffix("x: Astro filter, 15–60 s at gain 60–80, 200–400 frames") == true)
+    #expect(line("dwarf-mini", .nebulae, "Nebula", "NGC1999")?.contains("Duo-Band or Astro filter") == true)
+    #expect(line("dwarf-mini", .planets, "Moon", "moon")?.contains("Moon mode, about 1/250 s at gain 0") == true)
+    #expect(line("seestar-s50", .nebulae, "Nebula", "NGC1999")?.contains("filter on if it glows red, off if not, 10 s frames") == true)
+    #expect(line("dslr-apsc-200", .nebulae, "Emission nebula", "NGC7000")?.hasPrefix("NGC7000 · x: dual-band or light-pollution filter") == true)   // no catalogue ID: the name
+    for (preset, group, type, id) in [("seestar-s50", TargetGroup.planets, "Moon", "moon"), ("dwarf-mini", .constellations, "Constellation", "Cyg"),
+                                      ("dslr-apsc-200", .planets, "Moon", "moon"), ("dwarf-mini", .planets, "Planet", "planet-mars")] {
+        #expect(line(preset, group, type, id) == nil)
+    }
+}
