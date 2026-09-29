@@ -1,6 +1,8 @@
 import SwiftUI
 import SkyCore
 import UserNotifications
+import CoreServices
+import WidgetKit
 
 /// Receives the widget's nightwatch:// links (v0.6). A click can launch the app, so links that arrive before boot() has set
 /// the handler wait in `pending`.
@@ -24,6 +26,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         Notifier.registerActions()
+        Self.registerWithLaunchServices()
+    }
+
+    /// After an update over an older copy, macOS can keep the widget's previous version on record and then throw away every
+    /// snapshot the new widget draws ("Bundle version did not match; LaunchServices DB may need to be rebuilt"), leaving grey
+    /// bars (owner's Mac Mini, 0.7.0 to 1.0.0, 29 September 2026). Registering the app and its widget on each launch is what
+    /// `lsregister -f` does by hand; the widget then reloads.
+    static func registerWithLaunchServices() {
+        DispatchQueue.global(qos: .utility).async {
+            var urls = [Bundle.main.bundleURL]
+            if let plugIns = Bundle.main.builtInPlugInsURL,
+               let found = try? FileManager.default.contentsOfDirectory(at: plugIns, includingPropertiesForKeys: nil) {
+                urls += found.filter { $0.pathExtension == "appex" }
+            }
+            for url in urls { _ = LSRegisterURL(url as CFURL, true) }
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 }
 
