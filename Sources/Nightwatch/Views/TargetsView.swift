@@ -27,7 +27,6 @@ final class TargetsViewState: ObservableObject {
 
 struct TargetsView: View {
     @EnvironmentObject var store: Store
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var ui = TargetsViewState()
 
@@ -132,15 +131,9 @@ struct TargetsView: View {
                 }
             }
         }
+        // No "What the numbers mean" button here: it made the title bar busy (owner's UAT, 29 September 2026). Settings
+        // and About open the guide.
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
-        .toolbar {   // #59, beside the search
-            // Its full width, so the toolbar never squeezes the words (owner's screenshot, 29 September 2026).
-            ToolbarItem {
-                Button { openWindow(id: "numbers") } label: {
-                    Label("What the numbers mean", systemImage: "questionmark.circle").labelStyle(.titleAndIcon).fixedSize()
-                }
-            }
-        }
         .preferredColorScheme(.dark)
         .background(Theme.bg)
         .onAppear { consumeRequest() }

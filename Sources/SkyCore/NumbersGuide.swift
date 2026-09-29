@@ -12,9 +12,9 @@ public struct GuideEntry: Identifiable, Equatable, Sendable {
 public enum NumbersGuide {
     public static let entries: [GuideEntry] = [
         GuideEntry(id: "score", title: "Sky score",
-                   body: "How good tonight is for imaging from where you are, out of 100. Cloud during darkness counts most: 60 points, or 75 when there is no seeing forecast. Then the Moon (15), seeing and transparency together (15), and calm, dry air (10). “Held back by” names what cost the most."),
+                   body: "How good tonight is for imaging from where you are, out of 100: the higher, the better. Cloud during darkness counts most, then the Moon, then seeing and transparency, then wind and damp air. “Held back by” names what cost the most tonight."),
         GuideEntry(id: "rule", title: "Go rule and clear window",
-                   body: "When Nightwatch calls a night clear: an unbroken run of at least 3 hours inside astronomical darkness with cloud at or under 25%. The clear window is that run. Targets are listed when they are at least 30° up in it. All three numbers are yours to change in Settings › Go rule. Clear sky by hour shows each hour’s cloud: a full bar is clear."),
+                   body: "The clear window is an unbroken run of clear sky in astronomical darkness, long enough to take and stack many images of a target. You can change the rule in Settings › Go rule. By default the run lasts at least 3 hours, with cloud at or under 25%, and targets count when they are at least 30° up. Clear sky by hour shows each hour’s cloud: a full bar is clear."),
         GuideEntry(id: "dark", title: "Dark",
                    body: "Astronomical darkness: the Sun more than 18° below the horizon, when the sky is as dark as it gets. In a British midsummer there is none, which is what Bright nights in Settings is for."),
         GuideEntry(id: "moon", title: "Moon",
@@ -29,7 +29,7 @@ public enum NumbersGuide {
                    body: "How dark your sky is, from 1 (pristine) to 9 (inner city). Your site’s class is set in Settings; dark sites show theirs, so you can see what a drive would gain."),
         GuideEntry(id: "eq", title: "EQ tilt",
                    body: "The angle to set an equatorial mount’s polar axis: your latitude, pointed at true north (not magnetic north), or true south in the southern hemisphere."),
-        GuideEntry(id: "chips", title: "Frame and Moon chips",
-                   body: "Fills 28% of frame: how much of your telescope’s field it covers. Small in frame: under 5′ across, a speck. Mosaic: bigger than your field; shoot it in panels or choose part of it. Moon-washed and Near Moon: the Moon will dim it tonight. Naked eye and Binoculars: how it can be seen without a telescope."),
+        GuideEntry(id: "labels", title: "The labels on a target",
+                   body: "Fills … of frame: how much of your telescope’s field it covers, as a percentage. Small in frame: under 5′ across, a speck. Mosaic: bigger than your field; shoot it in panels or choose part of it. Moon-washed and Near Moon: the Moon will dim it tonight. Naked eye and Binoculars: how it can be seen without a telescope."),
     ]
 }
