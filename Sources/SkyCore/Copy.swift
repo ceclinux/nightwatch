@@ -269,6 +269,41 @@ public struct Copy: Sendable {
         return text
     }
 
+    // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
+    static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
+
+    /// A clause as a sentence: its own full stop, never two.
+    static func sentence(_ s: String) -> String { s.hasSuffix(".") ? s : s + "." }
+
+    /// "Sky Score": "Sky score 72 at Home. Clear window tonight. 20:40–03:10 · 6.5 h. Held back by a 40% moon. Forecast
+    /// from Apple Weather." On a night without a window the reason and "Tomorrow 21:10–01:40." follow instead.
+    public static func siriTonight(_ s: WidgetSnapshot?) -> String {
+        guard let s else { return "Nightwatch has no forecast yet. Open it once to set where you observe." }
+        return (["Sky score \(s.score) at \(s.siteName)", s.headline, s.window, s.reason, s.tomorrow].compactMap { $0 }.map(sentence)
+                + [siriSource(s)].compactMap { $0 }).joined(separator: " ")
+    }
+
+    /// "Best Targets Tonight": Tonight's plan when there is one, else the popover's best three ("M31, best 00:40 · 64° up").
+    public static func siriBest(_ s: WidgetSnapshot?, session: SessionPlan?, site: Site?) -> String {
+        guard let s else { return siriTonight(nil) }
+        if let session, let site {
+            let list = session.slots.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.start, site: site))" }
+            return "Tonight's plan: " + list.joined(separator: ", then ") + "."
+        }
+        guard !s.targets.isEmpty else { return [sentence(s.headline), "No targets are suggested tonight."].joined(separator: " ") }
+        // `best` already reads "Best 00:40 · 64° up"; lower-cased after the name.
+        return "Tonight's best targets: " + s.targets.map { "\($0.name), \($0.best.prefix(1).lowercased() + $0.best.dropFirst())" }
+            .joined(separator: "; ") + "."
+    }
+
+    /// "Events Tonight": up to three, with whether it will be clear then.
+    public static func siriEvents(_ events: [SkyEvent]) -> String {
+        guard !events.isEmpty else { return "No events tonight." }
+        return events.prefix(3).map { e in
+            [e.title + ".", e.clear.map { $0 ? "Clear then." : "Cloudy then." }].compactMap { $0 }.joined(separator: " ")
+        }.joined(separator: " ")
+    }
+
     public func scoreBand(_ score: Int) -> String {
         switch score { case 80...: "Excellent"; case 50..<80: "Fair"; case 20..<50: "Poor"; default: "Overcast" }
     }

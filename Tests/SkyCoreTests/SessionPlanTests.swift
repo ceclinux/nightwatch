@@ -216,3 +216,13 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
     let a = try #require(make(p, added: ["NGC7635"]))
     #expect(Copy.slotDetail(a.slots[0], index: 0, presetID: nil, site: sheffield).hasPrefix("Added by you · best "))
 }
+
+@Test func siriReadsTonightsPlanWhenThereIsOne() throws {
+    let p = try septemberPlan()
+    let s = try #require(make(p))
+    let snap = WidgetSnapshot.make(plan: p, tomorrow: nil, fetchedAt: p.night.sunset, site: sheffield, rule: GoRule(), bright: BrightSettings(),
+                                   alerts: AlertSettings(), copy: Copy())
+    let text = Copy.siriBest(snap, session: s, site: sheffield)
+    #expect(text.hasPrefix("Tonight's plan: Crescent Nebula at \(Copy.hhmm(s.slots[0].start, site: sheffield)), then "))
+    #expect(text.components(separatedBy: ", then ").count == s.slots.count)
+}

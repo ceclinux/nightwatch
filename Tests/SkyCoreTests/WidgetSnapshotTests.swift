@@ -163,3 +163,39 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let back = try dec.decode(WidgetSnapshot.self, from: enc.encode(s))   // ISO dates drop fractions of a second, so compare the fields
     #expect(back.weatherMarkFile == s.weatherMarkFile && back.weatherLegalURL == s.weatherLegalURL)
 }
+
+// Siri and Spotlight (#53): spoken answers built from the same snapshot as the widget.
+@Test func siriSaysTonightFromTheCachedSnapshot() throws {
+    let (p, t) = try plans(november, Array(repeating: 0, count: 24))
+    var s = snap(p, t, fetchedAt: november)
+    s.source = "Apple Weather"
+    let text = Copy.siriTonight(s)
+    #expect(text.hasPrefix("Sky score \(s.score) at Test site. "))
+    #expect(text.hasSuffix(" Forecast from Apple Weather."))
+    #expect(!text.contains("..") && !text.contains(" nil"))
+    #expect(Copy.siriTonight(nil) == "Nightwatch has no forecast yet. Open it once to set where you observe.")
+}
+
+@Test func siriListsTheBestTargetsAndEvents() throws {
+    let (p, t) = try plans(november, Array(repeating: 100, count: 24))
+    let cloudy = snap(p, t, fetchedAt: november)
+    #expect(Copy.siriBest(cloudy, session: nil, site: testSite).hasSuffix("No targets are suggested tonight."))
+    var s = cloudy
+    s.targets = [WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)]
+    #expect(Copy.siriBest(s, session: nil, site: testSite) == "Tonight's best targets: Andromeda Galaxy, best 00:40 · 64° up.")
+    #expect(Copy.siriEvents([]) == "No events tonight.")
+}
+
+@Test func siriReadsEachClauseOnceWithOneFullStop() throws {
+    // Cloudy tonight, clear tomorrow: the reason and "Tomorrow …" once each, not "Tomorrow: Tomorrow".
+    let (p, t) = try plans(november, Array(repeating: 100, count: 24))
+    let (_, clearTomorrow) = try plans(november, Array(repeating: 0, count: 24))
+    var s = snap(p, clearTomorrow, fetchedAt: november)
+    s.tomorrow = "Tomorrow 21:10–01:40"
+    let cloudy = Copy.siriTonight(s)
+    #expect(cloudy.contains(" Tomorrow 21:10–01:40.") && !cloudy.contains("Tomorrow: ") && !cloudy.contains(".."))
+    // A reason without its own full stop gets one.
+    s.reason = "Held back by a 40% moon"
+    #expect(Copy.siriTonight(s).contains("Held back by a 40% moon. "))
+    _ = t
+}

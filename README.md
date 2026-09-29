@@ -98,6 +98,8 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 
 Any. Pick a preset (DWARF Mini, DWARF 3, Seestar S50, APS-C at 200 mm) or type your field of view in degrees.
 
+Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
+
 On a clear night the Targets window opens with Tonight's plan: the night's best targets in the order they are best placed, ending with the clear window or your Stop by time. Each gets long enough for a stack (a DWARF: 200 frames at 30 s; a Seestar: about 1,000 at 10 s), or with a camera the time it is well placed. It notes when the plan runs longer than your telescope's battery.
 
 ## Dark-sky sites
