@@ -269,6 +269,25 @@ public struct Copy: Sendable {
         return text
     }
 
+    /// The Targets header's Moon line (#62): "Next moonless run: Thu 8 – Mon 19 Oct · new Moon Sun 11 Oct", or during a run
+    /// "Moonless tonight, and until Mon 19 Oct." ("Moonless tonight." when tonight is the last).
+    public static func moonlessRun(_ r: MoonlessRun, site: Site) -> String {
+        let last = dayMonth(r.last.localDate, site: site)
+        if r.includesTonight {
+            return r.last.key == r.first.key ? "Moonless tonight." : "Moonless tonight, and until \(last)."
+        }
+        var first = dayMonth(r.first.localDate, site: site)
+        if r.first.key == r.last.key { first = last }
+        else if first.suffix(3) == last.suffix(3) { first = String(first.dropLast(4)) }   // "Thu 8 – Mon 19 Oct": one month named once
+        let range = r.first.key == r.last.key ? first : "\(first) – \(last)"
+        return "Next moonless run: \(range)" + (r.newMoon.map { " · new Moon \(dayMonth($0, site: site))" } ?? "")
+    }
+
+    /// "Your first clear window with Nightwatch: 21:10–01:40." Said once, ever (#64, owner-approved mock-up).
+    public static func firstClear(_ w: ClearWindow, site: Site) -> String {
+        "Your first clear window with Nightwatch: \(span(w.start, w.end, site: site))."
+    }
+
     // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
     static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
 

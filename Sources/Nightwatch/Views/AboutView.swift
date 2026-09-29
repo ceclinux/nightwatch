@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AboutView: View {
     @EnvironmentObject var store: Store
+    @Environment(\.openWindow) private var openWindow
     private let notice = (try? String(contentsOfFile: Bundle.main.path(forResource: "NOTICE", ofType: nil) ?? "", encoding: .utf8)) ?? ""
 
     var body: some View {
@@ -18,6 +19,7 @@ struct AboutView: View {
                 Link("Privacy ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
             }
             .font(.callout)
+            Button("What the numbers mean") { openWindow(id: "numbers") }.font(.callout)   // #59
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(.caption2).foregroundStyle(Theme.dim)
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))

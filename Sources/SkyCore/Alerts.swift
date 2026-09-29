@@ -37,8 +37,13 @@ public struct AlertState: Codable, Equatable, Sendable {
     public var doubtSent: Bool?
     /// "Not tonight" on the heads-up (#57): nothing more is sent for this night.
     public var silenced: Bool?
-    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil, silenced: Bool? = nil) {
+    /// The first clear window with Nightwatch has been named (#64). Carried from night to night; nil in a file written before
+    /// it existed, which means an earlier version has already been running, so it is not said to someone upgrading.
+    public var firstClearSaid: Bool?
+    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil, silenced: Bool? = nil,
+                firstClearSaid: Bool? = nil) {
         self.nightKey = nightKey; self.stage = stage; self.mode = mode; self.goFired = goFired; self.doubtSent = doubtSent; self.silenced = silenced
+        self.firstClearSaid = firstClearSaid
     }
 }
 
@@ -63,11 +68,22 @@ public enum AlertEngine {
 
     public static func step(now: Date, tonight: NightPlan, tomorrow: NightPlan?, state: AlertState?, settings: AlertSettings,
                             forecastFetchedAt: Date, site: Site, copy: Copy, session: SessionPlan? = nil) -> (notification: AlertNotification?, state: AlertState) {
+        // A fresh install has no state and has not had its first clear window; any earlier file has (see firstClearSaid).
+        let firstSaid = state.map { $0.firstClearSaid ?? true } ?? false
         var s = (state?.nightKey == tonight.night.key) ? state! : AlertState(nightKey: tonight.night.key, stage: .idle)
+        s.firstClearSaid = firstSaid
         if s.silenced == true { return (nil, s) }
         // Switching bright nights on or off mid-evening changes the plan, not the sky: start the night's alerts afresh
         // in the new mode rather than sending "Cancelled. Clouds moving in".
-        if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle) }
+        if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle, firstClearSaid: firstSaid) }
+        /// "Your first clear window with Nightwatch: 21:10–01:40. ", once ever, on whichever of the heads-up or go comes first.
+        /// Counted as said only when that notification is really sent (not dropped in quiet hours), at the end of the step.
+        var firstClearUsed = false
+        func firstClear() -> String {
+            guard s.firstClearSaid != true, let w = tonight.primary else { return "" }
+            firstClearUsed = true
+            return Copy.firstClear(w, site: site) + " "
+        }
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
 
         let headsUpAt = tonight.night.sunset.addingTimeInterval(-3600)
@@ -84,7 +100,7 @@ public enum AlertEngine {
             guard let g = goAt, let w = tonight.primary, agreed, now >= g, now < w.end else { return false }
             if s.goFired == true, s.stage == .doubted { s.stage = .goSent; return true }
             s.goFired = true
-            note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site, alerts: settings))
+            note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: firstClear() + copy.notificationBody(plan: tonight, site: site, alerts: settings))
             s.stage = .goSent
             return true
         }
@@ -126,8 +142,8 @@ public enum AlertEngine {
                 if tonight.qualifies, settings.headsUp, agreed {
                     let (start, hours) = window(tonight)
                     // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
-                    let body = session.map { Copy.headsUpPlan($0, plan: tonight, site: site) + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
-                        ?? copy.notificationBody(plan: tonight, site: site, alerts: settings)
+                    let body = firstClear() + (session.map { Copy.headsUpPlan($0, plan: tonight, site: site) + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
+                        ?? copy.notificationBody(plan: tonight, site: site, alerts: settings))
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,
                                              planNight: session == nil ? nil : tonight.night.key)
                     s.stage = .headsUpSent
@@ -151,6 +167,7 @@ public enum AlertEngine {
         }
 
         if note != nil, inQuietHours(now, site: site, settings: settings) { note = nil }   // dropped, not deferred
+        if note != nil, firstClearUsed { s.firstClearSaid = true }
         if s.stage != .idle, s.stage != .previewSent { s.mode = tonight.mode }
         return (note, s)
     }

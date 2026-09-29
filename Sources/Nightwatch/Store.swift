@@ -35,6 +35,9 @@ final class Store: ObservableObject {
     @Published var targetsRequest: TargetsRequest? = nil
     /// Tonight's plan edits (#57): targets added from a page or removed from the strip, for one night only (not saved).
     @Published var planEdits = PlanEdits()
+    /// The next run of moonless nights (#62), worked out again only when the night or the site changes.
+    @Published var moonlessRun: MoonlessRun?
+    private var moonlessFor: String?
     struct PlanEdits: Equatable { var nightKey = ""; var added: [String] = []; var removed: Set<String> = [] }
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var awaitingFix = false            // boot is waiting for this Mac's location: no refresh for a saved site meanwhile
@@ -281,6 +284,8 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
+        let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
+        if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
         Store.write(p, "plan.json")
         writeWidgetSnapshot()

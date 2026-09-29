@@ -117,3 +117,23 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     #expect(try key(utc(2026, 9, 27, 12, 0)) == "2026-09-27")
     #expect(try key(utc(2026, 9, 27, 22, 30)) == "2026-09-27")                             // 23:30 BST, before midnight
 }
+
+// The next moonless run (#62). The full Moon of 26 September 2026 puts the new Moon on or about 11 October.
+@Test func theNextMoonlessRunSurroundsTheNewMoon() throws {
+    let tonight = try Ephemeris.night(localDate: utc(2026, 9, 29, 12, 0), site: sheffield)
+    #expect(!MoonCalendar.isMoonless(tonight, site: sheffield))                 // 88% lit and up all night
+    let r = try #require(MoonCalendar.nextRun(from: tonight, site: sheffield))
+    #expect(!r.includesTonight)
+    let newMoon = try #require(r.newMoon)
+    #expect(Copy.dayMonth(newMoon, site: sheffield).hasSuffix(" Oct"))
+    #expect(r.first.localDate <= newMoon && newMoon <= r.last.localDate.addingTimeInterval(86_400))
+    #expect(r.last.localDate.timeIntervalSince(r.first.localDate) >= 3 * 86_400)
+    let text = Copy.moonlessRun(r, site: sheffield)
+    #expect(text.hasPrefix("Next moonless run: ") && text.contains(" – ") && text.contains(" · new Moon "))
+    // From a night inside the run it reads from tonight.
+    let inside = try #require(MoonCalendar.nextRun(from: r.first, site: sheffield))
+    #expect(inside.includesTonight && Copy.moonlessRun(inside, site: sheffield) == "Moonless tonight, and until \(Copy.dayMonth(r.last.localDate, site: sheffield)).")
+    // A British midsummer has no astronomical darkness, so no night then is moonless.
+    let june = try Ephemeris.night(localDate: utc(2026, 6, 21, 12, 0), site: sheffield)
+    #expect(!MoonCalendar.isMoonless(june, site: sheffield))
+}

@@ -80,6 +80,8 @@ struct NightwatchApp: App {
             .windowResizability(.contentSize).defaultPosition(.center)
         Window("About Nightwatch", id: "about") { AboutView().environmentObject(store) }
             .defaultSize(width: 420, height: 420).defaultPosition(.center)
+        Window("What the numbers mean", id: "numbers") { NumbersView() }
+            .defaultSize(width: 780, height: 620).defaultPosition(.center)
     }
 
     @MainActor

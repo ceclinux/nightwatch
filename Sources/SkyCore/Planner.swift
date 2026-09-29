@@ -178,6 +178,9 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public var commonName: String? = nil
     /// The Caldwell number, for the card line and search; the catalogue ID stays the NGC or IC number.
     public var caldwell: Int? = nil
+    /// The short axis in arcminutes, where the catalogue gives one: with `sizeArcmin` it sets the area over which the
+    /// target's light is spread, for Eyes and binoculars (#63). Optional, so plans cached before it still decode.
+    public var minorArcmin: Double? = nil
 
     /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
@@ -379,7 +382,9 @@ extension Planner {
                               viewable: tr.viewable, site: site, typeName: Catalog.typeNames[o.typeCode] ?? o.typeCode,
                               catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov),
                               caldwell: o.caldwell)
-            return (t, tr.fraction, rule.minAltitudeDeg)
+            var withMinor = t
+            withMinor.minorArcmin = o.minAxisArcmin
+            return (withMinor, tr.fraction, rule.minAltitudeDeg)
         case .star(let st):
             // A bright star is a point that outshines the Moon's glow, so it is never Moon-washed.
             let tr = track(raHours: st.raHours, decDeg: st.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)

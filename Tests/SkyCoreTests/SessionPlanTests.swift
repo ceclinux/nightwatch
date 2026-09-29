@@ -157,13 +157,13 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
 @Test func notTonightSilencesTheRestOfTheNight() throws {
     let p = try septemberPlan()
     let now = p.night.sunset.addingTimeInterval(-1800)
-    let quiet = AlertState(nightKey: p.night.key, stage: .idle, silenced: true)
+    let quiet = AlertState(nightKey: p.night.key, stage: .idle, silenced: true, firstClearSaid: true)
     let r = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: quiet, settings: AlertSettings(), forecastFetchedAt: now,
                              site: sheffield, copy: Copy())
     #expect(r.notification == nil && r.state == quiet)
     let s = try #require(make(p))
-    let heads = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: nil, settings: AlertSettings(), forecastFetchedAt: now,
-                                 site: sheffield, copy: Copy(), session: s)
+    let heads = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: AlertState(nightKey: "earlier", stage: .done, firstClearSaid: true),
+                                 settings: AlertSettings(), forecastFetchedAt: now, site: sheffield, copy: Copy(), session: s)
     #expect(heads.notification?.kind == .headsUp && heads.notification?.body.hasPrefix("Start with the Crescent Nebula") == true)
 }
 
@@ -225,4 +225,44 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
     let text = Copy.siriBest(snap, session: s, site: sheffield)
     #expect(text.hasPrefix("Tonight's plan: Crescent Nebula at \(Copy.hhmm(s.slots[0].start, site: sheffield)), then "))
     #expect(text.components(separatedBy: ", then ").count == s.slots.count)
+}
+
+@Test func theFirstClearWindowIsNamedOnceAndNeverToSomeoneUpgrading() throws {
+    let p = try septemberPlan()
+    let now = p.night.sunset.addingTimeInterval(-1800)
+    func step(_ state: AlertState?, at t: Date = now, plan: NightPlan? = nil) -> (AlertNotification?, AlertState) {
+        let r = AlertEngine.step(now: t, tonight: plan ?? p, tomorrow: nil, state: state, settings: AlertSettings(), forecastFetchedAt: t,
+                                 site: sheffield, copy: Copy())
+        return (r.notification, r.state)
+    }
+    let line = Copy.firstClear(p.primary!, site: sheffield)
+    #expect(line.hasPrefix("Your first clear window with Nightwatch: ") && line.hasSuffix("."))
+    // A fresh install: the first heads-up opens with it.
+    let (first, afterFirst) = step(nil)
+    #expect(first?.body.hasPrefix(line + " ") == true && afterFirst.firstClearSaid == true)
+    // The next clear night: never again.
+    let next = try Ephemeris.night(localDate: utc(2026, 9, 30, 12, 0), site: sheffield)
+    let w2 = ClearWindow(start: try #require(next.darkStart), end: try #require(next.darkEnd))
+    let p2 = NightPlan(night: next, windows: [w2], primary: w2, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil, moonSet: nil,
+                       darkHours: [], targets: [], best: [], seeingAvailable: false)
+    let (second, _) = step(afterFirst, at: next.sunset.addingTimeInterval(-1800), plan: p2)
+    #expect(second?.kind == .headsUp && second?.body.contains("first clear window") == false)
+    // Someone upgrading: an alerts file from before the field existed decodes it as nil, which counts as said.
+    let old = try JSONDecoder().decode(AlertState.self, from: Data(#"{"nightKey":"2026-09-20","stage":"done"}"#.utf8))
+    #expect(old.firstClearSaid == nil)
+    #expect(step(old).0?.body.contains("first clear window") == false)
+    // A cloudy first night says nothing and keeps it for the first clear one.
+    let cloudy = NightPlan(night: p.night, windows: [], primary: nil, score: 10, qualifies: false, moonIllumination: 0, moonRise: nil,
+                           moonSet: nil, darkHours: [], targets: [], best: [], seeingAvailable: false)
+    #expect(step(nil, plan: cloudy).1.firstClearSaid == false)
+}
+
+@Test func aFirstClearLineDroppedInQuietHoursIsNotUsedUp() throws {
+    let p = try septemberPlan()
+    // After midnight, inside the default quiet hours (00:00–07:00), with the window still open: the go is dropped.
+    let late = p.primary!.start.addingTimeInterval(4 * 3600)
+    var quiet = AlertSettings(); quiet.quietStartHour = 0; quiet.quietEndHour = 7
+    let r = AlertEngine.step(now: late, tonight: p, tomorrow: nil, state: nil, settings: quiet, forecastFetchedAt: late, site: sheffield, copy: Copy())
+    #expect(r.notification == nil)
+    #expect(r.state.firstClearSaid == false)
 }

@@ -182,7 +182,8 @@ private func bright(_ p: NightPlan) -> NightPlan {
     let h = try #require(heads.notification)
     #expect(h.kind == .headsUp)
     #expect(h.title == "Bright night tonight from \(Copy.hhmm(tonight.primary!.start, site: site)) · Moon 62%, Saturn")
-    #expect(h.body == "Moon 62%, Saturn well placed.")
+    // A fresh install (no state): the first clear window is named once, before the usual body (#64).
+    #expect(h.body == Copy.firstClear(tonight.primary!, site: site) + " Moon 62%, Saturn well placed.")
 
     let goAt = tonight.primary!.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60 + 60)
     let go = AlertEngine.step(now: goAt, tonight: tonight, tomorrow: nil, state: heads.state, settings: settings, forecastFetchedAt: goAt, site: site, copy: copy)

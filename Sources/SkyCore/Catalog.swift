@@ -96,6 +96,10 @@ public struct Catalog: Sendable {
     /// Well-known names OpenNGC leaves out, by its Name, so they show on the card and the search finds them (v1.0.1: the owner
     /// searched "sombrero" for C43). From Wikipedia's Caldwell catalogue table, and its NGC 7814 article for the Little Sombrero.
     /// OpenNGC's own name wins where it has one.
+    /// Sizes OpenNGC gets wrong, in arcminutes (major, minor), where a visibility judgement depends on them (#63).
+    /// NGC 7000: OpenNGC has 120 × 30; the nebula is 120′ × 100′ (Wikipedia, North America Nebula).
+    static let sizeCorrections: [String: (Double, Double)] = ["NGC7000": (120, 100)]
+
     static let extraNames: [String: String] = [
         "NGC0188": "Polarissima Cluster", "IC0342": "Hidden Galaxy", "NGC0891": "Silver Sliver Galaxy",
         "NGC7814": "Little Sombrero Galaxy", "NGC7479": "Superman Galaxy", "NGC0246": "Skull Nebula",
@@ -142,7 +146,8 @@ public struct Catalog: Sendable {
                     : names.split(separator: ",").first.map { String($0).trimmingCharacters(in: .whitespaces) },
                 messier: Int(field(row, "M")),
                 typeCode: type, group: group, raHours: ra, decDeg: dec,
-                majAxisArcmin: Double(field(row, "MajAx")), minAxisArcmin: Double(field(row, "MinAx")),
+                majAxisArcmin: sizeCorrections[field(row, "Name")]?.0 ?? Double(field(row, "MajAx")),
+                minAxisArcmin: sizeCorrections[field(row, "Name")]?.1 ?? Double(field(row, "MinAx")),
                 magnitude: v ?? b, constellation: field(row, "Const"),
                 caldwell: DeepSkyObject.caldwellNumber(identifiers: field(row, "Identifiers")) ?? DeepSkyObject.caldwellNumber(name: field(row, "Name"))))
         }

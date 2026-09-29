@@ -100,6 +100,8 @@ Any. Pick a preset (DWARF Mini, DWARF 3, Seestar S50, APS-C at 200 mm) or type y
 
 Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
 
+The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness; the next run of moonless nights in its header; and **What the numbers mean**, a window explaining every figure the app shows.
+
 On a clear night the Targets window opens with Tonight's plan: the night's best targets in the order they are best placed, ending with the clear window or your Stop by time. Each gets long enough for a stack (a DWARF: 200 frames at 30 s; a Seestar: about 1,000 at 10 s), or with a camera the time it is well placed. It notes when the plan runs longer than your telescope's battery.
 
 ## Dark-sky sites

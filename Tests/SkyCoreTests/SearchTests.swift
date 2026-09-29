@@ -101,3 +101,80 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     let old = try JSONDecoder().decode(RankedTarget.self, from: JSONSerialization.data(withJSONObject: json))
     #expect(old.caldwell == nil && old.name == c43.name)
 }
+
+// Eyes and binoculars (#63): only what the eye or binoculars can show, by surface brightness against the site's sky.
+private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: Double?, minor: Double? = nil, type: String = "",
+                       washed: Bool = false) -> RankedTarget {
+    var r = RankedTarget(id: id, name: id, subtitle: "", group: group, raHours: 0, decDeg: 0, sizeArcmin: size, magnitude: mag, fit: .fits,
+                         peakAltDeg: 60, peakTime: Date(), moonSepDeg: 90, moonWashed: washed, visibleFraction: 1)
+    r.typeName = type; r.minorArcmin = minor
+    return r
+}
+
+@Test func surfaceBrightnessMatchesThePublishedExample() {
+    // Torres Lapasio: the Crab Nebula, 6′ × 4′ at magnitude 8.4, is 20.5 mag/arcsec².
+    #expect(abs(EyeViews.surfaceBrightness(magnitude: 8.4, majorArcmin: 6, minorArcmin: 4) - 20.5) < 0.05)
+}
+
+@Test func eyesAndBinocularsFollowPublishedVisibilityOnTheCatalogue() throws {
+    // The app's own OpenNGC rows, not typed-in sizes (review, 29 September 2026), against published visibility.
+    let catalog = try Catalog.bundled()
+    func row(_ id: String) throws -> RankedTarget {
+        let o = try #require(catalog.objects.first { $0.id == id })
+        var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours,
+                             decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 60, peakTime: Date(),
+                             moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode; r.minorArcmin = o.minAxisArcmin
+        return r
+    }
+    func view(_ id: String, _ bortle: Int) throws -> EyeView? { EyeViews.view(try row(id), bortle: bortle) }
+    #expect(try view("NGC0224", 5) == .nakedEye)       // M31: "visible to the naked eye … with moderate light pollution"
+    #expect(try view("NGC1976", 5) == .nakedEye)       // M42: "visible to the naked eye even from areas affected by light pollution"
+    #expect(try view("NGC0598", 5) == .binoculars)     // M33: undetectable by eye in Bortle class 5
+    #expect(try view("NGC0598", 2) == .nakedEye)
+    #expect(try view("NGC7000", 5) == .binoculars)     // "normally it cannot be seen with the unaided eye"
+    #expect(try view("IC5070", 5) == nil && view("IC5070", 2) == nil)
+    #expect(try view("NGC6888", 5) == nil && view("NGC6888", 2) == nil)   // the Crescent needs a filter
+    #expect(try view("NGC6853", 5) == .binoculars)     // M27: "easily visible in binoculars"
+    #expect(try view("NGC6960", 1) == nil)             // the Veil needs an O-III filter
+    #expect(try view("NGC6205", 5) == .binoculars && view("NGC6205", 2) == .nakedEye)   // M13
+    #expect(try view("NGC0869", 5) == .nakedEye)       // the Double Cluster
+    #expect(try view("NGC5457", 5) == nil)             // M101: too faint per square arcsecond for a suburban sky
+    let nan = try row("NGC7000")
+    #expect(nan.sizeArcmin == 120 && nan.minorArcmin == 100)   // OpenNGC's 120 × 30, corrected
+}
+
+@Test func eyesAndBinocularsKeepTheMoonPlanetsAndStarsRules() {
+    #expect(EyeViews.view(eyeTarget("M42w", .nebulae, mag: 4, size: 65, washed: true), bortle: 5) == nil)
+    #expect(EyeViews.view(eyeTarget("moon", .planets, mag: nil, size: 31), bortle: 9) == .nakedEye)
+    #expect(EyeViews.view(eyeTarget("planet-neptune", .planets, mag: 7.8, size: nil), bortle: 5) == .binoculars)
+    #expect(EyeViews.view(eyeTarget("HIP1", .stars, mag: 0.5, size: nil), bortle: 5) == nil)
+    let m31 = eyeTarget("M31", .galaxies, mag: 3.44, size: 177.8, minor: 69.7, type: "Galaxy")
+    let m13 = eyeTarget("M13", .clusters, mag: 5.8, size: 20, type: "Globular cluster")
+    #expect(Copy.eyeLook(m31, .nakedEye) == "A faint smudge to the eye")
+    #expect(Copy.eyeLook(m13, .binoculars) == "A fuzzy ball in binoculars")
+}
+
+// What the numbers mean (#59): every term the popover and target cards show has a plain entry.
+@Test func everyTermOnScreenIsExplained() {
+    let titles = NumbersGuide.entries.map(\.title).joined(separator: " ").lowercased()
+    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "frame"] {
+        #expect(titles.contains(term), "no entry for \(term)")
+    }
+    let text = NumbersGuide.entries.map(\.body).joined(separator: " ")
+    for shown in ["Held back by", "Fills 28% of frame", "Small in frame", "Mosaic", "Moon-washed", "Near Moon", "Naked eye", "Binoculars", "arcseconds"] {
+        #expect(text.contains(shown), "\(shown) is not explained")
+    }
+    #expect(Set(NumbersGuide.entries.map(\.id)).count == NumbersGuide.entries.count)
+    // The figures quoted are the app's own.
+    let rule = GoRule()
+    #expect(text.contains("at least \(Int(rule.minHours)) hours") && text.contains("\(rule.maxCloudPct)%") && text.contains("\(Int(rule.minAltitudeDeg))° up"))
+}
+
+@Test func eyesAndBinocularsEventsLeaveOutFaintPlanets() {
+    func e(_ kind: SkyEventKind, _ title: String) -> SkyEvent {
+        SkyEvent(id: title, kind: kind, title: title, detail: "", time: Date(), endTime: nil, raHours: nil, decDeg: nil)
+    }
+    #expect(EyeViews.includes(e(.conjunction, "Moon near Jupiter")) && !EyeViews.includes(e(.conjunction, "Moon near Neptune")))
+    #expect(EyeViews.includes(e(.meteorShower, "Orionids")) && !EyeViews.includes(e(.solarEclipse, "Partial solar eclipse")))
+}

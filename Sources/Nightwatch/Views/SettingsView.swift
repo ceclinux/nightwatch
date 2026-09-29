@@ -15,6 +15,7 @@ final class SettingsViewState: ObservableObject {
 
 struct SettingsView: View {
     @EnvironmentObject var store: Store
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var ui = SettingsViewState()
 
     var body: some View {
@@ -163,6 +164,7 @@ struct SettingsView: View {
                         Button("Reset config", role: .destructive) { store.resetConfig() }
                     }
             }
+            Section { Button("What the numbers mean") { openWindow(id: "numbers") } }   // #59, at the foot
         }
         .formStyle(.grouped)
         .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store) }
