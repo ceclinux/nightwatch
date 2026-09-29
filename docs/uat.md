@@ -55,3 +55,5 @@ Run on each Mac after `scripts/build-app.sh`.
 51. After an alert, run a cleaner (or quit Nightwatch and empty its caches), relaunch → no repeat notification and no welcome window. → pass.
 52. Upgrading from 0.6.x to 0.7.0 on a Mac with settings: the first launch shows no welcome, the popover shows your saved site, and Settings shows your telescope, go rule and alert choices unchanged. The old `~/Library/Application Support/Nightwatch` folder is left in place, untouched. → pass.
 53. About › Privacy opens PRIVACY.md on GitHub. → pass.
+54. On a clear night, Targets shows Tonight's plan above the grid: slots in best-viewing order (Cygnus before Cassiopeia in late September), each 1 h 40 min for a DWARF, with the power-bank note when it runs past 4 h; × takes a target out and the plan refills; a target's page offers Add to / Remove from tonight's plan; Settings › Telescope › Stop by ends it earlier; the switch below hides it. → pass.
+55. The evening heads-up on a clear night says "Start with … at …, then … at …", adds "Fit the dew heater" only when dew is likely, and its Not tonight button stops the rest of that night's clear-sky alerts. → pass.

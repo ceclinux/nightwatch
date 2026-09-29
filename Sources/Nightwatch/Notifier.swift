@@ -12,8 +12,19 @@ enum Notifier {
         [.authorized, .provisional].contains(await UNUserNotificationCenter.current().notificationSettings().authorizationStatus)
     }
 
+    /// The heads-up's buttons (#57): "Open plan" opens Targets, "Not tonight" silences the rest of the night.
+    static let headsUpCategory = "nightwatch.headsUp", openPlan = "open-plan", notTonight = "not-tonight"
+    static func registerActions() {
+        UNUserNotificationCenter.current().setNotificationCategories([UNNotificationCategory(
+            identifier: headsUpCategory,
+            actions: [UNNotificationAction(identifier: openPlan, title: "Open plan", options: [.foreground]),
+                      UNNotificationAction(identifier: notTonight, title: "Not tonight", options: [])],
+            intentIdentifiers: [])])
+    }
+
     static func post(_ n: AlertNotification) {
         let content = UNMutableNotificationContent()
+        if let night = n.planNight { content.categoryIdentifier = headsUpCategory; content.userInfo = ["night": night] }
         content.title = n.title
         content.body = n.body
         content.sound = n.kind == .go || n.kind == .aurora ? .default : nil   // aurora is brief: worth a sound (v0.6.6)

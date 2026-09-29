@@ -6,10 +6,14 @@ public struct TelescopePreset: Codable, Equatable, Sendable, Identifiable {
     public let widthDeg: Double
     public let heightDeg: Double
     public let source: String
+    /// The maker's battery life in hours, for Tonight's plan's power-bank note (#57); nil for a camera, which swaps batteries.
+    public var batteryHours: Double? = nil
     public var fov: FieldOfView { FieldOfView(widthDeg: widthDeg, heightDeg: heightDeg) }
 }
 
 public enum TelescopePresets {
+    /// Loaded once; empty if the bundled file were ever missing.
+    public static let shared: [TelescopePreset] = (try? bundled()) ?? []
     public static func bundled() throws -> [TelescopePreset] {
         guard let url = Bundle.module.url(forResource: "telescopes", withExtension: "json", subdirectory: "Resources/presets") else {
             throw CatalogError.missingResource("telescopes")
@@ -42,6 +46,9 @@ public struct Config: Codable, Equatable, Sendable {
     public var aurora = AuroraSettings()
     /// Target IDs the user has hearted (v1.0.1), in the order they were added: "NGC7814", "HIP24608", "planet-saturn", "Ori".
     public var favourites: [String] = []
+    /// Tonight's plan (#57): when the night's session must end, and whether Targets shows the plan.
+    public var stopBy = StopBy()
+    public var showPlan = true
 
     public init() {}
 
@@ -113,7 +120,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -138,6 +145,8 @@ public struct Config: Codable, Equatable, Sendable {
         brightNights = try c.decodeIfPresent(BrightSettings.self, forKey: .brightNights) ?? BrightSettings()
         aurora = try c.decodeIfPresent(AuroraSettings.self, forKey: .aurora) ?? AuroraSettings()
         favourites = try c.decodeIfPresent([String].self, forKey: .favourites) ?? []
+        stopBy = try c.decodeIfPresent(StopBy.self, forKey: .stopBy) ?? StopBy()
+        showPlan = try c.decodeIfPresent(Bool.self, forKey: .showPlan) ?? true
     }
 }
 

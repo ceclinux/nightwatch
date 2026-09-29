@@ -7,6 +7,8 @@ import SkyCore
 /// Controls stay inside the card: an overlay outside its Liquid Glass view is drawn under the glass.
 struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: View {
     var dimmed = false
+    /// In Tonight's plan (#57): outlined in the accent.
+    var highlighted = false
     let title: String
     /// Beside the title, dimmer: a target's Caldwell number.
     var note: String? = nil
@@ -39,8 +41,16 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             footer()
         }
         .padding(10)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.targetsTrack, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
+    }
+}
+
+/// A plain button on a page's caption: "How to shoot this", "Add to tonight's plan".
+extension View {
+    func captionButton() -> some View {
+        buttonStyle(.plain).font(.system(size: 11)).padding(.horizontal, 9).padding(.vertical, 5)
+            .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -182,7 +192,6 @@ struct HowToShootButton: View {
                 Image(systemName: shown ? "chevron.down" : "chevron.up").font(.system(size: 9, weight: .semibold)).accessibilityHidden(true)
             }
         }
-        .buttonStyle(.plain).font(.system(size: 11)).padding(.horizontal, 9).padding(.vertical, 5)
-        .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6)).padding(.top, 4)
+        .captionButton().padding(.top, 4)
     }
 }

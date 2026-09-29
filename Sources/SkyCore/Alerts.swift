@@ -35,8 +35,10 @@ public struct AlertState: Codable, Equatable, Sendable {
     /// The go nudge went out tonight, and the "Less certain" message went out tonight (v0.6.3). Optional, so older files decode.
     public var goFired: Bool?
     public var doubtSent: Bool?
-    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil) {
-        self.nightKey = nightKey; self.stage = stage; self.mode = mode; self.goFired = goFired; self.doubtSent = doubtSent
+    /// "Not tonight" on the heads-up (#57): nothing more is sent for this night.
+    public var silenced: Bool?
+    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil, silenced: Bool? = nil) {
+        self.nightKey = nightKey; self.stage = stage; self.mode = mode; self.goFired = goFired; self.doubtSent = doubtSent; self.silenced = silenced
     }
 }
 
@@ -45,6 +47,8 @@ public struct AlertNotification: Equatable, Sendable {
     public let kind: Kind
     public let title: String
     public let body: String
+    /// A heads-up carrying Tonight's plan (#57): its night, so Open plan and Not tonight act on that night only.
+    public var planNight: String? = nil
 }
 
 public enum AlertEngine {
@@ -58,8 +62,9 @@ public enum AlertEngine {
     }
 
     public static func step(now: Date, tonight: NightPlan, tomorrow: NightPlan?, state: AlertState?, settings: AlertSettings,
-                            forecastFetchedAt: Date, site: Site, copy: Copy) -> (notification: AlertNotification?, state: AlertState) {
+                            forecastFetchedAt: Date, site: Site, copy: Copy, session: SessionPlan? = nil) -> (notification: AlertNotification?, state: AlertState) {
         var s = (state?.nightKey == tonight.night.key) ? state! : AlertState(nightKey: tonight.night.key, stage: .idle)
+        if s.silenced == true { return (nil, s) }
         // Switching bright nights on or off mid-evening changes the plan, not the sky: start the night's alerts afresh
         // in the new mode rather than sending "Cancelled. Clouds moving in".
         if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle) }
@@ -120,7 +125,11 @@ public enum AlertEngine {
             if !goIfDue(), now >= headsUpAt {
                 if tonight.qualifies, settings.headsUp, agreed {
                     let (start, hours) = window(tonight)
-                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site, alerts: settings))
+                    // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
+                    let body = session.map { Copy.headsUpPlan($0, plan: tonight, site: site) + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
+                        ?? copy.notificationBody(plan: tonight, site: site, alerts: settings)
+                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,
+                                             planNight: session == nil ? nil : tonight.night.key)
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
                     note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site, agreement: false))

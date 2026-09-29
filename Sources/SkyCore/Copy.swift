@@ -30,10 +30,7 @@ public struct Copy: Sendable {
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
     /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
-        let line: String
-        if !agreement { line = "" }
-        else if let advice = Copy.advice(plan, site: site, alerts: alerts) { line = " " + advice.sentence }
-        else { line = plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" }
+        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) : ""
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
@@ -41,6 +38,12 @@ public struct Copy: Sendable {
         else { parts.append("Moon \(Int((plan.moonIllumination * 100).rounded()))%") }
         if !plan.best.isEmpty { parts.append(plan.best.map(\.name).joined(separator: ", ") + " well placed") }
         return parts.joined(separator: ". ") + "." + line
+    }
+
+    /// The second opinion as a notification ends, with its leading space; "" without one. Shared by every body that carries it.
+    public func secondOpinionLine(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
+        if let advice = Copy.advice(plan, site: site, alerts: alerts) { return " " + advice.sentence }
+        return plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? ""
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
@@ -189,6 +192,81 @@ public struct Copy: Sendable {
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)
+    }
+
+    // Tonight's plan (#57, owner-approved mock-up, 29 September 2026).
+    static let ordinalWords = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
+    static let countWords = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"]
+    /// "first" for slot 0.
+    public static func ordinal(_ i: Int) -> String { i < ordinalWords.count ? ordinalWords[i] : "number \(i + 1)" }
+
+    /// "5 h", "1 h 40 min", "40 min".
+    public static func duration(_ seconds: TimeInterval) -> String {
+        let m = Int((seconds / 60).rounded()), h = m / 60, r = m % 60
+        return h == 0 ? "\(r) min" : (r == 0 ? "\(h) h" : "\(h) h \(r) min")
+    }
+
+    /// "20:40–03:10".
+    public static func span(_ from: Date, _ to: Date, site: Site) -> String { "\(hhmm(from, site: site))–\(hhmm(to, site: site))" }
+
+    /// The strip's summary: "Clear 20:40–03:10 · three targets, 5 h", with "stop by 00:30" when that ends it first.
+    public static func planHeader(_ s: SessionPlan, window: ClearWindow, site: Site) -> String {
+        let n = s.slots.count
+        let count = "\(n < countWords.count ? countWords[n] : String(n)) target\(n == 1 ? "" : "s"), \(duration(s.hours * 3600))"
+        let stop = s.end < window.end ? " · stop by \(hhmm(s.end, site: site))" : ""
+        return "Clear \(span(window.start, window.end, site: site))\(stop) · \(count)"
+    }
+
+    /// A slot's second line: "Crescent Nebula, in Cygnus".
+    public static func slotName(_ t: RankedTarget, constellations: [Constellation]) -> String {
+        let abbr = t.subtitle.components(separatedBy: " in ").last ?? ""
+        guard let c = constellations.first(where: { $0.id == abbr }) else { return t.cardName }
+        return "\(t.cardName), in \(c.name)"
+    }
+
+    /// A slot's third line: "Best 21:20, so first · Duo-Band · 200 × 30 s"; a favourite or added target says so instead.
+    public static func slotDetail(_ slot: PlanSlot, index: Int, presetID: String?, site: Site) -> String {
+        let best = hhmm(slot.target.peakTime, site: site)
+        let why = switch slot.reason {
+        case .bestPlaced: "Best \(best), so \(ordinal(index))"
+        case .favourite: "Favourite · best \(best)"
+        case .added: "Added by you · best \(best)"
+        }
+        return ShootingTips.planKit(slot.target, presetID: presetID).map { "\(why) · \($0)" } ?? why
+    }
+
+    /// "01:40–03:10: 1 h 30 min left, too short for another stack." Nil without a leftover.
+    public static func planLeftover(_ s: SessionPlan, site: Site) -> String? {
+        guard let l = s.leftover else { return nil }
+        let left = "\(span(l.start, l.end, site: site)): \(duration(l.end.timeIntervalSince(l.start))) left"
+        return s.leftoverTooShort ? "\(left), too short for another stack." : "\(left), with nothing else up long enough to add."
+    }
+
+    /// The power-bank note (owner, 29 September 2026: the battery is not a limit, but say when a plan outlasts it).
+    public static func planBattery(_ s: SessionPlan, telescope: String) -> String? {
+        guard let b = s.outlastsBatteryHours else { return nil }
+        return "This plan runs \(duration(s.hours * 3600)), longer than a \(telescope) battery (about \(duration(b * 3600))): you may need a power bank or a spare battery."
+    }
+
+    /// A target card in the plan: "In the plan, 1st".
+    public static func inPlan(_ index: Int) -> String {
+        let n = index + 1, suffix = (n % 100 / 10 == 1) ? "th" : (["th", "st", "nd", "rd"] + Array(repeating: "th", count: 6))[n % 10]
+        return "In the plan, \(n)\(suffix)"
+    }
+
+    /// The heads-up with a plan: "Start with the Crescent Nebula at 20:40, then the Bubble Nebula at 22:20." and, only when
+    /// dew is likely during the plan, "Fit the dew heater: dew likely after 23:00."
+    public static func headsUpPlan(_ s: SessionPlan, plan: NightPlan, site: Site) -> String {
+        func name(_ t: RankedTarget) -> String { t.commonName.map { "the \($0)" } ?? t.catalogueID }
+        var text = s.slots.prefix(2).enumerated().map { i, slot in
+            "\(i == 0 ? "Start with" : "then") \(name(slot.target)) at \(hhmm(slot.start, site: site))"
+        }.joined(separator: ", ") + "."
+        let dew = plan.darkHours.first { h in
+            guard h.time >= s.slots[0].start.addingTimeInterval(-1800), h.time < s.end, let t = h.tempC, let d = h.dewPointC else { return false }
+            return t - d < 2
+        }
+        if let d = dew { text += " Fit the dew heater: dew likely after \(hhmm(max(d.time, s.slots[0].start), site: site))." }
+        return text
     }
 
     public func scoreBand(_ score: Int) -> String {

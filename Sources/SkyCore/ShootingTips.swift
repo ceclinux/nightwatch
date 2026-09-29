@@ -34,6 +34,32 @@ public enum ShootingTips {
         }
     }
 
+    /// The shortest worthwhile stack for a deep-sky target (#57). A DWARF: its manual's 200 frames (the low end of 200–400)
+    /// at 30 s, 100 minutes. A Seestar stacks as it goes with ZWO's 10 s frames and names no count, so the owner's rule of
+    /// thumb for deep sky, about 1,000 frames (29 September 2026): 167 minutes. Nil for a camera or a custom telescope;
+    /// Tonight's plan then gives a target the time it is well placed.
+    public static func stackMinutes(presetID: String?) -> Double? {
+        switch presetID {
+        case "dwarf-mini", "dwarf-3": 200 * 30 / 60
+        case "seestar-s50": 1000 * 10 / 60
+        default: nil
+        }
+    }
+
+    /// A plan slot's kit, from the same maker figures: "Duo-Band · 200 × 30 s". Nil where the tips give no filter name.
+    public static func planKit(_ t: RankedTarget, presetID: String?) -> String? {
+        let k = kind(t)
+        switch presetID {
+        case "dwarf-mini", "dwarf-3":
+            return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
+        case "seestar-s50":
+            let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
+            return filter + "1,000 × 10 s"
+        default:
+            return nil
+        }
+    }
+
     /// `stackMinutes`: how long the target is up inside tonight's clear window, up to 3 h; nil when there is no clear window.
     public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site) -> ShootingTip {
         let k = kind(t)

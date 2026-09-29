@@ -98,6 +98,8 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 
 Any. Pick a preset (DWARF Mini, DWARF 3, Seestar S50, APS-C at 200 mm) or type your field of view in degrees.
 
+On a clear night the Targets window opens with Tonight's plan: the night's best targets in the order they are best placed, ending with the clear window or your Stop by time. Each gets long enough for a stack (a DWARF: 200 frames at 30 s; a Seestar: about 1,000 at 10 s), or with a camera the time it is well placed. It notes when the plan runs longer than your telescope's battery.
+
 ## Dark-sky sites
 
 The Targets window's "Dark sites" group lists two kinds of place: certified sites (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites) from a bundled list of 76 places compiled from Wikidata and hand-verified UK and Ireland entries, and up to five computed "dark spots" from a bundled light-pollution grid. Each card shows distance, bearing, a darkness band or Bortle class, tonight's clear window and a score. Forecasts are fetched for the nearest eight sites. "Observe from here" observes from that site without saving it: the popover and the Dark sites page offer "Back to" your home site, and Settings › Where you observe can Keep it. When a listed site scores 20 or more above home, the popover shows one line naming it.

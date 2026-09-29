@@ -55,7 +55,7 @@ struct SettingsView: View {
                 Text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with.")
                     .font(.caption).foregroundStyle(Theme.dim)
             }
-            Section("Field of view") {
+            Section("Telescope") {
                 Picker("Preset", selection: Binding(get: { store.config.fovPresetID ?? "custom" }, set: { id in
                     store.config.fovPresetID = id == "custom" ? nil : id
                     if let p = ui.presets.first(where: { $0.id == id }) { store.config.fov = p.fov }
@@ -68,6 +68,19 @@ struct SettingsView: View {
                     TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { setFOV(width: $0) }), format: .number)
                     TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { setFOV(height: $0) }), format: .number)
                 }
+                // Tonight's plan (#57): the plan ends with the clear window, or by this time. The battery is no limit (a power
+                // bank outlasts it), so there is no battery setting; the plan says when it runs past the maker's figure.
+                Toggle("Stop by", isOn: bind(\.stopBy.enabled))
+                if store.config.stopBy.enabled {
+                    DatePicker("Plan ends by", selection: Binding(get: {
+                        let m = store.config.stopBy.minutes
+                        return Calendar.current.date(bySettingHour: m / 60 % 24, minute: m % 60, second: 0, of: .now) ?? .now
+                    }, set: { d in
+                        let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                        store.config.stopBy.minutes = (c.hour ?? 0) * 60 + (c.minute ?? 0); store.saveConfig()
+                    }), displayedComponents: .hourAndMinute)
+                }
+                Toggle("Tonight's plan in Targets and the heads-up", isOn: bind(\.showPlan))
             }
             Section("Go rule") {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")

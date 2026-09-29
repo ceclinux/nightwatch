@@ -12,7 +12,6 @@ struct DetailView: View {
     let onBack: () -> Void
     @StateObject private var hero = ThumbnailLoader()
     @StateObject private var tipsUI = TipsState()
-    private static let presets = (try? TelescopePresets.bundled()) ?? []
 
     /// Photographs and artwork that must be seen whole; everything else is a survey image to fill the page.
     private var fitted: Bool { target.group == .constellations || target.group == .planets }
@@ -113,9 +112,32 @@ struct DetailView: View {
             Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
-            if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help("Filter, exposure and frames for your telescope and this target") }
+            HStack(spacing: 8) {
+                if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help("Filter, exposure and frames for your telescope and this target") }
+                planButton.padding(.top, 4)
+            }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
             if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: 9.5)).foregroundStyle(Theme.dim) }
+        }
+    }
+
+    /// "Add to tonight's plan" (#57): on a night with a clear window, in the dark.
+    @ViewBuilder private var planButton: some View {
+        // Only for a target the plan can take: deep sky, in tonight's list or a favourite usable tonight.
+        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan, SessionPlanner.canTake(target),
+           (plan.targets + plan.favourites.filter { $0.notTonight == nil }.map(\.target)).contains(where: { $0.id == target.id }) {
+            let inPlan = store.session(for: plan)?.slots.contains { $0.id == target.id } ?? false
+            let asked = store.planEdits.nightKey == plan.night.key && store.planEdits.added.contains(target.id)
+            let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"
+            HStack(spacing: 6) {
+                Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
+                    Label(inPlan ? "Remove from \(night)" : "Add to \(night)", systemImage: inPlan ? "minus.circle" : "plus.circle")
+                }
+                .captionButton()
+                if asked && !inPlan {
+                    Text("Not up long enough in the clear window for a stack").font(.system(size: 10.5)).foregroundStyle(Theme.dim)
+                }
+            }
         }
     }
 
@@ -146,7 +168,7 @@ extension DetailView {
     /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of
     /// target, sized to tonight's window, with where the numbers come from.
     func tipsCard(site: Site) -> some View {
-        let preset = Self.presets.first { $0.id == store.config.fovPresetID }
+        let preset = TelescopePresets.shared.first { $0.id == store.config.fovPresetID }
         let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset?.name,
                                    stackMinutes: target.viewable.map { min($0.hours, 3) * 60 }, site: site)
         return ShootingTipCard(tip: tip)

@@ -199,7 +199,9 @@ struct TargetsView: View {
     }
 
     private var grid: some View {
-        ScrollView {
+        let session = isEvents || !store.config.showPlan ? nil : store.session(for: plan)
+        let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
+        return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(ui.section == .favourites ? "Favourites" : selectedGroup.displayName).font(.title2.weight(.semibold))
@@ -259,6 +261,10 @@ struct TargetsView: View {
                     }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
+            if let p = plan, let s = store.site, let session {
+                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations) { ui.selected = $0 }
+                    .padding(.horizontal, 20).padding(.top, 12)
+            }
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
                     if isEvents {
@@ -289,12 +295,11 @@ struct TargetsView: View {
                             // Not a Button: the heart inside the card needs its own clicks, and a button inside a button's label
                             // does not reliably get them. A heart overlaid outside the card was hidden under the Liquid Glass
                             // (owner, 27 September 2026), so it lives inside, beside the chips.
-                            card(t, notTonight: f.notTonight)
+                            card(t, notTonight: f.notTonight, planIndex: order[t.id])
                                 .contentShape(Rectangle())
                                 .onTapGesture { ui.selected = t }
                                 .accessibilityElement(children: .combine)
-                                .accessibilityLabel(f.notTonight.map { "\(t.name), \($0)" }
-                                                    ?? store.site.map { Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
+                                .accessibilityLabel(cardLabel(t, notTonight: f.notTonight, planIndex: order[t.id]))
                                 .accessibilityAddTraits(.isButton)
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
@@ -304,6 +309,16 @@ struct TargetsView: View {
                 }
             }
         }
+    }
+
+    /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
+    private func cardLabel(_ t: RankedTarget, notTonight: String?, planIndex: Int?) -> String {
+        let base: String
+        if let reason = notTonight { base = "\(t.name), \(reason)" }
+        else if let s = store.site { base = Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: s) }
+        else { base = t.name }
+        guard let i = planIndex else { return base }
+        return base + ", " + Copy.inPlan(i).lowercased()
     }
 
     private func nearMoon(_ t: RankedTarget) -> Bool {
@@ -332,8 +347,9 @@ struct TargetsView: View {
     }
 
     /// `notTonight`: a favourite that is not usable tonight, drawn dimmed with the reason in place of its timeline.
-    private func card(_ t: RankedTarget, notTonight: String? = nil) -> some View {
-        TargetCardFrame(dimmed: notTonight != nil, title: t.catalogueID, note: t.cardNote, subtitle: t.cardName,
+    /// `planIndex`: its place in Tonight's plan (#57), outlined and labelled "In the plan, 1st".
+    private func card(_ t: RankedTarget, notTonight: String? = nil, planIndex: Int? = nil) -> some View {
+        TargetCardFrame(dimmed: notTonight != nil, highlighted: planIndex != nil, title: t.catalogueID, note: t.cardNote, subtitle: t.cardName,
                         trailing: t.magnitude.map { String(format: "mag %.1f", $0) }) {
             ThumbnailView(target: t)
         } corner: {
@@ -344,7 +360,10 @@ struct TargetsView: View {
             if let reason = notTonight {
                 Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)
             } else if let s = store.site, let p = plan, let track = p.primary ?? p.darkSpan {
-                ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
+                VStack(alignment: .leading, spacing: 4) {
+                    if let i = planIndex { Text(Copy.inPlan(i)).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Tokens.accentClear) }
+                    ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
+                }
             }
         }
     }
