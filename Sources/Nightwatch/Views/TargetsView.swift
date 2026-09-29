@@ -246,17 +246,14 @@ struct TargetsView: View {
         let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
         return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                // Title and controls on one line when they fit; otherwise the controls go under the title, so a long title
-                // ("Eyes and binoculars") is never squeezed into a column (owner's screenshot, 29 September 2026).
-                ViewThatFits(in: .horizontal) {
-                    HStack { headerTitle; headerControls }
-                    VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
-                }
+                // The title on its own line and the controls under it, on every page: a short title ("Stars") sat beside
+                // the controls while the others sat above them (owner's UAT, 29 September 2026).
+                VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
                 // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
                 // Tonight, so it never jumps to tomorrow by itself on a later refresh.
                 Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                 if let p = plan, let s = store.site {
-                    ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
+                    // No hour bars here: the popover and the medium and large widgets already show them (owner's UAT, 29 September 2026).
                     if showingTomorrow, let w = p.primary {
                         Text("Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s)): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))")
                             .font(.caption).foregroundStyle(Tokens.textSecondary)
