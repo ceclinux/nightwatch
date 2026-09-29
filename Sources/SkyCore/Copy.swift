@@ -205,10 +205,10 @@ public struct Copy: Sendable {
     /// "20:40–03:10".
     public static func span(_ from: Date, _ to: Date, site: Site) -> String { "\(hhmm(from, site: site))–\(hhmm(to, site: site))" }
 
-    /// The plan page's summary: "Clear 21:40–02:10 · 4.5 h · Moon 78%", with "stop by 00:30" when that ends it first.
+    /// The plan page's summary: "Clear 21:40–02:10 · 4.5 h · Moon 78%", with "finish by 00:30" when that ends it first.
     public static func planSummary(_ s: SessionPlan, plan: NightPlan, site: Site) -> String {
         let full = plan.primary ?? s.window
-        let stop = s.window.end < full.end ? " · stop by \(hhmm(s.window.end, site: site))" : ""
+        let stop = s.window.end < full.end ? " · finish by \(hhmm(s.window.end, site: site))" : ""
         return "Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%"
     }
 

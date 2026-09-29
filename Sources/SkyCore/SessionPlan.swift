@@ -78,7 +78,7 @@ public enum SessionPlanner {
             if t.moonWashed { omitted.append(PlanOmission(target: t, reason: "Washed out by the Moon")); continue }
             guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: "Not up in the clear window")); continue }
             guard v.start < end else {
-                omitted.append(PlanOmission(target: t, reason: "Up only after your Stop by time, \(Copy.hhmm(end, site: site))")); continue
+                omitted.append(PlanOmission(target: t, reason: "Up only after your finish time, \(Copy.hhmm(end, site: site))")); continue
             }
             if choices.removed.contains(id) { takenOff.append(t); continue }
             items.append(PlanItem(target: t, added: !favourites.contains(id)))

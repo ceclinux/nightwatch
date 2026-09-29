@@ -56,7 +56,7 @@ struct PlanView: View {
             } else if p.primary == nil {
                 note(store.copy.noWindow)
             } else {
-                note("Your Stop by time comes before tonight's clear window opens.")
+                note("Your finish time comes before tonight's clear window opens.")
             }
         } else {
             note(store.lastError ?? "Waiting for the first forecast…")

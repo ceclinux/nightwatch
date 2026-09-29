@@ -100,8 +100,8 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     let stop = StopBy(enabled: true, minutes: 30)   // 00:30, before M42 is up
     let s = try #require(make(p, favourites: ["NGC2024", "IC1805", "M42"], stopBy: stop))
     #expect(s.items.isEmpty)
-    #expect(s.omitted.map(\.reason) == ["Below 30° in tonight's window", "Washed out by the Moon", "Up only after your Stop by time, 00:30"])
-    #expect(Copy.planSummary(s, plan: p, site: sheffield).contains(" · stop by 00:30 · ") && Copy.planSummary(s, plan: p, site: sheffield).hasSuffix("· Moon 78%"))
+    #expect(s.omitted.map(\.reason) == ["Below 30° in tonight's window", "Washed out by the Moon", "Up only after your finish time, 00:30"])
+    #expect(Copy.planSummary(s, plan: p, site: sheffield).contains(" · finish by 00:30 · ") && Copy.planSummary(s, plan: p, site: sheffield).hasSuffix("· Moon 78%"))
 }
 
 @Test func planChoicesAreKeptPerNightAndSyncWithTheSettings() throws {
