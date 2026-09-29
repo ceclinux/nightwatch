@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 import SkyCore
 
-/// DSS2 colour cutouts from CDS hips2fits at the user's field of view (or 1.5 × the object when it is bigger), cached forever per object and FOV.
+/// DSS2 colour cutouts from CDS hips2fits at the user's field of view (or 1.5 × the object when it is bigger), cached per object and
+/// FOV until not shown for 30 days.
 enum Thumbnails {
     static let dir = Store.cacheDir.appendingPathComponent("thumbs", isDirectory: true)
 
@@ -36,13 +37,18 @@ enum Thumbnails {
         dir.appendingPathComponent(ThumbnailFiles.name(id: t.id, fovWidthDeg: fov.widthDeg, fovHeightDeg: fov.heightDeg, width: width, context: context))
     }
 
-    /// Drops detail images not opened for 30 days; run after each new detail image is saved.
-    static func pruneDetailImages(now: Date = Date()) {
+    /// When the images were last pruned: at most once a day, after a new image is saved.
+    nonisolated(unsafe) private static var prunedAt = Date.distantPast
+
+    /// Drops card and detail images not shown for 30 days.
+    static func pruneStaleImages(now: Date = Date()) {
+        guard now.timeIntervalSince(prunedAt) > 86_400 else { return }
+        prunedAt = now
         let fm = FileManager.default
         guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return }
         var modified: [String: Date] = [:]
         for n in names { modified[n] = (try? fm.attributesOfItem(atPath: dir.appendingPathComponent(n).path))?[.modificationDate] as? Date }
-        for n in ThumbnailFiles.staleDetailImages(names: names, modified: modified, now: now) { try? fm.removeItem(at: dir.appendingPathComponent(n)) }
+        for n in ThumbnailFiles.staleImages(names: names, modified: modified, now: now) { try? fm.removeItem(at: dir.appendingPathComponent(n)) }
     }
 
     static func image(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> NSImage? {
@@ -51,13 +57,20 @@ enum Thumbnails {
         if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap { NSImage(contentsOf: $0) } }
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov, width: width, context: context)
-        if let img = NSImage(contentsOf: f) { return img }
+        if let img = NSImage(contentsOf: f) {
+            // Shown again: its date says so, so pruning keeps it.
+            let fm = FileManager.default, now = Date()
+            if ThumbnailFiles.needsTouch(modified: (try? fm.attributesOfItem(atPath: f.path))?[.modificationDate] as? Date, now: now) {
+                try? fm.setAttributes([.modificationDate: now], ofItemAtPath: f.path)
+            }
+            return img
+        }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         // hips2fits took 12.5 s for a 1600 px image with extra sky (25 Sep 2026), so the large fetch gets more than the usual 20 s.
         let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)
         guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), let img = NSImage(data: data) else { return nil }
         try? data.write(to: f, options: .atomic)
-        if width != cardWidth { pruneDetailImages() }
+        pruneStaleImages()
         return img
     }
 }

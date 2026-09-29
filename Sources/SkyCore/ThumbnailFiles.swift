@@ -10,12 +10,18 @@ public enum ThumbnailFiles {
         return "\(id)-\(String(format: "%.2fx%.2f", fovWidthDeg, fovHeightDeg))\(size)\(wider).jpg"
     }
 
-    /// Detail images older than `maxAge` (30 days): each is 0.2–0.3 MB and only fetched when a page is opened. Card images
-    /// are kept forever, as before; a file whose date is unknown is kept.
-    public static func staleDetailImages(names: [String], modified: [String: Date], now: Date, maxAge: TimeInterval = 30 * 86_400) -> [String] {
+    /// Images not shown for `maxAge` (30 days), cards and detail pages alike: a shown image has its date refreshed, so an
+    /// old date means unused (owner, 29 September 2026: each telescope's field of view kept its own set of cards forever).
+    /// Only Nightwatch's own `.jpg` images; a file whose date is unknown is kept.
+    public static func staleImages(names: [String], modified: [String: Date], now: Date, maxAge: TimeInterval = 30 * 86_400) -> [String] {
         names.filter { n in
-            guard n.range(of: #"-w\d+(-c[\d.]+)?\.jpg$"#, options: .regularExpression) != nil, let m = modified[n] else { return false }
+            guard n.hasSuffix(".jpg"), let m = modified[n] else { return false }
             return now.timeIntervalSince(m) > maxAge
         }
+    }
+
+    /// A shown image's date is refreshed once it is a day old, so browsing does not rewrite it every time.
+    public static func needsTouch(modified: Date?, now: Date) -> Bool {
+        modified.map { now.timeIntervalSince($0) > 86_400 } ?? false
     }
 }

@@ -26,9 +26,13 @@ import Foundation
     #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600, context: 1.6) == "NGC7000-2.10x1.20-w1600-c1.6.jpg")
 }
 
-@Test func onlyOldDetailImagesArePruned() {
+@Test func imagesNotShownFor30DaysArePrunedCardsIncluded() {
     let now = Date(), old = now.addingTimeInterval(-31 * 86_400), recent = now.addingTimeInterval(-86_400)
-    let names = ["M31-2.10x1.20.jpg", "M31-2.10x1.20-w1600.jpg", "NGC7000-2.10x1.20-w1600-c1.6.jpg", "M42-2.10x1.20-w1600.jpg"]
-    let modified = [names[0]: old, names[1]: old, names[2]: old, names[3]: recent]
-    #expect(ThumbnailFiles.staleDetailImages(names: names, modified: modified, now: now) == [names[1], names[2]])
+    let names = ["M31-2.10x1.20.jpg", "M31-2.10x1.20-w1600.jpg", "NGC7000-2.10x1.20-w1600-c1.6.jpg", "M42-2.10x1.20-w1600.jpg",
+                 "M42-1.65x1.24.jpg", "notes.txt", "M1-2.10x1.20.jpg"]
+    let modified = [names[0]: old, names[1]: old, names[2]: old, names[3]: recent, names[4]: recent, names[5]: old]   // M1: no date, kept
+    #expect(ThumbnailFiles.staleImages(names: names, modified: modified, now: now) == [names[0], names[1], names[2]])
+    // A shown image's date is refreshed once a day, not every time.
+    #expect(ThumbnailFiles.needsTouch(modified: old, now: now) && !ThumbnailFiles.needsTouch(modified: now.addingTimeInterval(-3600), now: now))
+    #expect(!ThumbnailFiles.needsTouch(modified: nil, now: now))
 }
