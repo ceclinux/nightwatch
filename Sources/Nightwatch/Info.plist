@@ -7,8 +7,8 @@
   <key>CFBundleExecutable</key><string>Nightwatch</string>
   <key>CFBundleIdentifier</key><string>io.github.rsutcliffe.nightwatch</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
-  <key>CFBundleVersion</key><string>24</string>
+  <key>CFBundleShortVersionString</key><string>1.1.0</string>
+  <key>CFBundleVersion</key><string>26</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.weather</string>
