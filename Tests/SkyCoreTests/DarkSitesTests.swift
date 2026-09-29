@@ -54,3 +54,13 @@ import Foundation
     #expect(named.name == "Dark spot near Kielder")
     #expect(named.id == spot.id && named.coordinate == spot.coordinate && named.band == spot.band && named.isComputed)
 }
+
+// Computed spots move to a dark car park (owner's UAT, 29 September 2026).
+@Test func computedSpotsMoveToADarkCarPark() {
+    #expect(DarkSites.darkEnough(.dark, spot: .veryDark) && DarkSites.darkEnough(.veryDark, spot: .dark))
+    #expect(!DarkSites.darkEnough(.rural, spot: .veryDark) && !DarkSites.darkEnough(.bright, spot: .dark))   // a town car park
+    #expect(DarkSites.darkEnough(nil, spot: .veryDark) && DarkSites.darkEnough(.bright, spot: nil))
+    #expect(DarkSites.carParkName("Hafren Forest Car Park and Toilet Block") == "Hafren Forest Car Park and Toilet Block")
+    #expect(DarkSites.carParkName("Car Park") == "Car park" && DarkSites.carParkName("Parking") == "Car park" && DarkSites.carParkName(nil) == "Car park")
+    #expect(DarkSites.spotName(place: "Kettlewell, North Yorkshire", lead: DarkSites.genericCarPark) == "Car park near Kettlewell")
+}

@@ -39,8 +39,8 @@ nearby dark-sky sites if that feature is on). They go to:
 - **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion. No name, account or device
   identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
-- **Apple Maps**, for the name of the nearest town or village to each computed dark spot, and a small map of each dark
-  site on its card, if that feature is on; Open in Maps hands the site's position to the Maps app. Each
+- **Apple Maps**, to find a dark car park near each computed dark spot and the name of its town or village, and a small
+  map of each dark site on its card, if that feature is on; Open in Maps hands the site's position to the Maps app. Each
   spot is looked up once and the answer kept; a lookup that fails is tried again an hour later. macOS makes these
   requests on Nightwatch's behalf, as it does for Apple Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
 

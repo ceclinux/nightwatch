@@ -535,6 +535,9 @@ struct DarkSiteCard: View {
                     Text("\(siteSky), home Bortle \(home.bortle)").font(.caption).foregroundStyle(Theme.dim)
                 }
             }
+            if s.isComputed {
+                Text("Found from light-pollution data: check access and park considerately.").font(.caption).foregroundStyle(Theme.dim)
+            }
             if let w = plan.primary, let home = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(.caption)
             } else if plan.forecastMissing {

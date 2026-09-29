@@ -462,7 +462,7 @@ final class Store: ObservableObject {
         // Up to ~700k distance checks at 300 km: off the main actor.
         let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
         guard gen == darkSitesGeneration else { return }
-        let sites = namedSpots(found, now: now)
+        let sites = namedSpots(publicSpots(found, home: home, site: site, night: night), now: now)
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
@@ -499,15 +499,19 @@ final class Store: ObservableObject {
     /// and failed lookups are tried again after an hour.
     /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
     private func namedSpots(_ sites: [DarkSite], now: Date) -> [DarkSite] {
-        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
+        // Only a car park Apple Maps names just "Car park" needs its town ("Car park near Kettlewell").
+        let missing = sites.filter { $0.isComputed && $0.name == DarkSites.genericCarPark && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
         if now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
             for s in missing {
                 spotLookups.insert(s.id)
                 Task { [weak self] in
-                    let place: String?? = try? await PlaceNames.nearest(to: s.coordinate)   // nil: the lookup failed
+                    // do/catch, not try?: try? flattens String?? into String?, so a failed lookup was kept as "no name here".
+                    let place: String?
+                    do { place = try await PlaceNames.nearest(to: s.coordinate) } catch {
+                        self?.spotLookups.remove(s.id); self?.spotLookupFailedAt = Date(); return
+                    }
                     guard let self else { return }
                     spotLookups.remove(s.id)
-                    guard let place else { spotLookupFailedAt = Date(); return }
                     spotPlaces[s.id] = place ?? ""
                     Store.write(spotPlaces, "spot-places.json")
                     renameSpots()
@@ -518,7 +522,55 @@ final class Store: ObservableObject {
     }
 
     private func spotNamed(_ s: DarkSite) -> DarkSite {
-        spotPlaces[s.id].flatMap(DarkSites.spotName(place:)).map(s.named) ?? s
+        guard s.isComputed, s.name == DarkSites.genericCarPark else { return s }
+        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: DarkSites.genericCarPark) }.map(s.named) ?? s
+    }
+
+    /// Each computed spot's public place by the spot's id (nil inside: none within reach), found once and kept.
+    private lazy var spotPublic: [String: PublicPlaces.Place?] = Store.read("spot-public.json") ?? [:]
+    private var publicLookups: Set<String> = []
+    private var publicLookupFailedAt: Date?
+
+    /// Computed spots moved to the nearest dark car park (owner's UAT, 29 September 2026: a pin in the middle of a moor
+    /// raised whether it was public, or condoning trespass). A spot is not shown until its car park is known, and is left
+    /// out when there is none; the list is worked out again once the searches finish. Failed searches are tried again
+    /// after an hour.
+    private func publicSpots(_ sites: [DarkSite], home: Coordinate, site: Site, night: Night) -> [DarkSite] {
+        var out: [DarkSite] = [], seen = Set<String>()
+        let due = Date().timeIntervalSince(publicLookupFailedAt ?? .distantPast) >= 3600
+        for s in sites {
+            guard s.isComputed else { out.append(s); continue }
+            guard let entry = spotPublic[s.id] else {
+                if due, !publicLookups.contains(s.id) { lookUpPublicPlace(for: s, site: site, night: night) }
+                continue
+            }
+            guard let p = entry else { continue }
+            let c = Coordinate(latitude: p.latitude, longitude: p.longitude)
+            let id = String(format: "place-%.3f-%.3f", c.latitude, c.longitude)
+            guard seen.insert(id).inserted else { continue }   // two spots can share a car park
+            out.append(DarkSite(id: id, name: p.name, kind: "spot", coordinate: c, distanceKm: Geo.distanceKm(home, c),
+                                bearingDeg: Geo.bearingDeg(from: home, to: c),
+                                band: LPGrids.radiance(at: c, in: grids).map(DarknessBand.from) ?? s.band, bortle: nil, source: nil,
+                                isComputed: true))
+        }
+        return out.sorted { $0.distanceKm < $1.distanceKm }
+    }
+
+    private func lookUpPublicPlace(for s: DarkSite, site: Site, night: Night) {
+        publicLookups.insert(s.id)
+        let grids = grids
+        Task { [weak self] in
+            let place: PublicPlaces.Place?
+            do { place = try await PublicPlaces.nearest(to: s.coordinate, band: s.band, grids: grids) } catch {
+                self?.publicLookups.remove(s.id); self?.publicLookupFailedAt = Date(); return
+            }
+            guard let self else { return }
+            publicLookups.remove(s.id)
+            spotPublic[s.id] = .some(place)
+            Store.write(spotPublic, "spot-public.json")
+            // Once every search is back, the list again, now with the car parks.
+            if publicLookups.isEmpty { await recomputeDarkSites(now: Date(), site: site, night: night) }
+        }
     }
 
     /// A name that arrived after the cards were built: the same sites and plans, renamed.
