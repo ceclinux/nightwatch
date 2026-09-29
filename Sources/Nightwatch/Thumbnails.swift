@@ -51,20 +51,23 @@ enum Thumbnails {
         for n in ThumbnailFiles.staleImages(names: names, modified: modified, now: now) { try? fm.removeItem(at: dir.appendingPathComponent(n)) }
     }
 
+    /// A saved image, its date refreshed as it is shown again, so pruning keeps it; nil when not saved.
+    static func cached(_ f: URL) -> NSImage? {
+        guard let img = NSImage(contentsOf: f) else { return nil }
+        let fm = FileManager.default, now = Date()
+        if ThumbnailFiles.needsTouch(modified: (try? fm.attributesOfItem(atPath: f.path))?[.modificationDate] as? Date, now: now) {
+            try? fm.setAttributes([.modificationDate: now], ofItemAtPath: f.path)
+        }
+        return img
+    }
+
     static func image(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> NSImage? {
         // Planets and the Moon get real photographs, not a survey cutout.
         if t.id == "moon" { return await MoonImages.image(at: t.peakTime) }
         if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap { NSImage(contentsOf: $0) } }
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov, width: width, context: context)
-        if let img = NSImage(contentsOf: f) {
-            // Shown again: its date says so, so pruning keeps it.
-            let fm = FileManager.default, now = Date()
-            if ThumbnailFiles.needsTouch(modified: (try? fm.attributesOfItem(atPath: f.path))?[.modificationDate] as? Date, now: now) {
-                try? fm.setAttributes([.modificationDate: now], ofItemAtPath: f.path)
-            }
-            return img
-        }
+        if let img = cached(f) { return img }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         // hips2fits took 12.5 s for a 1600 px image with extra sky (25 Sep 2026), so the large fetch gets more than the usual 20 s.
         let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)

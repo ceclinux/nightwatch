@@ -516,6 +516,7 @@ struct DarkSiteCard: View {
     var body: some View {
         let s = plan.site
         VStack(alignment: .leading, spacing: 8) {
+            SiteMapView(site: s)
             HStack(alignment: .firstTextBaseline) {
                 Text(s.name).font(.callout.weight(.semibold)).lineLimit(2)
                 Spacer()
@@ -544,6 +545,7 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
+                Button("Open in Maps") { SiteMaps.open(s) }.font(.caption)
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
                 Button("Observe from here") { store.visit(s) }.font(.caption)
             }
