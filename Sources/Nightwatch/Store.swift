@@ -90,6 +90,7 @@ final class Store: ObservableObject {
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
         if catalog.objects.isEmpty { lastError = "Catalogue missing: run scripts/fetch-data.sh and rebuild." }
         loadConfig()
+        startSettingsSync()
     }
 
     /// Loads config.json. A file that exists but will not decode (or a dangling symlink) is never overwritten:
@@ -124,6 +125,48 @@ final class Store: ObservableObject {
 
     /// Clears `configLoadFailed` by writing defaults. (A later load that decodes, e.g. after the user fixes the file
     /// by hand, also clears it: memory then matches the file, so saving can no longer lose anything.)
+    // MARK: Settings sync (#49)
+
+    private let cloud = NSUbiquitousKeyValueStore.default
+
+    /// At launch: the newer of this Mac's file and iCloud's copy wins; then other Macs' changes are merged as they arrive.
+    private func startSettingsSync() {
+        NotificationCenter.default.addObserver(forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: cloud,
+                                               queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.receiveSyncedSettings() }
+        }
+        cloud.synchronize()
+        guard !configLoadFailed else { return }
+        if let p = cloud.data(forKey: SettingsSync.key).flatMap(SettingsSync.decode),
+           SettingsSync.remoteWins(remoteSavedAt: p.savedAt, localSavedAt: configModDate) {
+            apply(p)
+        } else {
+            sendSettings()
+        }
+    }
+
+    private func receiveSyncedSettings() {
+        guard !configLoadFailed, let p = cloud.data(forKey: SettingsSync.key).flatMap(SettingsSync.decode) else { return }
+        apply(p)
+    }
+
+    /// Another Mac's settings, with this Mac's own choices kept; saved here without sending them back.
+    private func apply(_ p: SettingsSync.Payload) {
+        let merged = SettingsSync.merge(remote: p.config, local: config)
+        guard merged != config else { return }
+        config = merged
+        saveConfig(send: false)
+    }
+
+    private func sendSettings() {
+        guard !configLoadFailed, let d = SettingsSync.encode(SettingsSync.outgoing(config, at: Date())) else { return }
+        cloud.set(d, forKey: SettingsSync.key)
+        cloud.synchronize()
+    }
+
+    /// Signed in to iCloud, so settings reach this account's other Macs (Settings › App says which).
+    var syncsSettings: Bool { FileManager.default.ubiquityIdentityToken != nil }
+
     func resetConfig() {
         configLoadFailed = false
         config = .default
@@ -202,12 +245,14 @@ final class Store: ObservableObject {
     var isStale: Bool { (forecast?.fetchedAt).map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true }
     var iconName: String { Theme.icon(for: plan, stale: isStale, now: Date()) }
 
-    func saveConfig() {
+    /// `send`: pass the change to this account's other Macs (#49); false for a change that came from one.
+    func saveConfig(send: Bool = true) {
         if configLoadFailed {
             lastError = "Not saved: \(ConfigStore.defaultURL.lastPathComponent) could not be read. Fix it, or use Reset config in Settings."
         } else {
             try? ConfigStore.save(config, to: ConfigStore.defaultURL)
             configModDate = Store.configModDate()
+            if send { sendSettings() }
         }
         let siteChanged = site.map { !forecastMatches($0) } ?? false
         Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }

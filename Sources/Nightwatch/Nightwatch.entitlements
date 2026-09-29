@@ -4,6 +4,7 @@
      release.sh and appstore.sh re-sign with their own lists; an unsigned build is signed ad hoc without WeatherKit or the group. -->
 <plist version="1.0"><dict>
   <key>com.apple.developer.weatherkit</key><true/>
+  <key>com.apple.developer.ubiquity-kvstore-identifier</key><string>$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch</string>
   <key>com.apple.security.application-groups</key><array><string>$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch</string></array>
   <key>com.apple.security.personal-information.location</key><true/>
   <key>com.apple.security.app-sandbox</key><true/>

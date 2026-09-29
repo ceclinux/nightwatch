@@ -154,14 +154,19 @@ struct SettingsView: View {
                     if SMAppService.mainApp.status == .requiresApproval { ui.loginStatus = "Approve Nightwatch under System Settings › General › Login Items." }
                 }))
                 if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(.caption).foregroundStyle(Theme.warn) }
-                LabeledContent("Config file") { Text(ConfigStore.defaultURL.path).font(.caption).textSelection(.enabled) }
-                Text("Symlink that file into iCloud Drive or any synced folder to share settings across Macs.").font(.caption).foregroundStyle(Theme.dim)
+                // #49: iCloud key-value storage replaces the file path and the symlink advice, which the sandbox cannot follow.
+                Text(store.syncsSettings
+                     ? "Settings sync through iCloud to your other Macs. Start at login, where this Mac is observing from and its own location stay on this Mac."
+                     : "Not signed in to iCloud: settings stay on this Mac.")
+                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 if store.configLoadFailed {
                     Text("The config file could not be read, so changes are not being saved. A copy is at config.json.bad. Fix the file, or reset to defaults.").font(.caption).foregroundStyle(Theme.warn)
                 }
                 Button("Reset config", role: .destructive) { ui.confirmReset = true }
-                    .confirmationDialog("Replace the config file with defaults? Sites and settings will be lost.", isPresented: $ui.confirmReset) {
+                    .confirmationDialog("Replace your settings with defaults? Sites and settings will be lost.", isPresented: $ui.confirmReset) {
                         Button("Reset config", role: .destructive) { store.resetConfig() }
+                    } message: {
+                        Text(store.syncsSettings ? "Resetting affects all your Macs." : "")
                     }
             }
             Section { Button("What the numbers mean") { openWindow(id: "numbers") } }   // #59, at the foot

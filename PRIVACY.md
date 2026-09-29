@@ -1,13 +1,15 @@
 # Nightwatch privacy policy
 
-*Last updated 29 September 2026. Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 29 September 2026 (iCloud settings sync). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
 
 Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
 
 ## What stays on your Mac
 
-- **Your settings:** your saved sites, telescope, alert choices and so on.
+- **Your settings:** your saved sites, telescope, alert choices and so on. If you are signed in to iCloud, they are also
+  kept in your iCloud account so your other Macs share them (Apple's iCloud key-value storage, under
+  [Apple's privacy policy](https://www.apple.com/legal/privacy/)); Nightwatch's developer cannot see them.
 - **Your location**, if you let Nightwatch use it. It is used to work out sunset, darkness and what is visible from where
   you are.
 - **Caches:** forecasts, tonight's plan, sky-survey images and the place names of computed dark spots, plus a record of which alerts tonight has already sent, so

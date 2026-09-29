@@ -86,6 +86,7 @@ if [[ -n "$PROFILE" ]]; then
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>com.apple.developer.weatherkit</key><true/>
+  <key>com.apple.developer.ubiquity-kvstore-identifier</key><string>$TEAM.$BUNDLE_ID</string>
   <key>com.apple.application-identifier</key><string>$TEAM.$BUNDLE_ID</string>
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
