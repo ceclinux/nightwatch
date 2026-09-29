@@ -9,6 +9,10 @@ struct DetailView: View {
     let target: RankedTarget
     /// The night the Targets window shows: tonight, or tomorrow night when chosen (owner, 28 September 2026).
     let plan: NightPlan?
+    /// The page it was opened from, for the back link ("Eyes and binoculars", not the target's group: owner's UAT).
+    var back: String? = nil
+    /// Opened from Eyes and binoculars: how to see it, in place of telescope settings until How to shoot this is chosen.
+    var eye: EyeView? = nil
     let onBack: () -> Void
     @StateObject private var hero = ThumbnailLoader()
     @StateObject private var tipsUI = TipsState()
@@ -19,7 +23,7 @@ struct DetailView: View {
     private var fov: FieldOfView { FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg)) }
 
     var body: some View {
-        DetailPage(back: target.group.displayName, onBack: onBack) {
+        DetailPage(back: back ?? target.group.displayName, onBack: onBack) {
             if !fitted {
                 Label(showsWholeFieldOfView ? "Shown at your field of view" : "Dashed box = your field of view", systemImage: "viewfinder").captionPill()
             }
@@ -158,6 +162,16 @@ extension DetailView {
     /// opening it never resizes the image, and it is never clipped by the window's bottom edge (owner, 25 Sep 2026).
     @ViewBuilder var tipsOverlay: some View {
         if tipsUI.shown, let s = store.site { tipsCard(site: s) }
+        else if let eye, let s = store.site { eyeCard(eye, site: s) }
+    }
+
+    /// "How to see this" for a target opened from Eyes and binoculars (owner's UAT, 29 September 2026).
+    func eyeCard(_ eye: EyeView, site: Site) -> some View {
+        let abbr = target.subtitle.components(separatedBy: " in ").last ?? ""
+        let moonUp = plan.flatMap(Planner.moonTonight).map { $0 != .down } ?? false
+        let tip = ShootingTips.eyeTip(for: target, eye: eye, constellation: store.constellations.first { $0.id == abbr }?.name,
+                                      moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site)
+        return ShootingTipCard(tip: tip)
     }
 
     /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of

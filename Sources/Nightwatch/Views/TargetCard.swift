@@ -166,7 +166,7 @@ struct ShootingTipCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
+                Label(tip.title, systemImage: tip.symbol).font(.system(size: 13, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if let line = tip.copyLine { CopyButton(text: line, label: "Copy settings", done: "Settings copied") }   // #61

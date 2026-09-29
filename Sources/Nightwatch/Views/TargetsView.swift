@@ -126,7 +126,8 @@ struct TargetsView: View {
                 EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
             } else if let selected = ui.selected {
                 // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
-                DetailView(target: selected, plan: plan) { ui.selected = nil }.id(selected.id)
+                DetailView(target: selected, plan: plan, back: sectionTitle, eye: ui.section == .eyes ? eyeView(selected) : nil) { ui.selected = nil }
+                    .id(selected.id)
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
@@ -373,6 +374,17 @@ struct TargetsView: View {
 
     /// Three columns, or two once a column would be narrower than a card can be read at (#60).
     private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.narrow ? 2 : 3) }
+
+    /// The page's name, for a target page's back link.
+    private var sectionTitle: String {
+        switch ui.section {
+        case .plan: return "Tonight's plan"
+        case .favourites: return "Favourites"
+        case .eyes: return "Eyes and binoculars"
+        case .group(let g): return g.displayName
+        case .darkSites: return "Dark sites"
+        }
+    }
 
     private var headerTitle: some View {
         Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
