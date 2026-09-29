@@ -37,9 +37,12 @@ public enum ShootingTips {
         }
     }
 
-    /// A plan row's kit, from the maker's figures: "Duo-Band · 200 × 30 s". Nil where the tips give no filter name.
+    /// A plan row's kit, from the maker's figures: "Duo-Band · 200 × 30 s". Nil where the tips give no filter name, and for
+    /// the Moon, planets, stars and constellations, whose tips carry no deep-sky filter or frames (Saturn read "Duo-Band or
+    /// Astro · 200 × 30 s", owner's UAT, 29 September 2026).
     public static func planKit(_ t: RankedTarget, presetID: String?) -> String? {
         let k = kind(t)
+        guard [.emission, .broadband, .nebulaUnknown].contains(k) else { return nil }
         switch presetID {
         case "dwarf-mini", "dwarf-3":
             return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"

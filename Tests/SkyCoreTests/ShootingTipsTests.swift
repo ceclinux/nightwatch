@@ -129,3 +129,13 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco") == "Hα + O III")
 }
+
+// Planets, the Moon, stars and constellations get no deep-sky kit in a plan row (owner's UAT: Saturn read "Duo-Band or Astro").
+@Test func planRowsGiveNoDeepSkyKitOutsideDeepSky() {
+    for id in ["planet-saturn", "moon"] {
+        #expect(ShootingTips.planKit(target(id, .planets, "Planet"), presetID: "dwarf-mini") == nil)
+    }
+    #expect(ShootingTips.planKit(target("Capella", .stars, "Star"), presetID: "seestar-s50") == nil)
+    #expect(ShootingTips.planKit(target("Cyg", .constellations, "Constellation"), presetID: "dwarf-mini") == nil)
+    #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "dwarf-mini") == "Astro · 200 × 30 s")
+}
