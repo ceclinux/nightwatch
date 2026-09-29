@@ -182,7 +182,7 @@ struct TonightView: View {
             TileRow {
                 StatTile(label: "Wind", value: windText)
                 StatTile(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName,
-                         hint: dew == .high ? "Dew heater advised" : nil, warning: dew == .high)
+                         hint: dew == .high ? "Dew heater advised" : nil)
                 StatTile(label: "Transparency", value: transpText)
             }
         }

@@ -22,7 +22,7 @@ Run on each Mac after `scripts/build-app.sh`.
 18. Settings › Aurora on, threshold Amber: on an amber or red AuroraWatch UK status after dark with a clear sky, outside quiet hours, a notification arrives and the popover shows "Aurora: amber (AuroraWatch UK)" in AuroraWatch's amber (#ff9900); under cloud, no notification. → pass.
 19. macOS 26 or later: the popover panel, tiles and Targets cards are frosted glass; with Reduce transparency on they are a solid dark fill with the same layout. → pass.
 20. Popover: the sky score sits in a 60-tick bezel whose ticks glow red across tonight's clear window; with a bright Moon up the line under the window time reads "Held back by a N% moon". → pass.
-21. Popover: clear-sky bars (taller = clearer) with the window hours red; the Moon tile shows the Moon, "N%" and "Sets HH:MM"; on a damp night the Dew risk tile is amber with "Dew heater advised". → pass.
+21. Popover: clear-sky bars (taller = clearer) with the window hours red; the Moon tile shows the Moon, "N%" and "Sets HH:MM"; on a damp night the Dew risk tile says "Dew heater advised" in plain text, with no colour or outline. → pass.
 22. Popover: three cards read "ID / name / Best HH:MM · N° up"; the footer switch reads "Notify at HH:MM"; Refresh updates the update time. → pass.
 23. Targets: every card shows a track across the clear window, lit red where the target is viewable and brighter where higher, a white dot at the best moment, and "Viewable HH:MM–HH:MM · Best HH:MM · N°". → pass.
 24. Targets: titles read "IC 1340  Eastern Veil" with a magnitude on every card; a neutral "Fills N% of frame" chip disappears when "Fits my field of view" is on. → pass.
