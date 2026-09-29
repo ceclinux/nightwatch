@@ -17,99 +17,94 @@ public struct StopBy: Codable, Equatable, Sendable {
     }
 }
 
-/// One target's turn in Tonight's plan, and why it has this place.
-public struct PlanSlot: Equatable, Sendable, Identifiable {
-    public enum Reason: Equatable, Sendable { case bestPlaced, favourite, added }
+/// One night's choices for Tonight's plan: favourites taken off for that night, and targets added for that night only.
+/// Kept per night in settings, so they sync to the user's other Macs and are still there when the night planned as
+/// "tomorrow night" becomes tonight (owner's UAT, 29 September 2026).
+public struct PlanChoices: Codable, Equatable, Sendable {
+    public var added: [String] = []
+    public var removed: [String] = []
+    public init(added: [String] = [], removed: [String] = []) { self.added = added; self.removed = removed }
+    public var isEmpty: Bool { added.isEmpty && removed.isEmpty }
+}
+
+/// A target in the plan. `clashes`: the others whose best time is within `SessionPlanner.clashMinutes` of this one's.
+public struct PlanItem: Equatable, Sendable, Identifiable {
     public let target: RankedTarget
-    public let start: Date
-    public let end: Date
-    public let reason: Reason
+    /// Added for this night only, rather than a favourite.
+    public let added: Bool
+    public var clashes: [RankedTarget] = []
     public var id: String { target.id }
 }
 
-/// Tonight's plan (#57, owner-approved mock-up, 29 September 2026): the clear window as a running order of the night's best
-/// deep-sky targets, each when it is best placed and for a stack's length, ending with the window or the Stop by time.
+/// A favourite, or an added target, left out of the night's plan, and why: "Below 30° in tonight's window".
+public struct PlanOmission: Equatable, Sendable, Identifiable {
+    public let target: RankedTarget
+    public let reason: String
+    public var id: String { target.id }
+}
+
+/// Tonight's plan, as redesigned at the owner's UAT (29 September 2026, approved mock-up): the user's favourites that are
+/// up in the clear window, plus any target added for the night, in order of their best time. The user takes off the ones
+/// they will skip; nothing is scheduled into slots, so two favourites best at the same time are flagged for the user to
+/// choose between.
 public struct SessionPlan: Equatable, Sendable {
-    public let slots: [PlanSlot]
-    /// The window's end, or Stop by when that comes first.
-    public let end: Date
-    /// Time left after the last slot; nil when under 15 minutes.
-    public let leftover: ClearWindow?
-    /// The stack each slot holds, in minutes; nil without a frame count (a slot is then the time a target is well placed).
-    public let stackMinutes: Double?
-    /// The leftover is shorter than a stack (an hour without a frame count), rather than empty for want of a target.
-    public var leftoverTooShort: Bool { leftover.map { $0.hours * 60 < (stackMinutes ?? SessionPlanner.minimumSlot / 60) } ?? false }
-    /// The maker's battery life when the plan runs longer than it (a power bank or spare battery may be needed); else nil.
-    public let outlastsBatteryHours: Double?
-    public var hours: Double { slots.last.map { $0.end.timeIntervalSince(slots[0].start) / 3600 } ?? 0 }
+    /// In the plan, by best time.
+    public let items: [PlanItem]
+    /// Taken off for this night, by best time.
+    public let takenOff: [RankedTarget]
+    /// Favourites (and added targets) that cannot be in it tonight.
+    public let omitted: [PlanOmission]
+    /// The clear window, ended by Stop by when that comes first.
+    public let window: ClearWindow
 }
 
 public enum SessionPlanner {
-    static let deepSky: Set<TargetGroup> = [.nebulae, .galaxies, .clusters]
-    /// Only deep sky is stacked for hours, so only deep sky can be added; its frame and the Moon are the user's call.
-    public static func canTake(_ t: RankedTarget) -> Bool { deepSky.contains(t.group) }
-    /// How many of the night's best targets the plan chooses among, before favourites and added ones.
-    static let poolSize = 12
-    /// No slot is shorter than this, and a target must be well placed for at least this long to take one.
-    static let minimumSlot: TimeInterval = 3600
-    static let step: TimeInterval = 600
+    /// Best times this close together count as the same time.
+    public static let clashMinutes: Double = 30
 
-    /// The plan for `plan`'s clear window from `now` (or its start), or nil on a night with no window, a bright night, or
-    /// nothing to shoot. The pool is the night's best deep-sky targets that fit the frame and escape the Moon (well-known
-    /// names first, then the brightest), plus favourites and targets `added` from a page; `removed` never take part.
-    /// `added`, then favourites, take their turn first when they are up; otherwise the one highest in the middle of the slot
-    /// goes next, so each comes when it is best placed and one that sets early is not left until it has gone. When nothing
-    /// is up the plan waits for the next target to rise.
-    public static func make(plan: NightPlan, presetID: String?, batteryHours: Double?, stopBy: StopBy, favourites: [String],
-                            added: [String] = [], removed: Set<String> = [], now: Date? = nil, site: Site) -> SessionPlan? {
+    /// The plan for `plan`'s clear window, or nil on a night with no window, a bright night, or a Stop by before the
+    /// window opens. Favourites come first in `favourites` order for the omissions; the plan itself is by best time.
+    public static func make(plan: NightPlan, favourites: [String], choices: PlanChoices, stopBy: StopBy, site: Site) -> SessionPlan? {
         guard plan.mode == .dark, let w = plan.primary else { return nil }
         let end = stopBy.enabled ? min(w.end, stopBy.date(night: plan.night, site: site)) : w.end
-        var t = w.start
-        if let now, now > t { t = Date(timeIntervalSinceReferenceDate: (now.timeIntervalSinceReferenceDate / 300).rounded(.up) * 300) }
-        guard end > t else { return nil }
-
+        guard end > w.start else { return nil }
         var byID: [String: RankedTarget] = [:]
-        for x in plan.targets + plan.favourites.filter({ $0.notTonight == nil }).map(\.target) where byID[x.id] == nil { byID[x.id] = x }
-        let best = byID.values
-            .filter { deepSky.contains($0.group) && !$0.moonWashed && $0.fit == .fits }
-            .sorted { ($0.commonName == nil ? 1 : 0, $0.magnitude ?? 12, $0.id) < ($1.commonName == nil ? 1 : 0, $1.magnitude ?? 12, $1.id) }
-            .prefix(poolSize)
-        let chosen = added + favourites.filter { !added.contains($0) }
-        let pool = (Array(best) + chosen.compactMap { byID[$0] })
-            .reduce(into: [RankedTarget]()) { acc, x in if !acc.contains(where: { $0.id == x.id }) { acc.append(x) } }
-            .filter { !removed.contains($0.id) && $0.viewable != nil && canTake($0) }
-        let stack = ShootingTips.stackMinutes(presetID: presetID).map { $0 * 60 }
-
-        func alt(_ c: RankedTarget, _ at: Date) -> Double { Ephemeris.altAz(raHours: c.raHours, decDeg: c.decDeg, at: at, site: site).alt }
-        /// The slot `c` would take from `t`: a stack while it stays up, or without a frame count the time it stays well
-        /// placed (within 10° of its best tonight); nil when that is not possible now.
-        func slot(_ c: RankedTarget) -> TimeInterval? {
-            guard let v = c.viewable, v.start <= t else { return nil }
-            let upTo = min(v.end, end)
-            if let s = stack { return upTo.timeIntervalSince(t) >= s ? s : nil }
-            let floor = c.peakAltDeg - 10
-            var u = t
-            while u < upTo, alt(c, u) >= floor { u = min(upTo, u.addingTimeInterval(step)) }
-            return u.timeIntervalSince(t) >= minimumSlot ? u.timeIntervalSince(t) : nil
-        }
-
-        var slots: [PlanSlot] = []
-        while end.timeIntervalSince(t) >= min(stack ?? minimumSlot, minimumSlot) {
-            let used = Set(slots.map(\.id))
-            let open = pool.compactMap { c in used.contains(c.id) ? nil : slot(c).map { (c, $0) } }
-            let first = chosen.lazy.compactMap { id in open.first { $0.0.id == id } }.first
-            guard let (pick, len) = first ?? open.max(by: { alt($0.0, t.addingTimeInterval($0.1 / 2)) < alt($1.0, t.addingTimeInterval($1.1 / 2)) }) else {
-                t = t.addingTimeInterval(step)   // nothing up long enough yet: wait for the next to rise
-                continue
+        for t in plan.targets + plan.favourites.map(\.target) where byID[t.id] == nil { byID[t.id] = t }
+        let reasons = Dictionary(plan.favourites.map { ($0.target.id, $0.notTonight) }, uniquingKeysWith: { a, _ in a })
+        var items: [PlanItem] = [], takenOff: [RankedTarget] = [], omitted: [PlanOmission] = [], seen = Set<String>()
+        for id in favourites + choices.added where seen.insert(id).inserted {
+            guard let t = byID[id] else { continue }
+            if let reason = reasons[id] ?? nil { omitted.append(PlanOmission(target: t, reason: reason)); continue }
+            if t.moonWashed { omitted.append(PlanOmission(target: t, reason: "Washed out by the Moon")); continue }
+            guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: "Not up in the clear window")); continue }
+            guard v.start < end else {
+                omitted.append(PlanOmission(target: t, reason: "Up only after your Stop by time, \(Copy.hhmm(end, site: site))")); continue
             }
-            let reason: PlanSlot.Reason = added.contains(pick.id) ? .added : (favourites.contains(pick.id) ? .favourite : .bestPlaced)
-            slots.append(PlanSlot(target: pick, start: t, end: t.addingTimeInterval(len), reason: reason))
-            t = t.addingTimeInterval(len)
+            if choices.removed.contains(id) { takenOff.append(t); continue }
+            items.append(PlanItem(target: t, added: !favourites.contains(id)))
         }
-        guard let last = slots.last else { return nil }
-        let left = end.timeIntervalSince(last.end) >= 15 * 60 ? ClearWindow(start: last.end, end: end) : nil
-        let hours = last.end.timeIntervalSince(slots[0].start) / 3600
-        return SessionPlan(slots: slots, end: end, leftover: left, stackMinutes: stack.map { $0 / 60 },
-                           outlastsBatteryHours: batteryHours.flatMap { hours > $0 ? $0 : nil })
+        items.sort { ($0.target.peakTime, $0.id) < ($1.target.peakTime, $1.id) }
+        for i in items.indices {
+            items[i].clashes = items.filter { o in
+                o.id != items[i].id && abs(o.target.peakTime.timeIntervalSince(items[i].target.peakTime)) <= clashMinutes * 60
+            }.map(\.target)
+        }
+        return SessionPlan(items: items, takenOff: takenOff.sorted { $0.peakTime < $1.peakTime }, omitted: omitted,
+                           window: ClearWindow(start: w.start, end: end))
+    }
+
+    /// The night's choices after a target is put in (`on`) or taken out. A favourite is taken off or put back; any other
+    /// target is added for the night or dropped.
+    public static func choose(_ id: String, on: Bool, isFavourite: Bool, in choices: PlanChoices) -> PlanChoices {
+        var c = choices
+        c.added.removeAll { $0 == id }
+        c.removed.removeAll { $0 == id }
+        if isFavourite { if !on { c.removed.append(id) } } else if on { c.added.append(id) }
+        return c
+    }
+
+    /// Choices for `from` (a night key, "2026-09-29") and later, without empty ones: earlier nights have no further use.
+    public static func pruned(_ all: [String: PlanChoices], from: String) -> [String: PlanChoices] {
+        all.filter { $0.key >= from && !$0.value.isEmpty }
     }
 }

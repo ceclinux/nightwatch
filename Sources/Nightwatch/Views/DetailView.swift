@@ -121,23 +121,18 @@ struct DetailView: View {
         }
     }
 
-    /// "Add to tonight's plan" (#57): on a night with a clear window, in the dark.
+    /// Tonight's plan from a target's page (#57, redesigned at the owner's UAT): a favourite can be taken off for the night
+    /// or put back; any other target up in the clear window can be added for that night only.
     @ViewBuilder private var planButton: some View {
-        // Only for a target the plan can take: deep sky, in tonight's list or a favourite usable tonight.
-        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan, SessionPlanner.canTake(target),
-           (plan.targets + plan.favourites.filter { $0.notTonight == nil }.map(\.target)).contains(where: { $0.id == target.id }) {
-            let inPlan = store.session(for: plan)?.slots.contains { $0.id == target.id } ?? false
-            let asked = store.planEdits.nightKey == plan.night.key && store.planEdits.added.contains(target.id)
+        if let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
+            let inPlan = session.items.contains { $0.id == target.id }
+            let favourite = store.config.favourites.contains(target.id)
             let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"
-            HStack(spacing: 6) {
-                Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
-                    Label(inPlan ? "Remove from \(night)" : "Add to \(night)", systemImage: inPlan ? "minus.circle" : "plus.circle")
-                }
-                .captionButton()
-                if asked && !inPlan {
-                    Text("Not up long enough in the clear window for a stack").font(.system(size: 10.5)).foregroundStyle(Theme.dim)
-                }
+            let label = inPlan ? (favourite ? "Take off \(night)" : "Remove from \(night)") : (favourite ? "Put back in \(night)" : "Add to \(night)")
+            Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
+                Label(label, systemImage: inPlan ? "minus.circle" : "plus.circle")
             }
+            .captionButton()
         }
     }
 

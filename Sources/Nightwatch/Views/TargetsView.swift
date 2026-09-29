@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-enum BrowserSection: Hashable { case favourites, eyes, group(TargetGroup), darkSites }
+enum BrowserSection: Hashable { case plan, favourites, eyes, group(TargetGroup), darkSites }
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
@@ -49,7 +49,10 @@ struct TargetsView: View {
         return .nebulae
     }
 
-    private var sections: [BrowserSection] { [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+    /// Tonight's plan first, as a page of its own (owner's UAT, 29 September 2026), unless it is switched off in Settings.
+    private var sections: [BrowserSection] {
+        (store.config.showPlan ? [.plan] : []) + [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites]
+    }
 
     /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
     private func eyeView(_ t: RankedTarget) -> EyeView? { store.site.flatMap { EyeViews.view(t, bortle: $0.bortle) } }
@@ -83,7 +86,7 @@ struct TargetsView: View {
         case .eyes:
             let found = eyeTargets.filter { $0.matches(ui.search) }
             return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
-        case .darkSites:
+        case .darkSites, .plan:
             return []
         }
     }
@@ -127,6 +130,7 @@ struct TargetsView: View {
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
+                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
                 case .group, .favourites, .eyes: grid
                 }
             }
@@ -143,6 +147,9 @@ struct TargetsView: View {
     private func sidebarRow(_ section: BrowserSection) -> some View {
         HStack {
             switch section {
+            case .plan:
+                Label("Tonight's plan", systemImage: "list.bullet"); Spacer()
+                Text("\(store.session(for: plan)?.items.count ?? 0)").foregroundStyle(Tokens.textSecondary)
             case .favourites:
                 Label("Favourites", systemImage: "heart.fill"); Spacer(); Text("\(favourites.count)").foregroundStyle(Tokens.textSecondary)
             case .eyes:
@@ -235,8 +242,9 @@ struct TargetsView: View {
     }
 
     private var grid: some View {
-        let session = isEvents || ui.section == .eyes || !store.config.showPlan ? nil : store.session(for: plan)
-        let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
+        // Each card in the plan says its place in it; the plan itself is a page of its own.
+        let session = isEvents || ui.section == .eyes ? nil : store.session(for: plan)
+        let order = Dictionary(uniqueKeysWithValues: (session?.items ?? []).enumerated().map { ($1.id, $0) })
         return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 // The title on its own line and the controls under it, on every page: a short title ("Stars") sat beside
@@ -293,10 +301,6 @@ struct TargetsView: View {
                     }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
-            if let p = plan, let s = store.site, let session {
-                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations, columns: ui.narrow ? 2 : 3) { ui.selected = $0 }
-                    .padding(.horizontal, 20).padding(.top, 12)
-            }
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
                     if isEvents {

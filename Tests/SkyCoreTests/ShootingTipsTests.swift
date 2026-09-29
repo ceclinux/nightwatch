@@ -127,6 +127,5 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(!galaxy.rows.contains { $0.label == "Frames" })
     let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: 60, site: site)
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
-    #expect(ShootingTips.stackMinutes(presetID: "draco") == nil)
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco") == "Hα + O III")
 }

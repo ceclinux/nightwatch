@@ -94,6 +94,7 @@ struct NightwatchApp: App {
             guard let link = WidgetLink(url: url) else { return }
             switch link {
             case .targets: store.targetsRequest = TargetsRequest(section: nil, siteID: nil)
+            case .plan: store.openPlan()
             case .target(let id):
                 // Both lists, so a Moon or planet id finds its group on either kind of night; TargetsView selects it only
                 // when it is in tonight's list, else it opens the section.

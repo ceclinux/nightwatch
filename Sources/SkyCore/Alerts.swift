@@ -142,10 +142,11 @@ public enum AlertEngine {
                 if tonight.qualifies, settings.headsUp, agreed {
                     let (start, hours) = window(tonight)
                     // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
-                    let body = firstClear() + (session.map { Copy.headsUpPlan($0, plan: tonight, site: site) + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
+                    let planText = session.flatMap { Copy.headsUpPlan($0, plan: tonight, site: site) }
+                    let body = firstClear() + (planText.map { $0 + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
                         ?? copy.notificationBody(plan: tonight, site: site, alerts: settings))
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,
-                                             planNight: session == nil ? nil : tonight.night.key)
+                                             planNight: planText == nil ? nil : tonight.night.key)
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
                     note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site, agreement: false))

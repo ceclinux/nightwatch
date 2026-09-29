@@ -109,7 +109,7 @@ Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight*
 
 The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness; the next run of moonless nights in its header; and **What the numbers mean**, a window explaining every figure the app shows.
 
-On a clear night the Targets window opens with Tonight's plan: the night's best targets in the order they are best placed, ending with the clear window or your Stop by time. Each gets long enough for a stack (a DWARF: 200 frames at 30 s; a Seestar: about 1,000 at 10 s), or with a camera the time it is well placed. It notes when the plan runs longer than your telescope's battery.
+**Tonight's plan** is the first page of the Targets window: your favourites that are up in the clear window, in order of their best time, each with when it is up, its height at best, and your telescope's filter and frames where the maker publishes them. Two favourites best within half an hour of each other are marked, so you can choose. Not tonight takes one off for that night, Put back returns it, and Add to plan on a target's page adds any other target for one night. Your choices are kept for each night, sync between your Macs, and still apply when the night you planned as "tomorrow" comes. Favourites that cannot be in the plan are listed with the reason, and the plan ends with the clear window or your Stop by time.
 
 ## Dark-sky sites
 
