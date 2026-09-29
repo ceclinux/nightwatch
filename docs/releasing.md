@@ -37,7 +37,7 @@ from a website or a GitHub release.
 
 1. Merge the release PR and tag it, as for every version: `git tag -a v0.6.6 -m "…" && git push origin v0.6.6`.
 2. With the tag checked out and nothing uncommitted, run `scripts/release.sh --publish`. It:
-   - builds the app with `scripts/build-app.sh` (Xcode and xcodegen are needed, for the widget);
+   - builds the app and widget with `scripts/build-app.sh` (Xcode and xcodegen);
    - re-signs the widget, then the app, with the Developer ID, the hardened runtime and a secure timestamp, and embeds the
      Developer ID profile so WeatherKit works;
    - packages `build/release/Nightwatch-<version>.dmg` with an Applications shortcut, and signs it;

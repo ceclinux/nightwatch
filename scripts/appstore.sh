@@ -67,7 +67,7 @@ for k in com.apple.application-identifier:"$TEAM.$WIDGET_ID" com.apple.developer
   /usr/libexec/PlistBuddy -c "Delete :${k%%:*}" "$WORK/widget.entitlements" >/dev/null 2>&1 || true
   /usr/libexec/PlistBuddy -c "Add :${k%%:*} string ${k#*:}" "$WORK/widget.entitlements"
 done
-# The app and the widget each carry SwiftPM's resource bundle with the same identifier, which App Store Connect rejects
+# The app and the widget each carry the SkyCore package's resource bundle with the same identifier, which App Store Connect rejects
 # as a collision. Bundle.module finds the bundle by name, not identifier, so each gets its own.
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID.resources" "$APP/Contents/Resources/Nightwatch_SkyCore.bundle/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $WIDGET_ID.resources" "$APPEX/Contents/Resources/Nightwatch_SkyCore.bundle/Contents/Info.plist"
@@ -84,7 +84,7 @@ for b in "$APP" "$APPEX"; do
 done
 attrs=$(xattr -r "$APP" 2>/dev/null)
 [[ "$attrs" == *com.apple.quarantine* ]] && fail "a file in the store build is quarantined, which App Store Connect rejects (error 91109)"
-grep -qaF "Check for a new version once a day" "$APP/Contents/MacOS/Nightwatch" && fail "the store build still has the update check: was it built with -DAPPSTORE?"
+grep -qaF "Check for a new version once a day" "$APP/Contents/MacOS/Nightwatch" && fail "the store build still has the update check: was it built with the APPSTORE condition?"
 sdk=$(vtool -show-build "$APP/Contents/MacOS/Nightwatch" | awk '/ sdk /{print $2; exit}')
 (( ${sdk%%.*} >= 26 )) || fail "the app records macOS SDK $sdk; App Store Connect needs 26 or later"
 

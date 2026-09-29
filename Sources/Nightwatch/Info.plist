@@ -20,6 +20,8 @@
   </dict></array>
   <key>NSLocationUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
   <key>NSLocationWhenInUseUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
+  <!-- The widget's shared container: the same value as the widget's NightwatchAppGroup (project.yml). -->
+  <key>NightwatchAppGroup</key><string>$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch</string>
   <key>NSHumanReadableCopyright</key><string>MIT licence. Data attributions in About.</string>
 </dict>
 </plist>

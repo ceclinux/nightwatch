@@ -65,7 +65,7 @@ fi
 scripts/build-app.sh --no-install
 SRC=build/Nightwatch.app
 [[ -d "$SRC/Contents/PlugIns/NightwatchWidget.appex" ]] \
-  || fail "the build has no widget: releases need Xcode, xcodegen and the Apple Development certificate and profile that build-app.sh uses (see build/widget.log)"
+  || fail "the build has no widget: releases need Xcode, xcodegen and the Apple Development certificate and profile that build-app.sh uses (see build/xcode.log)"
 OUT=build/release; mkdir -p "$OUT"
 APP="$WORK/Nightwatch.app"
 ditto "$SRC" "$APP"

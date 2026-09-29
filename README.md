@@ -32,22 +32,22 @@ Taken at the North York Moors International Dark Sky Reserve with version 1.0.
 
 **[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
 
-## Build and install (any Mac, macOS 14+, no Xcode needed)
+## Build and install (macOS 14+, Xcode 26 or later)
 
-    xcode-select --install        # Command Line Tools, once
+    brew install xcodegen         # generates the Xcode project from project.yml, once
     git clone https://github.com/rsutcliffe/nightwatch.git && cd nightwatch
     scripts/fetch-data.sh         # optional: only to refresh the bundled catalogue; the data is committed
-    scripts/build-app.sh          # builds, signs ad hoc, installs to /Applications, launches
+    scripts/build-app.sh          # builds with Xcode, signs ad hoc, installs to /Applications, launches
 
 Every build runs in Apple's app sandbox, including one signed ad hoc. An ad hoc build gets a new signature each time it is rebuilt; if macOS then asks whether Nightwatch may access its data, choose Allow.
 
-The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer document. With Xcode installed, the build compiles it into a Liquid Glass icon with `actool`; with the Command Line Tools alone, `scripts/make-icns.swift` makes a classic icon from the same artwork.
+The app and its widget are one Xcode project, generated from `project.yml` by xcodegen (the generated `Nightwatch.xcodeproj` is not committed). SkyCore and NightwatchUI are Swift packages, so the tests run with `scripts/test.sh` alone. The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer document that Xcode compiles into a Liquid Glass icon plus a classic one.
 
 ## Desktop widget (optional)
 
 Nightwatch has small, medium and large desktop widgets showing tonight's sky score and verdict. The medium and large ones add the clear-sky bars, and the large one the best three targets. They draw a snapshot the app writes after each refresh, so they always match the popover, and they never fetch anything themselves. Clicking one opens the Targets window; clicking a target on the large one opens its detail.
 
-The widget is built only on a signed build with Xcode and xcodegen installed (`brew install xcodegen`): `scripts/build-app.sh` then generates `Widget/NightwatchWidget.xcodeproj` from `Widget/project.yml`, builds the extension with `xcodebuild` and embeds it. With the Command Line Tools alone the app builds exactly as before, without the widget.
+The widget comes with a signed build only, since it shares its snapshot with the app through an App Group: `scripts/build-app.sh` signs both when an Apple Development certificate and profile are on the Mac. An ad hoc build leaves the widget out.
 
 To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widgets won't stay on the desktop, turn on System Settings › Desktop & Dock › Widgets › Show widgets › On Desktop.
 

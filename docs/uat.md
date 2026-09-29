@@ -31,7 +31,7 @@ Run on each Mac after `scripts/build-app.sh`.
 27. Signed build, after a Refresh: the popover shows an "Open-Meteo agrees…" or "Open-Meteo sees…" line. → pass.
 28. Popover: under the window time, "Open-Meteo agrees" with a tick, or "Open-Meteo agrees: no clear window" when neither sees one, or an amber-dot line where it differs ("sees cloud from HH:MM", "sees it clear from HH:MM", "has a clear run HH:MM–HH:MM", "sees no clear window"); the evening heads-up and the nudge end with the same sentence. → pass.
 29. Settings › Alerts: "Alert only when Open-Meteo agrees" is off by default and enabled on the signed build; with it on, a night where Open-Meteo is not clear inside the window sends no heads-up. → pass.
-30. Signed build with Xcode and xcodegen: `scripts/build-app.sh` prints "Widget: built and embedded"; with the Command Line Tools only it prints "Widget: skipped (Xcode not installed)", and on an unsigned build "Widget: skipped (unsigned build; …)"; either way the app still builds. → pass.
+30. Signed build: `scripts/build-app.sh` prints "Signed as …, with WeatherKit and the widget"; on an unsigned build it prints "Signed ad hoc … no widget" and the app still builds. Without Xcode or xcodegen it stops and says which is missing. → pass.
 31. Right-click the desktop › Edit Widgets… › Nightwatch lists small, medium and large with the porthole icon; before the app has refreshed, the gallery shows a sample night. → pass.
 32. On the desktop, each size shows tonight's score and the popover's verdict with nothing cut off; the small one is centred; medium and large show the reason and Open-Meteo's line. → pass.
 33. After a Refresh the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.

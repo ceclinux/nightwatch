@@ -6,8 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "SkyCore", targets: ["SkyCore"]),
-        .library(name: "NightwatchUI", targets: ["NightwatchUI"]),
-        .executable(name: "Nightwatch", targets: ["Nightwatch"])
+        .library(name: "NightwatchUI", targets: ["NightwatchUI"])
     ],
     dependencies: [
         .package(url: "https://github.com/gavineadie/SatelliteKit.git", exact: "2.1.2")
@@ -21,7 +20,7 @@ let package = Package(
             resources: [.copy("Resources")]
         ),
         .target(name: "NightwatchUI", dependencies: ["SkyCore"], path: "Sources/NightwatchUI"),
-        .executableTarget(name: "Nightwatch", dependencies: ["SkyCore", "NightwatchUI"], path: "Sources/Nightwatch", exclude: ["Info.plist"]),
+        // The app itself (Sources/Nightwatch) and its widget are built by Xcode from project.yml: scripts/build-app.sh.
         .testTarget(
             name: "SkyCoreTests",
             dependencies: ["SkyCore"],

@@ -1,4 +1,4 @@
-# Every pull request and every push to main: the test suite, then both builds of the same code (the download and the Mac
+# Every pull request and every push to main: the test suite, then both Xcode builds of the same code (the download and the Mac
 # App Store variant, which differs only in having no update check). The repository is public, so these runs are free.
 name: CI
 
@@ -28,12 +28,18 @@ jobs:
         run: swift --version
       - name: Tests
         run: swift test
+      - name: xcodegen
+        run: brew install xcodegen && xcodegen generate --quiet
+      # Unsigned: CI has no certificates. The same Xcode project scripts/build-app.sh builds and signs.
       - name: Download build
-        run: swift build -c release
+        run: xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release -derivedDataPath build/download CODE_SIGNING_ALLOWED=NO build -quiet
       - name: App Store build
-        run: swift build -c release -Xswiftc -DAPPSTORE
-      - name: The App Store build has no update check
+        run: xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release -derivedDataPath build/appstore SWIFT_ACTIVE_COMPILATION_CONDITIONS=APPSTORE CODE_SIGNING_ALLOWED=NO build -quiet
+      - name: The App Store build has no update check, the download has it, and both embed the widget
         run: |
-          if grep -qaF "Check for a new version once a day" .build/release/Nightwatch; then
+          BIN=Build/Products/Release/Nightwatch.app/Contents/MacOS/Nightwatch
+          grep -qaF "Check for a new version once a day" build/download/$BIN || { echo "The download build lacks the update check"; exit 1; }
+          if grep -qaF "Check for a new version once a day" build/appstore/$BIN; then
             echo "The App Store build still contains the update check"; exit 1
           fi
+          for b in download appstore; do test -d build/$b/Build/Products/Release/Nightwatch.app/Contents/PlugIns/NightwatchWidget.appex; done

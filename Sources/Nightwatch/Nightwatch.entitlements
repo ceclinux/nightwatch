@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The signed build's entitlements (scripts/build-app.sh). Xcode adds the application and team identifiers when it signs.
+     release.sh and appstore.sh re-sign with their own lists; an unsigned build is signed ad hoc without WeatherKit or the group. -->
+<plist version="1.0"><dict>
+  <key>com.apple.developer.weatherkit</key><true/>
+  <key>com.apple.security.application-groups</key><array><string>$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch</string></array>
+  <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
+</dict></plist>
