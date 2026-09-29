@@ -421,8 +421,7 @@ final class Store: ObservableObject {
         // Up to ~700k distance checks at 300 km: off the main actor.
         let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
         guard gen == darkSitesGeneration else { return }
-        let sites = await namedSpots(found, now: now)
-        guard gen == darkSitesGeneration else { return }
+        let sites = namedSpots(found, now: now)
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
@@ -450,30 +449,45 @@ final class Store: ObservableObject {
     /// refreshes add to it rather than overwrite each other.
     private lazy var spotPlaces: [String: String] = Store.read("spot-places.json") ?? [:]
     private var spotLookupFailedAt: Date?
-    private var lookingUpSpots = false
+    private var spotLookups: Set<String> = []   // ids being looked up now
 
     /// Computed dark spots carry the nearest town's name rather than coordinates (owner, 29 September 2026), looked up once
-    /// from Apple Maps and kept, together with "no name here". The lookups run together, 5 s at most, so a refresh is never
-    /// held up for long. A spot whose lookup fails keeps its coordinates, and failed lookups are tried again after an hour.
+    /// from Apple Maps and kept, together with "no name here". A refresh never waits for Apple Maps: each missing name is
+    /// looked up in its own task (5 s at most) and the cards are renamed when it answers. A task group here crashed in the
+    /// Swift runtime on macOS 27 (TaskGroup::offer, 29 September 2026). A spot whose lookup fails keeps its coordinates,
+    /// and failed lookups are tried again after an hour.
     /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
-    private func namedSpots(_ sites: [DarkSite], now: Date) async -> [DarkSite] {
-        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil }
-        if !missing.isEmpty, !lookingUpSpots, now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
-            lookingUpSpots = true
-            let results = await withTaskGroup(of: (String, String?, Bool).self) { group in
-                for s in missing {
-                    group.addTask {
-                        do { return (s.id, try await PlaceNames.nearest(to: s.coordinate), true) } catch { return (s.id, nil, false) }
-                    }
+    private func namedSpots(_ sites: [DarkSite], now: Date) -> [DarkSite] {
+        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
+        if now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
+            for s in missing {
+                spotLookups.insert(s.id)
+                Task { [weak self] in
+                    let place: String?? = try? await PlaceNames.nearest(to: s.coordinate)   // nil: the lookup failed
+                    guard let self else { return }
+                    spotLookups.remove(s.id)
+                    guard let place else { spotLookupFailedAt = Date(); return }
+                    spotPlaces[s.id] = place ?? ""
+                    Store.write(spotPlaces, "spot-places.json")
+                    renameSpots()
                 }
-                return await group.reduce(into: []) { $0.append($1) }
             }
-            lookingUpSpots = false
-            for (id, place, answered) in results where answered { spotPlaces[id] = place ?? "" }
-            if results.contains(where: { !$0.2 }) { spotLookupFailedAt = now }
-            Store.write(spotPlaces, "spot-places.json")
         }
-        return sites.map { s in spotPlaces[s.id].flatMap(DarkSites.spotName(place:)).map(s.named) ?? s }
+        return sites.map(spotNamed)
+    }
+
+    private func spotNamed(_ s: DarkSite) -> DarkSite {
+        spotPlaces[s.id].flatMap(DarkSites.spotName(place:)).map(s.named) ?? s
+    }
+
+    /// A name that arrived after the cards were built: the same sites and plans, renamed.
+    private func renameSpots() {
+        func renamed(_ p: SitePlan) -> SitePlan {
+            SitePlan(id: p.id, site: spotNamed(p.site), score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: p.forecastMissing)
+        }
+        darkSites = darkSites.map(spotNamed)
+        sitePlans = sitePlans.map(renamed)
+        bestAway = bestAway.map(renamed)
     }
 
     /// "Observe from here" on a dark-site card: observe from it without saving it (v0.6.5). A saved site at the same place

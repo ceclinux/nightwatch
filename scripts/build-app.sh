@@ -69,6 +69,14 @@ pkill -x Nightwatch || true
 # the desktop showed a build three hours old). Ending it makes the system relaunch the widget from the new copy.
 pkill -f "Nightwatch.app/Contents/PlugIns/NightwatchWidget.appex/" || true
 rm -rf /Applications/Nightwatch.app
-cp -R "$APP" /Applications/Nightwatch.app
+mv "$APP" /Applications/Nightwatch.app   # moved, not copied, so no second copy lingers in build/
+# Xcode registers every product it builds with Launch Services under the same bundle id, and Spotlight registers any app
+# it indexes. With several on record, the app launcher can settle on a copy under build/ and leave Nightwatch out of
+# Applications (29 Sep 2026), so Spotlight skips build/ and only the installed copy stays registered.
+touch build/.metadata_never_index
+LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREG" -u "$PWD/$APP" 2>/dev/null || true   # the path it was built at, now empty
+find build -maxdepth 6 -type d -name "Nightwatch.app" -prune | while read -r copy; do "$LSREG" -u "$copy" 2>/dev/null || true; done
+"$LSREG" -f -R -trusted /Applications/Nightwatch.app
 open /Applications/Nightwatch.app
 echo "Installed and launched /Applications/Nightwatch.app"
