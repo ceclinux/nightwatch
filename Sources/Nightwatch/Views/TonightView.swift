@@ -164,8 +164,7 @@ struct TonightView: View {
         let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? "None"
         let moon = Planner.moonTonight(plan)
         let pct = "\(Int((plan.moonIllumination * 100).rounded()))%"
-        let seeing = plan.darkHours.compactMap(\.seeing)
-        let seeingText = seeing.isEmpty ? nil : ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][min(8, seeing.reduce(0, +) / seeing.count)]
+        let seeingText = Copy.seeingText(plan.darkHours)
         let wind = plan.darkHours.compactMap(\.windKmh)
         let windText = wind.isEmpty ? nil : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
         let dew = Planner.dewRisk(plan.darkHours)

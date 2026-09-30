@@ -673,14 +673,7 @@ extension Planner {
             return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
         }
         if mode == .bright { return brightRunReason(dark, from: darkStart, to: darkEnd, rule: rule, site: site) }
-        var best: (start: Date, hours: Int) = (dark[0].time, 0), run: (start: Date, hours: Int)? = nil, prev: Date? = nil
-        for h in dark {
-            let isClear = h.effectiveCloud <= rule.maxCloudPct
-            let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
-            if isClear { run = (contiguous && run != nil) ? (run!.start, run!.hours + 1) : (h.time, 1) } else { run = nil }
-            if let r = run, r.hours > best.hours { best = r }
-            prev = h.time
-        }
+        let best = longestClearRun(dark, rule: rule) ?? (dark[0].time, 0)
         return String(format: "Longest clear run is %d h from %@; %@ needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
     }
 }

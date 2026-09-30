@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-enum BrowserSection: Hashable { case plan, favourites, eyes, group(TargetGroup), darkSites }
+enum BrowserSection: Hashable { case plan, week, favourites, eyes, group(TargetGroup), darkSites }
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
@@ -52,7 +52,7 @@ struct TargetsView: View {
 
     /// Tonight's plan first, as a page of its own (owner's UAT, 29 September 2026), unless it is switched off in Settings.
     private var sections: [BrowserSection] {
-        (store.config.showPlan ? [.plan] : []) + [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites]
+        (store.config.showPlan ? [.plan] : []) + [.week, .favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites]
     }
 
     /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
@@ -87,7 +87,7 @@ struct TargetsView: View {
         case .eyes:
             let found = eyeTargets.filter { $0.matches(ui.search) }
             return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
-        case .darkSites, .plan:
+        case .darkSites, .plan, .week:
             return []
         }
     }
@@ -133,6 +133,7 @@ struct TargetsView: View {
                 switch ui.section {
                 case .darkSites: darkSitesList
                 case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
+                case .week: WeekView { tomorrow in ui.tomorrow = tomorrow; ui.section = .plan }
                 case .group, .favourites, .eyes: grid
                 }
             }
@@ -152,6 +153,9 @@ struct TargetsView: View {
             case .plan:
                 Label("Tonight's plan", systemImage: "list.bullet"); Spacer()
                 Text("\(store.session(for: plan)?.items.count ?? 0)").foregroundStyle(Tokens.textSecondary)
+            case .week:
+                Label("The week ahead", systemImage: "calendar"); Spacer()
+                Text("\(store.week.filter { $0.plan.primary != nil }.count)").foregroundStyle(Tokens.textSecondary)
             case .favourites:
                 Label("Favourites", systemImage: "heart.fill"); Spacer(); Text("\(favourites.count)").foregroundStyle(Tokens.textSecondary)
             case .eyes:
@@ -382,6 +386,7 @@ struct TargetsView: View {
     private var sectionTitle: String {
         switch ui.section {
         case .plan: return "Tonight's plan"
+        case .week: return "The week ahead"
         case .favourites: return "Favourites"
         case .eyes: return "Eyes and binoculars"
         case .group(let g): return g.displayName
