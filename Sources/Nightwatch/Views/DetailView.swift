@@ -20,6 +20,8 @@ struct DetailView: View {
     /// Photographs and artwork that must be seen whole; everything else is a survey image to fill the page.
     private var fitted: Bool { target.group == .constellations || target.group == .planets }
     /// A hand-edited config can hold 0.
+    /// The night this page describes, in words.
+    private var nightWords: String { plan == nil || plan?.night.key == store.plan?.night.key ? "tonight" : "tomorrow night" }
     private var fov: FieldOfView { FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg)) }
 
     var body: some View {
@@ -131,7 +133,7 @@ struct DetailView: View {
         if let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
             let inPlan = session.items.contains { $0.id == target.id }
             let favourite = store.config.favourites.contains(target.id)
-            let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"
+            let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"   // its own `plan`, not `night`
             let label = inPlan ? (favourite ? "Take off \(night)" : "Remove from \(night)") : (favourite ? "Put back in \(night)" : "Add to \(night)")
             Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
                 Label(label, systemImage: inPlan ? "minus.circle" : "plus.circle")
@@ -151,7 +153,7 @@ struct DetailView: View {
                     else { StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°") }
                     StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60))
                 }
-                AltitudeChart(target: target, night: plan.night, window: w, minAltitude: store.config.goRule.minAltitudeDeg, site: s)
+                AltitudeChart(target: target, night: plan.night, window: w, minAltitude: store.config.goRule.minAltitudeDeg, site: s, nightWords: nightWords)
             }
         }
     }
@@ -170,7 +172,7 @@ extension DetailView {
         let abbr = target.subtitle.components(separatedBy: " in ").last ?? ""
         let moonUp = plan.flatMap(Planner.moonTonight).map { $0 != .down } ?? false
         let tip = ShootingTips.eyeTip(for: target, eye: eye, constellation: store.constellations.first { $0.id == abbr }?.name,
-                                      moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site)
+                                      moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site, night: nightWords)
         return ShootingTipCard(tip: tip)
     }
 
@@ -179,7 +181,9 @@ extension DetailView {
     func tipsCard(site: Site) -> some View {
         let preset = TelescopePresets.shared.first { $0.id == store.config.fovPresetID }
         let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset?.name,
-                                   stackMinutes: target.viewable.map { min($0.hours, 3) * 60 }, site: site)
+                                   // The time it is really up, not the 3 h suggested stack: "up and clear for 3 h" read as fact
+                                   // beside a 5 h window (owner's UAT, 30 September 2026).
+                                   stackMinutes: target.viewable.map { $0.hours * 60 }, site: site, night: nightWords)
         return ShootingTipCard(tip: tip)
     }
 }
@@ -194,6 +198,8 @@ struct AltitudeChart: View {
     let window: ClearWindow
     let minAltitude: Double
     let site: Site
+    /// "tonight" or "tomorrow night", for the heading.
+    var nightWords = "tonight"
 
     private var span: TimeInterval { night.sunrise.timeIntervalSince(night.sunset) }
     private func frac(_ t: Date) -> Double { t.timeIntervalSince(night.sunset) / span }
@@ -206,7 +212,7 @@ struct AltitudeChart: View {
             (frac(t), t, Ephemeris.altAz(raHours: target.raHours, decDeg: target.decDeg, at: t, site: site).alt)
         }
         VStack(alignment: .leading, spacing: 3) {
-            Text("Altitude tonight").font(.system(size: 10)).foregroundStyle(Theme.dim)
+            Text("Altitude \(nightWords)").font(.system(size: 10)).foregroundStyle(Theme.dim)
             GeometryReader { g in
                 let x = { (f: Double) in g.size.width * max(0, min(1, f)) }
                 let y = { (alt: Double) in g.size.height * (1 - max(0, min(90, alt)) / 90) }
@@ -239,7 +245,7 @@ struct AltitudeChart: View {
             .font(.system(size: 9.5)).foregroundStyle(Theme.dim)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Altitude tonight. Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees.")
+        .accessibilityLabel("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees.")
     }
 }
 

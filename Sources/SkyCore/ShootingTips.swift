@@ -58,8 +58,10 @@ public enum ShootingTips {
         }
     }
 
-    /// `stackMinutes`: how long the target is up inside tonight's clear window, up to 3 h; nil when there is no clear window.
-    public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site) -> ShootingTip {
+    /// `stackMinutes`: how long the target is up inside the night's clear window; nil when there is no clear window.
+    /// `night`: "tonight", or "tomorrow night" while the Targets window shows tomorrow (owner's UAT, 30 September 2026).
+    public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site,
+                           night: String = "tonight") -> ShootingTip {
         let k = kind(t)
         var rows: [ShootingTip.Row] = []
         var source: String?
@@ -94,7 +96,7 @@ public enum ShootingTips {
                 rows.append(.init("Filter", filterText(k, dualBand: "Duo-Band", broadband: "Astro")))
                 rows.append(.init("Exposure", "15–60 s per frame at gain 60–80."))
                 if let n = frames(30), let h = hours {
-                    rows.append(.init("Frames", "200–400 recommended. At 30 s a frame, for example, \(n) frames fill the \(h) it is up tonight."))
+                    rows.append(.init("Frames", "200–400 recommended. At 30 s a frame, for example, \(n) frames fill the \(h) it is up \(night)."))
                 } else {
                     rows.append(.init("Frames", "200–400 recommended."))
                 }
@@ -113,7 +115,7 @@ public enum ShootingTips {
                 source = "Filters from DWARFLAB's Draco product page; it has published no exposure settings yet."
                 rows.append(.init("Filter", filterText(k, dualBand: "Hα + O III dual-narrowband filter", broadband: "Astronomy filter")))
                 rows.append(.init("Exposure", "Single frames can run up to 300 s; DWARFLAB has not yet published a recommended exposure or gain."))
-                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) tonight.")) }
+                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }
             }
         case "seestar-s50":
             source = "Filters and frame length from ZWO's Seestar S50 FAQ."
@@ -160,7 +162,7 @@ public enum ShootingTips {
             default:
                 rows.append(.init("Filter", filterText(k, dualBand: "A dual-band or narrowband filter", broadband: "No filter, or a light-pollution filter only")))
                 rows.append(.init("Exposure", "Check your telescope's manual for exposure and gain."))
-                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) tonight.")) }
+                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }
             }
         }
 
@@ -208,7 +210,7 @@ public enum ShootingTips {
     /// where and when to look, and how to look, instead of telescope settings. `constellation`: the full name of the one it is
     /// in, when known.
     public static func eyeTip(for t: RankedTarget, eye: EyeView, constellation: String?, moonIllumination: Double, moonUp: Bool,
-                              site: Site) -> ShootingTip {
+                              site: Site, night: String = "tonight") -> ShootingTip {
         var rows = [ShootingTip.Row("Looks like", Copy.eyeLook(t, eye) + ".")]
         let az = Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az
         let direction = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"][Int((az / 45).rounded()) % 8]
@@ -231,7 +233,7 @@ public enum ShootingTips {
         case (.nakedEye, false): break
         }
         if faint, moonUp, moonIllumination >= 0.5 {
-            rows.append(.init("Moon", "The Moon is \(Int((moonIllumination * 100).rounded()))% lit tonight, which makes it harder to see."))
+            rows.append(.init("Moon", "The Moon is \(Int((moonIllumination * 100).rounded()))% lit \(night), which makes it harder to see."))
         }
         var tip = ShootingTip(title: "How to see this with \(eye == .binoculars ? "binoculars" : "the naked eye")", rows: rows, source: nil)
         tip.symbol = eye == .binoculars ? "binoculars" : "eye"

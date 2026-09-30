@@ -95,6 +95,13 @@ public enum DarkSites {
     }
     public static let genericCarPark = "Car park"
 
+    /// A computed car park within 1 km of a certified site is that site again ("Car park near Malham" beside Malham
+    /// National Park car park, owner's UAT, 30 September 2026): the certified one stays, with its source.
+    public static func withoutDuplicates(_ sites: [DarkSite], withinKm: Double = 1) -> [DarkSite] {
+        let certified = sites.filter { !$0.isComputed }
+        return sites.filter { s in !s.isComputed || !certified.contains { Geo.distanceKm($0.coordinate, s.coordinate) <= withinKm } }
+    }
+
     public static func toSite(_ s: DarkSite, timeZoneID: String) -> Site {
         Site(name: s.name, latitude: s.coordinate.latitude, longitude: s.coordinate.longitude, elevationM: 0, timeZoneID: timeZoneID,
              bortle: s.bortle ?? (s.band.map { [DarknessBand.veryDark: 2, .dark: 3, .rural: 4, .suburban: 6, .bright: 8][$0]! } ?? 5))

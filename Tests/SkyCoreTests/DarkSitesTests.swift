@@ -68,3 +68,18 @@ import Foundation
     #expect(DarkSites.spotName(place: "Malham", lead: "Malham National Park car park") == "Malham National Park car park")
     #expect(DarkSites.spotName(place: "Hetton", lead: "Euro Car Parks near Hetton") == "Euro Car Parks near Hetton")
 }
+
+/// A computed car park within 1 km of a certified site is dropped; the certified site stays (owner's UAT, 30 September 2026).
+@Test func aComputedCarParkBesideACertifiedSiteIsDropped() {
+    func site(_ id: String, _ lat: Double, _ lon: Double, computed: Bool) -> DarkSite {
+        DarkSite(id: id, name: id, kind: computed ? "spot" : "discovery", coordinate: Coordinate(latitude: lat, longitude: lon),
+                 distanceKm: 0, bearingDeg: 0, band: .veryDark, bortle: nil, source: nil, isComputed: computed)
+    }
+    let certified = site("Malham National Park car park", 54.0610, -2.1520, computed: false)
+    let beside = site("Car park near Malham", 54.0615, -2.1530, computed: true)       // about 80 m away
+    let apart = site("Euro Car Parks near Kettlewell", 54.1460, -2.0470, computed: true)
+    #expect(DarkSites.withoutDuplicates([certified, beside, apart]).map(\.name) == [certified.name, apart.name])
+    // Two certified sites close together are both kept: only computed ones are dropped.
+    let other = site("Another certified site", 54.0612, -2.1522, computed: false)
+    #expect(DarkSites.withoutDuplicates([certified, other]).count == 2)
+}

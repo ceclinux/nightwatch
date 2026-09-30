@@ -156,3 +156,13 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(planet.rows.map(\.label) == ["Looks like", "Where", "When"])   // a bright point: no dark adaptation, and the Moon does not hide it
     #expect(ShootingTips.tip(for: cluster, presetID: "dwarf-mini", presetName: nil, stackMinutes: nil, site: site).symbol == "camera.aperture")
 }
+
+/// Tomorrow night's page says tomorrow night, and the time it is really up (owner's UAT, 30 September 2026).
+@Test func tipsNameTheNightShown() {
+    let draco = ShootingTips.tip(for: target("NGC0281", .nebulae, "Emission nebula"), presetID: "draco", presetName: "DwarfLab Draco",
+                                 stackMinutes: 300, site: site, night: "tomorrow night")
+    #expect(draco.rows.first { $0.label == "Frames" }?.text == "It is up and clear for 5 h tomorrow night.")
+    let mini = ShootingTips.tip(for: target("NGC0281", .nebulae, "Emission nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini",
+                                stackMinutes: 300, site: site, night: "tomorrow night")
+    #expect(mini.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 600 frames fill the 5 h it is up tomorrow night.")
+}
