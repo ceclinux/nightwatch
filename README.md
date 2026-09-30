@@ -10,19 +10,27 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
 ## Screenshots
 
-Taken at the North York Moors International Dark Sky Reserve with version 1.0.
+Taken at the Malham National Park car park, in the Yorkshire Dales Dark Sky Reserve, with version 1.1 and a DWARF Mini.
 
-**A target's page:** the survey photo fills the window, the dashed box is your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames.
+**Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
-<img src="docs/images/screenshot-target.jpg" width="728" alt="The NGC 7000 North America Nebula page: a sky-survey photo with a dashed field-of-view box, the How to shoot this card for a DWARF Mini, and the altitude through tonight's clear window">
+<img src="docs/images/screenshot-plan.png" width="728" alt="Tomorrow night's plan, clear 22:00 to 03:00: the Iris Nebula at 22:00, the Little Sombrero Galaxy at 00:30 and Saturn at 01:00, both marked as best at the same time, and Capella at 03:00, each with a Not tomorrow button">
 
-**All 88 constellations:** each one drawn as a figure over its stars, with when it is best tonight.
+**Tonight or tomorrow night:** the whole Targets window can show tomorrow night instead, so you can plan ahead. Each card says how much of your frame the target fills, and when it is up in the clear window.
 
-<img src="docs/images/screenshot-constellation.jpg" width="728" alt="The Cygnus page: the swan drawn over its stars, with tonight's best time, altitude and Moon separation">
+<img src="docs/images/screenshot-nebulae.jpg" width="728" alt="Nebulae for tomorrow night, clear 22:00 to 03:00: sky-survey cards for NGC 281, IC 59, the Bubble Nebula and others, each with how much of the frame it fills and its best time">
 
-**Dark sites:** darker places nearby, scored for tonight against home.
+**A target's page:** the survey photo fills the window at your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames, sized to the clear window.
 
-<img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km, each card showing its score against home, distance and direction, darkness and clear window, with an Observe from here button">
+<img src="docs/images/screenshot-target.jpg" width="728" alt="The NGC 281 page: a sky-survey photo of the nebula, How to shoot this for a DWARF Mini with the Duo-Band filter, 15 to 60 second frames at gain 60 to 80 and 600 frames to fill 5 hours, and the altitude through tomorrow night's clear window">
+
+**All 88 constellations:** each one drawn as a figure over its stars.
+
+<img src="docs/images/screenshot-constellation.jpg" width="728" alt="The Cygnus page: the swan drawn over its stars">
+
+**Dark sites:** darker places nearby, scored for tonight against home, each with a map and Open in Maps.
+
+<img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km of Malham: Gisburn Forest Hub, Slaidburn visitor car park, Euro Car Parks near Burnsall and Buckden National Park Car Park, each with a map, its score against home, distance, direction and darkness">
 
 **Desktop widgets:** small, medium and large.
 
