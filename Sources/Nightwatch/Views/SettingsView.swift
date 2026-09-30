@@ -41,7 +41,7 @@ struct SettingsView: View {
                                 Text("From Dark sites · Bortle \(v.bortle) · \(Bortle.name(v.bortle).lowercased())").font(.caption).foregroundStyle(Theme.dim)
                             }
                             Spacer()
-                            Button("Keep") { store.keepVisiting() }.help("Save \(v.name) to your sites")
+                            Button("Keep") { store.keepVisiting() }.help("Save \(v.name) to your sites").disabled(!store.config.canAddSite)
                             Button("Back to \(store.homeLabel)") { store.goHome() }
                         }
                     }
@@ -52,7 +52,12 @@ struct SettingsView: View {
                         ui.latText = ""; ui.lonText = ""; ui.addingSite = true
                     }
                         .buttonStyle(.borderedProminent)
+                        .disabled(!store.config.canAddSite)
                     Spacer()
+                }
+                if !store.config.canAddSite {
+                    Text("You have \(store.config.sites.count) saved sites, the most Nightwatch keeps. Remove one to add another.")
+                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
                 Text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with.")
                     .font(.caption).foregroundStyle(Theme.dim)
@@ -364,7 +369,7 @@ struct AddSiteSheet: View {
                     store.saveConfig()
                     dismiss()
                 }
-                .keyboardShortcut(.defaultAction).disabled(!valid)
+                .keyboardShortcut(.defaultAction).disabled(!valid || !store.config.canAddSite)
             }
         }
         .padding(20)
