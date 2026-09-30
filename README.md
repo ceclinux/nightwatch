@@ -1,3 +1,5 @@
+<img src="docs/images/nightwatch-icon.png" width="128" alt="The Nightwatch app icon: a porthole onto a starry night over a glowing horizon">
+
 # Nightwatch
 
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
