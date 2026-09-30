@@ -378,3 +378,21 @@ private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement
                              settings: quiet, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
     #expect(q.notification == nil && q.state.stage == .doubted)   // dropped, not deferred, as every alert
 }
+
+/// The app checks again at each due time, so alerts go out on the minute (owner's review, 30 September 2026). A check a
+/// few seconds after each due time sends the alert that falls due then.
+@Test func dueTimesAreWhenTheAlertsFire() throws {
+    let (night, good, bad, _) = try fixtures()
+    let due = AlertEngine.dueTimes(tonight: good, settings: settings)
+    #expect(due == [night.sunset.addingTimeInterval(-3600), good.primary!.start.addingTimeInterval(-30 * 60)])
+    #expect(AlertEngine.dueTimes(tonight: bad, settings: settings) == [night.sunset.addingTimeInterval(-3600)])   // no window, no nudge
+    var custom = settings; custom.preWindowMinutes = 60
+    #expect(AlertEngine.dueTimes(tonight: good, settings: custom)[1] == good.primary!.start.addingTimeInterval(-3600))
+    // Checking 5 s after each due time sends the heads-up, then the go.
+    let r1 = AlertEngine.step(now: due[0].addingTimeInterval(5), tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due[0], site: site, copy: copy)
+    #expect(r1.notification?.kind == .headsUp)
+    let r2 = AlertEngine.step(now: due[1].addingTimeInterval(5), tonight: good, tomorrow: nil, state: r1.state, settings: settings, forecastFetchedAt: due[1], site: site, copy: copy)
+    #expect(r2.notification?.kind == .go)
+    // A second before a due time sends nothing.
+    #expect(AlertEngine.step(now: due[0].addingTimeInterval(-1), tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due[0], site: site, copy: copy).notification == nil)
+}
