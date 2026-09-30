@@ -69,11 +69,14 @@ struct SettingsView: View {
                     TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { setFOV(width: $0) }), format: .number)
                     TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { setFOV(height: $0) }), format: .number)
                 }
-                // Tonight's plan (#57): the plan ends with the clear window, or by this time. The battery is no limit (a power
-                // bank outlasts it), so there is no battery setting; the plan says when it runs past the maker's figure.
-                Toggle("Stop by", isOn: bind(\.stopBy.enabled))
+            }
+            // Tonight's plan's own section: under Telescope, "Stop by" read as a camera setting rather than bedtime (owner's
+            // UAT, 29 September 2026).
+            Section("Tonight's plan") {
+                Toggle("Show Tonight's plan in Targets and the heads-up", isOn: bind(\.showPlan))
+                Toggle("Finish by a set time", isOn: bind(\.stopBy.enabled))
                 if store.config.stopBy.enabled {
-                    DatePicker("Plan ends by", selection: Binding(get: {
+                    DatePicker("Finish by", selection: Binding(get: {
                         let m = store.config.stopBy.minutes
                         return Calendar.current.date(bySettingHour: m / 60 % 24, minute: m % 60, second: 0, of: .now) ?? .now
                     }, set: { d in
@@ -81,7 +84,8 @@ struct SettingsView: View {
                         store.config.stopBy.minutes = (c.hour ?? 0) * 60 + (c.minute ?? 0); store.saveConfig()
                     }), displayedComponents: .hourAndMinute)
                 }
-                Toggle("Tonight's plan in Targets and the heads-up", isOn: bind(\.showPlan))
+                Text("For bed or an early start: the plan ends at this time, and favourites only up after it are left out.")
+                    .font(.caption).foregroundStyle(Theme.dim)
             }
             Section("Go rule") {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")

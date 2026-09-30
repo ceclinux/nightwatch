@@ -24,85 +24,156 @@ private func septemberPlan(objects: [DeepSkyObject] = [crescent, bubble, pacman,
     return p
 }
 
-private func make(_ p: NightPlan, preset: String? = "dwarf-mini", battery: Double? = 4, stopBy: StopBy = StopBy(),
-                  favourites: [String] = [], added: [String] = [], removed: Set<String> = [], now: Date? = nil) -> SessionPlan? {
-    SessionPlanner.make(plan: p, presetID: preset, batteryHours: battery, stopBy: stopBy, favourites: favourites,
-                        added: added, removed: removed, now: now, site: sheffield)
+private func make(_ p: NightPlan, favourites: [String], choices: PlanChoices = PlanChoices(), stopBy: StopBy = StopBy()) -> SessionPlan? {
+    SessionPlanner.make(plan: p, favourites: favourites, choices: choices, stopBy: stopBy, site: sheffield)
 }
 
-/// The same night's targets over a window of our choosing.
-private func withWindow(_ p: NightPlan, _ w: ClearWindow) -> NightPlan {
-    let targets = Planner.rank(catalog: Catalog(objects: [crescent, bubble, pacman, veil, crab]), constellations: [], window: w, site: sheffield,
-                               fov: dwarfMini, rule: GoRule())
-    return NightPlan(night: p.night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil,
-                     moonSet: nil, darkHours: [], targets: targets, best: [], seeingAvailable: false)
-}
-private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messier: 1, typeCode: "SNR", group: .nebulae,
-                                 raHours: 5.575, decDeg: 22.0, majAxisArcmin: 8, minAxisArcmin: 4, magnitude: 8.4, constellation: "Tau")
-
-@Test func thePlanRunsInBestViewingOrderWithStackLongSlots() throws {
-    let p = try septemberPlan()
-    let s = try #require(make(p))
-    #expect(s.slots.first?.id == "NGC6888")                                   // Cygnus first: it is best early
-    #expect(Set(s.slots.map(\.id)).isSuperset(of: ["NGC7635", "NGC281"]))
-    #expect(!s.slots.contains { $0.id == "NGC6960" })                          // the Veil does not fit a DWARF Mini's frame
-    #expect(s.slots.allSatisfy { $0.end.timeIntervalSince($0.start) == 100 * 60 })   // 200 × 30 s
-    #expect(zip(s.slots, s.slots.dropFirst()).allSatisfy { $0.end == $1.start })
-    #expect(s.slots.first?.start == p.primary?.start && (s.slots.last?.end ?? .distantFuture) <= s.end)
-    for slot in s.slots {                                                      // every slot inside the target's viewable span
-        let v = try #require(slot.target.viewable)
-        #expect(v.start <= slot.start && slot.end <= v.end)
-    }
+/// A target with a best time of our choosing, up across the whole window.
+private func target(_ id: String, _ name: String?, best: Date, window w: ClearWindow, moonWashed: Bool = false) -> RankedTarget {
+    var t = RankedTarget(id: id, name: name.map { "\(id) \($0)" } ?? id, subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: 10,
+                         magnitude: 8, fit: .fits, peakAltDeg: 70, peakTime: best, moonSepDeg: 90, moonWashed: moonWashed, visibleFraction: 1)
+    t.catalogueID = id; t.commonName = name; t.viewable = w; t.typeName = "Emission nebula"
+    return t
 }
 
-@Test func thePlanSaysWhenItOutlastsTheBatteryButIsNotCutShort() throws {
-    let s = try #require(make(try septemberPlan()))
-    #expect(s.slots.count == 3 && s.hours == 5)                                // three stacks, 5 h, past a 4 h battery
-    #expect(s.outlastsBatteryHours == 4)
-    #expect(make(try septemberPlan(), battery: nil)?.outlastsBatteryHours == nil)   // a camera: no note
-    #expect(make(try septemberPlan(), battery: 6)?.outlastsBatteryHours == nil)
-    let left = try #require(s.leftover)                                        // only three targets fit: the rest is free
-    #expect(left.start == s.slots.last?.end && left.end == s.end && !s.leftoverTooShort)
-    #expect(try #require(make(try septemberPlan(), stopBy: StopBy(enabled: true, minutes: 90))).leftoverTooShort)   // 01:30: under a stack left
+private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] = []) throws -> NightPlan {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 29, 12, 0), site: sheffield)
+    let w = ClearWindow(start: try #require(night.darkStart), end: try #require(night.darkEnd))
+    var p = NightPlan(night: night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0.78, moonRise: nil,
+                      moonSet: nil, darkHours: [], targets: targets, best: [], seeingAvailable: false)
+    p.favourites = favourites.isEmpty ? targets.map { FavouriteTarget(target: $0, notTonight: nil) } : favourites
+    return p
 }
 
-@Test func stopByEndsThePlanAndItsText() throws {
-    let p = try septemberPlan()
-    let stop = StopBy(enabled: true, minutes: 30)                              // 00:30
-    let s = try #require(make(p, stopBy: stop))
-    let stopAt = stop.date(night: p.night, site: sheffield)
-    #expect(s.end == stopAt && s.slots.allSatisfy { $0.end <= stopAt })
-    #expect(s.slots.count == 2)
-    #expect(Copy.hhmm(stopAt, site: sheffield) == "00:30" && stopAt > p.night.sunset)
+// Tonight's plan, redesigned at the owner's UAT (29 September 2026): favourites up in the clear window, by best time.
+@Test func thePlanIsTheFavouritesUpInTheWindowInBestTimeOrder() throws {
+    let p = try septemberPlan(favourites: ["NGC281", "NGC6888", "NGC7635"])
+    let s = try #require(make(p, favourites: ["NGC281", "NGC6888", "NGC7635"]))
+    #expect(s.items.map(\.id).first == "NGC6888")                              // Cygnus is best first
+    #expect(Set(s.items.map(\.id)) == ["NGC281", "NGC6888", "NGC7635"])        // favourites only, not the rest of the night
+    #expect(zip(s.items, s.items.dropFirst()).allSatisfy { $0.target.peakTime <= $1.target.peakTime })
+    #expect(s.items.allSatisfy { !$0.added } && s.takenOff.isEmpty)
+    #expect(make(p, favourites: []).map { $0.items.isEmpty && $0.omitted.isEmpty } == true)   // no favourites: an empty plan, not none
 }
 
-@Test func favouritesAndAddedTargetsGoFirstAndRemovedOnesNever() throws {
-    let p = try septemberPlan(favourites: ["NGC281"])
-    #expect(make(p, favourites: ["NGC281"])?.slots.first?.id == "NGC281")
-    #expect(make(p, added: ["NGC7635"])?.slots.first?.id == "NGC7635")
-    #expect(make(p, added: ["NGC6960"])?.slots.first?.id == "NGC6960")        // added by hand: its frame is the user's call
-    #expect(make(p, removed: ["NGC6888"])?.slots.contains { $0.id == "NGC6888" } == false)
-    let star = RankedTarget(id: "HIP102098", name: "Deneb", subtitle: "Star", group: .stars, raHours: 20.69, decDeg: 45.3, sizeArcmin: nil,
-                            magnitude: 1.25, fit: .small, peakAltDeg: 85, peakTime: p.primary!.start, moonSepDeg: 90, moonWashed: false,
-                            visibleFraction: 1, viewable: p.primary)
-    var withStar = p; withStar.favourites.append(FavouriteTarget(target: star, notTonight: nil))
-    #expect(!SessionPlanner.canTake(star) && make(withStar, added: ["HIP102098"])?.slots.contains { $0.id == "HIP102098" } == false)
+@Test func favouritesBestWithinHalfAnHourAreFlaggedToChooseBetween() throws {
+    let w0 = try nightWith([])
+    let w = try #require(w0.primary)
+    let a = target("NGC6992", "Eastern Veil", best: w.start.addingTimeInterval(3600), window: w)
+    let b = target("NGC6888", "Crescent Nebula", best: w.start.addingTimeInterval(3600 + 20 * 60), window: w)
+    let c = target("M31", nil, best: w.start.addingTimeInterval(3 * 3600), window: w)
+    let s = try #require(make(try nightWith([c, a, b]), favourites: ["M31", "NGC6992", "NGC6888"]))
+    #expect(s.items.map(\.id) == ["NGC6992", "NGC6888", "M31"])
+    #expect(Copy.planClash(s.items[0]) == "Best at the same time as the Crescent Nebula")
+    #expect(Copy.planClash(s.items[1]) == "Best at the same time as the Eastern Veil")
+    #expect(Copy.planClash(s.items[2]) == nil)
 }
 
-@Test func withoutAMakerFrameCountATargetGetsTheTimeItIsUp() throws {
-    let s = try #require(make(try septemberPlan(), preset: "seestar-s50", battery: 6))
-    #expect(s.slots.first.map { $0.end.timeIntervalSince($0.start) >= 3600 } == true)
-    #expect(s.slots.last?.end == s.end || s.leftover != nil)
+@Test func takenOffPutBackAndAddedForOneNight() throws {
+    let base = try nightWith([])
+    let w = try #require(base.primary)
+    let fav = target("NGC7000", "North America Nebula", best: w.start.addingTimeInterval(1800), window: w)
+    let other = target("M33", "Triangulum Galaxy", best: w.start.addingTimeInterval(7200), window: w)
+    let p = try nightWith([fav, other], favourites: [FavouriteTarget(target: fav, notTonight: nil)])
+    var c = SessionPlanner.choose("NGC7000", on: false, isFavourite: true, in: PlanChoices())
+    #expect(c.removed == ["NGC7000"])
+    var s = try #require(make(p, favourites: ["NGC7000"], choices: c))
+    #expect(s.items.isEmpty && s.takenOff.map(\.id) == ["NGC7000"])
+    c = SessionPlanner.choose("NGC7000", on: true, isFavourite: true, in: c)       // Put back
+    c = SessionPlanner.choose("M33", on: true, isFavourite: false, in: c)          // Add to plan, this night only
+    #expect(c == PlanChoices(added: ["M33"], removed: []))
+    s = try #require(make(p, favourites: ["NGC7000"], choices: c))
+    #expect(s.items.map(\.id) == ["NGC7000", "M33"] && s.items[1].added && !s.items[0].added)
+    #expect(Copy.planDetail(s.items[1], presetID: nil, site: sheffield).hasPrefix("Added for this night · Up "))
+    #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).hasSuffix("at 70° · Duo-Band · 200 × 30 s"))
+    #expect(SessionPlanner.choose("M33", on: false, isFavourite: false, in: c) == PlanChoices())
+}
+
+@Test func favouritesThatCannotBeInThePlanSayWhy() throws {
+    let base = try nightWith([])
+    let w = try #require(base.primary)
+    let low = target("NGC2024", "Flame Nebula", best: w.start, window: w)
+    let washed = target("IC1805", "Heart Nebula", best: w.start, window: w, moonWashed: true)
+    let late = target("M42", "Orion Nebula", best: w.end, window: ClearWindow(start: w.end.addingTimeInterval(-1800), end: w.end))
+    let p = try nightWith([washed, late], favourites: [FavouriteTarget(target: low, notTonight: "Below 30° in tonight's window"),
+                                                       FavouriteTarget(target: washed, notTonight: nil), FavouriteTarget(target: late, notTonight: nil)])
+    let stop = StopBy(enabled: true, minutes: 30)   // 00:30, before M42 is up
+    let s = try #require(make(p, favourites: ["NGC2024", "IC1805", "M42"], stopBy: stop))
+    #expect(s.items.isEmpty)
+    #expect(s.omitted.map(\.reason) == ["Below 30° in tonight's window", "Washed out by the Moon", "Up only after your finish time, 00:30"])
+    #expect(Copy.planSummary(s, plan: p, site: sheffield).contains(" · finish by 00:30 · ") && Copy.planSummary(s, plan: p, site: sheffield).hasSuffix("· Moon 78%"))
+}
+
+@Test func planChoicesAreKeptPerNightAndSyncWithTheSettings() throws {
+    let all = ["2026-09-28": PlanChoices(removed: ["M31"]), "2026-09-29": PlanChoices(added: ["M33"]), "2026-09-30": PlanChoices(removed: ["NGC7000"]),
+               "2026-10-01": PlanChoices()]
+    #expect(Set(SessionPlanner.pruned(all, from: "2026-09-29").keys) == ["2026-09-29", "2026-09-30"])   // earlier and empty nights go
+    let old = try JSONDecoder().decode(Config.self, from: Data("{}".utf8))
+    #expect(old.planChoices.isEmpty && old.stopBy == StopBy() && old.showPlan)
+    var c = Config(); c.planChoices = ["2026-09-30": PlanChoices(removed: ["NGC7000"])]; c.stopBy = StopBy(enabled: true, minutes: 23 * 60)
+    let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(c))
+    #expect(back.planChoices == c.planChoices && back.stopBy.minutes == 1380)
+    #expect(SettingsSync.outgoing(c, at: Date()).config.planChoices == c.planChoices)          // travels to the other Macs
+    // A night's choices made the day before still apply when that night comes.
+    let p = try septemberPlan(favourites: ["NGC6888"])
+    #expect(make(p, favourites: ["NGC6888"], choices: PlanChoices(removed: ["NGC6888"]))?.takenOff.map(\.id) == ["NGC6888"])
 }
 
 @Test func noPlanWithoutAWindowOrOnABrightNight() throws {
     var p = try septemberPlan()
     p.mode = .bright
-    #expect(make(p) == nil)
+    #expect(make(p, favourites: ["NGC6888"]) == nil)
     let none = NightPlan(night: p.night, windows: [], primary: nil, score: 10, qualifies: false, moonIllumination: 0, moonRise: nil,
                          moonSet: nil, darkHours: [], targets: p.targets, best: [], seeingAvailable: false)
-    #expect(make(none) == nil)
-    #expect(make(try septemberPlan(objects: [veil])) == nil)                   // nothing that fits
+    #expect(make(none, favourites: ["NGC6888"]) == nil)
+    // A Stop by before the window opens: nothing to plan.
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 29, 12, 0), site: sheffield)
+    let late = NightPlan(night: night, windows: [], primary: ClearWindow(start: utc(2026, 9, 30, 0, 0), end: utc(2026, 9, 30, 4, 0)), score: 80,
+                         qualifies: true, moonIllumination: 0, moonRise: nil, moonSet: nil, darkHours: [], targets: [], best: [], seeingAvailable: false)
+    #expect(make(late, favourites: [], stopBy: StopBy(enabled: true, minutes: 30)) == nil)
+    // The night the clocks go back (25 October 2026): 03:00 is still 03:00.
+    let autumn = try Ephemeris.night(localDate: utc(2026, 10, 24, 12, 0), site: sheffield)
+    #expect(Copy.hhmm(StopBy(enabled: true, minutes: 180).date(night: autumn, site: sheffield), site: sheffield) == "03:00")
+    #expect([0, 1, 2, 3, 10, 11, 20].map(Copy.inPlan) == ["In the plan, 1st", "In the plan, 2nd", "In the plan, 3rd", "In the plan, 4th",
+                                                         "In the plan, 11th", "In the plan, 12th", "In the plan, 21st"])
+}
+
+@Test func theHeadsUpNamesThePlanAndDewOnlyWhenLikely() throws {
+    var p = try septemberPlan(favourites: ["NGC6888", "NGC7635"])
+    let s = try #require(make(p, favourites: ["NGC6888", "NGC7635"]))
+    let a = s.items[0].target, b = s.items[1].target
+    let expected = "Your plan: the \(try #require(a.commonName)), best at \(Copy.hhmm(a.peakTime, site: sheffield)), then the \(try #require(b.commonName)), best at \(Copy.hhmm(b.peakTime, site: sheffield))."
+    #expect(Copy.headsUpPlan(s, plan: p, site: sheffield) == expected)
+    let damp = b.peakTime
+    p = NightPlan(night: p.night, windows: p.windows, primary: p.primary, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil, moonSet: nil,
+                  darkHours: [HourlyConditions(time: damp, cloudTotal: 0, cloudLow: nil, cloudMid: nil, cloudHigh: nil, tempC: 6, dewPointC: 5,
+                                               humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil)],
+                  targets: p.targets, best: [], seeingAvailable: false)
+    #expect(Copy.headsUpPlan(s, plan: p, site: sheffield) == expected + " Fit the dew heater: dew likely after \(Copy.hhmm(damp, site: sheffield)).")
+    #expect(Copy.headsUpPlan(try #require(make(p, favourites: [])), plan: p, site: sheffield) == nil)   // an empty plan says nothing
+}
+
+@Test func notTonightSilencesTheRestOfTheNight() throws {
+    let p = try septemberPlan(favourites: ["NGC6888"])
+    let now = p.night.sunset.addingTimeInterval(-1800)
+    let quiet = AlertState(nightKey: p.night.key, stage: .idle, silenced: true, firstClearSaid: true)
+    let r = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: quiet, settings: AlertSettings(), forecastFetchedAt: now,
+                             site: sheffield, copy: Copy())
+    #expect(r.notification == nil && r.state == quiet)
+    let s = try #require(make(p, favourites: ["NGC6888"]))
+    let heads = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: AlertState(nightKey: "earlier", stage: .done, firstClearSaid: true),
+                                 settings: AlertSettings(), forecastFetchedAt: now, site: sheffield, copy: Copy(), session: s)
+    #expect(heads.notification?.kind == .headsUp && heads.notification?.body.hasPrefix("Your plan: the Crescent Nebula") == true)
+    #expect(heads.notification?.planNight == p.night.key)
+}
+
+@Test func siriReadsTonightsPlanWhenThereIsOne() throws {
+    let p = try septemberPlan(favourites: ["NGC6888", "NGC7635"])
+    let s = try #require(make(p, favourites: ["NGC6888", "NGC7635"]))
+    let snap = WidgetSnapshot.make(plan: p, tomorrow: nil, fetchedAt: p.night.sunset, site: sheffield, rule: GoRule(), bright: BrightSettings(),
+                                   alerts: AlertSettings(), copy: Copy())
+    let text = Copy.siriBest(snap, session: s, site: sheffield)
+    #expect(text == "Tonight's plan: Crescent Nebula at \(Copy.hhmm(s.items[0].target.peakTime, site: sheffield)), then \(try #require(s.items[1].target.commonName)) at \(Copy.hhmm(s.items[1].target.peakTime, site: sheffield)).")
 }
 
 @Test func thePresetsCarryTheMakersBatteryFigures() throws {
@@ -111,121 +182,6 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
     #expect(b["dslr-apsc-200"] == .some(nil))
 }
 
-@Test func stopByAndShowPlanDefaultAndDecodeFromOlderConfigs() throws {
-    let old = try JSONDecoder().decode(Config.self, from: Data("{}".utf8))
-    #expect(old.stopBy == StopBy() && !old.stopBy.enabled && old.showPlan)
-    var c = Config(); c.stopBy = StopBy(enabled: true, minutes: 23 * 60); c.showPlan = false
-    let back = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(c))
-    #expect(back.stopBy.minutes == 1380 && back.stopBy.enabled && !back.showPlan)
-}
-
-@Test func thePlanReadsAsInTheMockUp() throws {
-    let p = try septemberPlan()
-    let s = try #require(make(p))
-    let w = try #require(p.primary)
-    #expect(Copy.planHeader(s, window: w, site: sheffield).hasSuffix("· three targets, 5 h"))
-    #expect(Copy.planHeader(try #require(make(p, stopBy: StopBy(enabled: true, minutes: 30))), window: w, site: sheffield)
-            .contains("· stop by 00:30 · two targets, 3 h 20 min"))
-    let cyg = Constellation(id: "Cyg", name: "Cygnus", raHours: 20.6, decDeg: 42, lines: [])
-    #expect(Copy.slotName(s.slots[0].target, constellations: [cyg]) == "Crescent Nebula, in Cygnus")
-    #expect(Copy.slotName(s.slots[0].target, constellations: []) == "Crescent Nebula")
-    #expect(Copy.slotDetail(s.slots[0], index: 0, presetID: "dwarf-mini", site: sheffield).hasSuffix(", so first · Duo-Band · 200 × 30 s"))
-    #expect(Copy.slotDetail(s.slots[0], index: 1, presetID: nil, site: sheffield).hasSuffix(", so second"))
-    #expect(Copy.planBattery(s, telescope: "DwarfLab DWARF Mini")
-            == "This plan runs 5 h, longer than a DwarfLab DWARF Mini battery (about 4 h): you may need a power bank or a spare battery.")
-    #expect(Copy.planLeftover(try #require(make(p, stopBy: StopBy(enabled: true, minutes: 90))), site: sheffield)?
-            .hasSuffix(" min left, too short for another stack.") == true)
-    #expect([0, 1, 2, 3, 10, 11, 20].map(Copy.inPlan) == ["In the plan, 1st", "In the plan, 2nd", "In the plan, 3rd", "In the plan, 4th",
-                                                         "In the plan, 11th", "In the plan, 12th", "In the plan, 21st"])
-    #expect(Copy.duration(40 * 60) == "40 min" && Copy.duration(100 * 60) == "1 h 40 min")
-}
-
-@Test func theHeadsUpNamesWhereToStartAndDewOnlyWhenLikely() throws {
-    var p = try septemberPlan()
-    let s = try #require(make(p))
-    let first = Copy.hhmm(s.slots[0].start, site: sheffield), second = Copy.hhmm(s.slots[1].start, site: sheffield)
-    let expected = "Start with the Crescent Nebula at \(first), then the \(try #require(s.slots[1].target.commonName)) at \(second)."
-    #expect(Copy.headsUpPlan(s, plan: p, site: sheffield) == expected)
-    let damp = s.slots[1].start.addingTimeInterval(1800)
-    p = NightPlan(night: p.night, windows: p.windows, primary: p.primary, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil, moonSet: nil,
-                  darkHours: [HourlyConditions(time: damp, cloudTotal: 0, cloudLow: nil, cloudMid: nil, cloudHigh: nil, tempC: 6, dewPointC: 5,
-                                               humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil)],
-                  targets: p.targets, best: [], seeingAvailable: false)
-    #expect(Copy.headsUpPlan(s, plan: p, site: sheffield) == expected + " Fit the dew heater: dew likely after \(Copy.hhmm(damp, site: sheffield)).")
-}
-
-@Test func notTonightSilencesTheRestOfTheNight() throws {
-    let p = try septemberPlan()
-    let now = p.night.sunset.addingTimeInterval(-1800)
-    let quiet = AlertState(nightKey: p.night.key, stage: .idle, silenced: true, firstClearSaid: true)
-    let r = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: quiet, settings: AlertSettings(), forecastFetchedAt: now,
-                             site: sheffield, copy: Copy())
-    #expect(r.notification == nil && r.state == quiet)
-    let s = try #require(make(p))
-    let heads = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: AlertState(nightKey: "earlier", stage: .done, firstClearSaid: true),
-                                 settings: AlertSettings(), forecastFetchedAt: now, site: sheffield, copy: Copy(), session: s)
-    #expect(heads.notification?.kind == .headsUp && heads.notification?.body.hasPrefix("Start with the Crescent Nebula") == true)
-}
-
-@Test func stopByBelongsToTheNightNotToTheWindow() throws {
-    let p = try septemberPlan()
-    // A window opening at 01:00 with Stop by 00:30, or at 23:30 with Stop by 23:00: nothing to plan, not a plan to 04:20.
-    #expect(make(withWindow(p, ClearWindow(start: utc(2026, 9, 30, 0, 0), end: utc(2026, 9, 30, 4, 0))), stopBy: StopBy(enabled: true, minutes: 30)) == nil)
-    #expect(make(withWindow(p, ClearWindow(start: utc(2026, 9, 29, 22, 30), end: utc(2026, 9, 30, 3, 0))), stopBy: StopBy(enabled: true, minutes: 23 * 60)) == nil)
-    // The night the clocks go back (25 October 2026): 03:00 is still 03:00.
-    let autumn = try Ephemeris.night(localDate: utc(2026, 10, 24, 12, 0), site: sheffield)
-    #expect(Copy.hhmm(StopBy(enabled: true, minutes: 180).date(night: autumn, site: sheffield), site: sheffield) == "03:00")
-}
-
-@Test func thePlanWaitsForATargetThatRisesLater() throws {
-    // 23:00 to 05:00 BST: the Crescent, then the Pacman and the Bubble, and the Crab once it is up, not an early stop.
-    let p = withWindow(try septemberPlan(), ClearWindow(start: utc(2026, 9, 29, 22, 0), end: utc(2026, 9, 30, 4, 0)))
-    let s = try #require(make(p, removed: ["NGC7635", "NGC281"]))
-    #expect(s.slots.map(\.id) == ["NGC6888", "NGC1952"])
-    let crabUp = try #require(s.slots.last?.target.viewable?.start)
-    #expect(s.slots[1].start >= crabUp && s.slots[1].start > s.slots[0].end)
-}
-
-@Test func onTheRealCatalogueThePlanChoosesTheNightsBestTargets() throws {
-    let night = try Ephemeris.night(localDate: utc(2026, 9, 29, 12, 0), site: sheffield)
-    let w = ClearWindow(start: try #require(night.darkStart), end: try #require(night.darkEnd))
-    let targets = Planner.rank(catalog: try Catalog.bundled(), constellations: [], window: w, site: sheffield, fov: dwarfMini, rule: GoRule())
-    let p = NightPlan(night: night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil,
-                      moonSet: nil, darkHours: [], targets: targets, best: [], seeingAvailable: false)
-    let s = try #require(make(p))
-    #expect(s.slots.count >= 3)
-    #expect(s.slots.allSatisfy { $0.target.commonName != nil })              // well-known targets, not whatever is highest
-    #expect(s.slots.allSatisfy { $0.target.fit == .fits && !$0.target.moonWashed && $0.reason == .bestPlaced })
-    let seestar = try #require(make(p, preset: "seestar-s50", battery: 6))   // about 1,000 × 10 s: several, not one all night
-    #expect(seestar.slots.count >= 2 && seestar.slots.allSatisfy { abs($0.end.timeIntervalSince($0.start) - 10_000) < 1 })
-    let camera = try #require(make(p, preset: "dslr-apsc-200", battery: nil)) // no frame count: while well placed
-    #expect(camera.slots.count >= 2)
-}
-
-@Test func onceTheWindowHasStartedThePlanRunsFromNow() throws {
-    let p = try septemberPlan()
-    let now = p.primary!.start.addingTimeInterval(2 * 3600 + 7 * 60)
-    let s = try #require(make(p, now: now))
-    #expect(s.slots[0].start >= now && s.slots[0].start.timeIntervalSince(now) < 300)
-}
-
-@Test func aFavouriteOrAddedTargetSaysWhyItIsThere() throws {
-    let p = try septemberPlan(favourites: ["NGC281"])
-    let s = try #require(make(p, favourites: ["NGC281"]))
-    #expect(s.slots[0].reason == .favourite && Copy.slotDetail(s.slots[0], index: 0, presetID: nil, site: sheffield).hasPrefix("Favourite · best "))
-    let a = try #require(make(p, added: ["NGC7635"]))
-    #expect(Copy.slotDetail(a.slots[0], index: 0, presetID: nil, site: sheffield).hasPrefix("Added by you · best "))
-}
-
-@Test func siriReadsTonightsPlanWhenThereIsOne() throws {
-    let p = try septemberPlan()
-    let s = try #require(make(p))
-    let snap = WidgetSnapshot.make(plan: p, tomorrow: nil, fetchedAt: p.night.sunset, site: sheffield, rule: GoRule(), bright: BrightSettings(),
-                                   alerts: AlertSettings(), copy: Copy())
-    let text = Copy.siriBest(snap, session: s, site: sheffield)
-    #expect(text.hasPrefix("Tonight's plan: Crescent Nebula at \(Copy.hhmm(s.slots[0].start, site: sheffield)), then "))
-    #expect(text.components(separatedBy: ", then ").count == s.slots.count)
-}
 
 @Test func theFirstClearWindowIsNamedOnceAndNeverToSomeoneUpgrading() throws {
     let p = try septemberPlan()
@@ -256,6 +212,7 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
                            moonSet: nil, darkHours: [], targets: [], best: [], seeingAvailable: false)
     #expect(step(nil, plan: cloudy).1.firstClearSaid == false)
 }
+
 
 @Test func aFirstClearLineDroppedInQuietHoursIsNotUsedUp() throws {
     let p = try septemberPlan()

@@ -33,12 +33,9 @@ final class Store: ObservableObject {
     @Published var bestAway: SitePlan?
     /// Set by the popover so the Targets window opens on a section, scrolled to a dark-site card.
     @Published var targetsRequest: TargetsRequest? = nil
-    /// Tonight's plan edits (#57): targets added from a page or removed from the strip, for one night only (not saved).
-    @Published var planEdits = PlanEdits()
     /// The next run of moonless nights (#62), worked out again only when the night or the site changes.
     @Published var moonlessRun: MoonlessRun?
     private var moonlessFor: String?
-    struct PlanEdits: Equatable { var nightKey = ""; var added: [String] = []; var removed: Set<String> = [] }
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var awaitingFix = false            // boot is waiting for this Mac's location: no refresh for a saved site meanwhile
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
@@ -180,13 +177,12 @@ final class Store: ObservableObject {
 
     var copy: Copy { Copy() }
 
-    /// Tonight's plan for `p` with this night's edits; nil when it has none (#57).
-    /// Nil too when the plan is switched off in Settings, which then leaves the heads-up as it was.
-    func session(for p: NightPlan?, now: Date = Date()) -> SessionPlan? {
+    /// The plan for `p`'s night with that night's choices; nil on a night with no clear window (#57, redesigned at the
+    /// owner's UAT). Nil too when the plan is switched off in Settings, which then leaves the heads-up as it was.
+    func session(for p: NightPlan?) -> SessionPlan? {
         guard config.showPlan, let p, let site else { return nil }
-        let e = planEdits.nightKey == p.night.key ? planEdits : PlanEdits()
-        return SessionPlanner.make(plan: p, presetID: config.fovPresetID, batteryHours: telescope?.batteryHours, stopBy: config.stopBy,
-                                   favourites: config.favourites, added: e.added, removed: e.removed, now: now, site: site)
+        return SessionPlanner.make(plan: p, favourites: config.favourites, choices: config.planChoices[p.night.key] ?? PlanChoices(),
+                                   stopBy: config.stopBy, site: site)
     }
 
     /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53). False when settings cannot be saved (an
@@ -216,18 +212,17 @@ final class Store: ObservableObject {
         return catalog.objects.first { $0.id == id }?.displayName
     }
 
-    /// "Open plan": Targets on the first planned target's group, where the strip is, with no page open over it.
-    func openPlan() {
-        let group = session(for: plan)?.slots.first?.target.group ?? .nebulae
-        targetsRequest = TargetsRequest(section: .group(group), siteID: nil)
-    }
+    /// "Open plan" on the heads-up: the Targets window on Tonight's plan.
+    func openPlan() { targetsRequest = TargetsRequest(section: .plan, siteID: nil) }
     var telescope: TelescopePreset? { TelescopePresets.shared.first { $0.id == config.fovPresetID } }
 
-    /// Adds a target to, or takes it out of, `night`'s plan.
+    /// Puts a target in `night`'s plan or takes it out. Saved with the settings, so the choice syncs and outlasts a restart;
+    /// nights before tonight are dropped as it saves.
     func setInPlan(_ id: String, _ on: Bool, night: String) {
-        if planEdits.nightKey != night { planEdits = PlanEdits(nightKey: night) }
-        planEdits.added.removeAll { $0 == id }
-        if on { planEdits.added.append(id); planEdits.removed.remove(id) } else { planEdits.removed.insert(id) }
+        let now = config.planChoices[night] ?? PlanChoices()
+        config.planChoices[night] = SessionPlanner.choose(id, on: on, isFavourite: config.favourites.contains(id), in: now)
+        config.planChoices = SessionPlanner.pruned(config.planChoices, from: min(night, plan?.night.key ?? night))
+        saveConfig()
     }
 
     /// "Not tonight" on the heads-up: no more clear-sky alerts for that night (an old notification never silences a newer one).
@@ -336,7 +331,7 @@ final class Store: ObservableObject {
         writeWidgetSnapshot()
         if canNotify {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
-                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p, now: now))
+                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p))
             alertState = r.state
             Store.writeFile(r.state, StateFiles.url(StateFiles.alerts))
             if let n = r.notification { Notifier.post(n) }
@@ -416,6 +411,7 @@ final class Store: ObservableObject {
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
         widgetAurora = shownAurora(aurora)
         WidgetCenter.shared.reloadAllTimelines()
+        SiriIndex.update()   // Siri and Spotlight read the same night (#72)
     }
 
     /// After a site change and before the new site's forecast arrives, the widget shows "Open Nightwatch…" rather than the
@@ -466,7 +462,7 @@ final class Store: ObservableObject {
         // Up to ~700k distance checks at 300 km: off the main actor.
         let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
         guard gen == darkSitesGeneration else { return }
-        let sites = namedSpots(found, now: now)
+        let sites = namedSpots(publicSpots(found, home: home, site: site, night: night), now: now)
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
@@ -503,15 +499,19 @@ final class Store: ObservableObject {
     /// and failed lookups are tried again after an hour.
     /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
     private func namedSpots(_ sites: [DarkSite], now: Date) -> [DarkSite] {
-        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
+        // Only a car park Apple Maps names just "Car park" needs its town ("Car park near Kettlewell").
+        let missing = sites.filter { $0.isComputed && $0.name == DarkSites.genericCarPark && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
         if now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
             for s in missing {
                 spotLookups.insert(s.id)
                 Task { [weak self] in
-                    let place: String?? = try? await PlaceNames.nearest(to: s.coordinate)   // nil: the lookup failed
+                    // do/catch, not try?: try? flattens String?? into String?, so a failed lookup was kept as "no name here".
+                    let place: String?
+                    do { place = try await PlaceNames.nearest(to: s.coordinate) } catch {
+                        self?.spotLookups.remove(s.id); self?.spotLookupFailedAt = Date(); return
+                    }
                     guard let self else { return }
                     spotLookups.remove(s.id)
-                    guard let place else { spotLookupFailedAt = Date(); return }
                     spotPlaces[s.id] = place ?? ""
                     Store.write(spotPlaces, "spot-places.json")
                     renameSpots()
@@ -522,7 +522,55 @@ final class Store: ObservableObject {
     }
 
     private func spotNamed(_ s: DarkSite) -> DarkSite {
-        spotPlaces[s.id].flatMap(DarkSites.spotName(place:)).map(s.named) ?? s
+        guard s.isComputed, s.name == DarkSites.genericCarPark else { return s }
+        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: DarkSites.genericCarPark) }.map(s.named) ?? s
+    }
+
+    /// Each computed spot's public place by the spot's id (nil inside: none within reach), found once and kept.
+    private lazy var spotPublic: [String: PublicPlaces.Place?] = Store.read("spot-public.json") ?? [:]
+    private var publicLookups: Set<String> = []
+    private var publicLookupFailedAt: Date?
+
+    /// Computed spots moved to the nearest dark car park (owner's UAT, 29 September 2026: a pin in the middle of a moor
+    /// raised whether it was public, or condoning trespass). A spot is not shown until its car park is known, and is left
+    /// out when there is none; the list is worked out again once the searches finish. Failed searches are tried again
+    /// after an hour.
+    private func publicSpots(_ sites: [DarkSite], home: Coordinate, site: Site, night: Night) -> [DarkSite] {
+        var out: [DarkSite] = [], seen = Set<String>()
+        let due = Date().timeIntervalSince(publicLookupFailedAt ?? .distantPast) >= 3600
+        for s in sites {
+            guard s.isComputed else { out.append(s); continue }
+            guard let entry = spotPublic[s.id] else {
+                if due, !publicLookups.contains(s.id) { lookUpPublicPlace(for: s, site: site, night: night) }
+                continue
+            }
+            guard let p = entry else { continue }
+            let c = Coordinate(latitude: p.latitude, longitude: p.longitude)
+            let id = String(format: "place-%.3f-%.3f", c.latitude, c.longitude)
+            guard seen.insert(id).inserted else { continue }   // two spots can share a car park
+            out.append(DarkSite(id: id, name: p.name, kind: "spot", coordinate: c, distanceKm: Geo.distanceKm(home, c),
+                                bearingDeg: Geo.bearingDeg(from: home, to: c),
+                                band: LPGrids.radiance(at: c, in: grids).map(DarknessBand.from) ?? s.band, bortle: nil, source: nil,
+                                isComputed: true))
+        }
+        return out.sorted { $0.distanceKm < $1.distanceKm }
+    }
+
+    private func lookUpPublicPlace(for s: DarkSite, site: Site, night: Night) {
+        publicLookups.insert(s.id)
+        let grids = grids
+        Task { [weak self] in
+            let place: PublicPlaces.Place?
+            do { place = try await PublicPlaces.nearest(to: s.coordinate, band: s.band, grids: grids) } catch {
+                self?.publicLookups.remove(s.id); self?.publicLookupFailedAt = Date(); return
+            }
+            guard let self else { return }
+            publicLookups.remove(s.id)
+            spotPublic[s.id] = .some(place)
+            Store.write(spotPublic, "spot-public.json")
+            // Once every search is back, the list again, now with the car parks.
+            if publicLookups.isEmpty { await recomputeDarkSites(now: Date(), site: site, night: night) }
+        }
     }
 
     /// A name that arrived after the cards were built: the same sites and plans, renamed.

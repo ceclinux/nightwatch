@@ -10,6 +10,8 @@ public struct ShootingTip: Equatable, Sendable {
     /// The settings as one line to paste into the telescope's app (#61): target, telescope and numbers only. Nil where the
     /// maker publishes no numbers, and then no copy icon is shown.
     public var copyLine: String? = nil
+    /// The card's SF Symbol: a camera for telescope settings, binoculars or an eye for How to see this.
+    public var symbol = "camera.aperture"
     public struct Row: Equatable, Sendable {
         public var label: String
         public var text: String
@@ -37,21 +39,12 @@ public enum ShootingTips {
         }
     }
 
-    /// The shortest worthwhile stack for a deep-sky target (#57). A DWARF: its manual's 200 frames (the low end of 200–400)
-    /// at 30 s, 100 minutes. A Seestar stacks as it goes with ZWO's 10 s frames and names no count, so the owner's rule of
-    /// thumb for deep sky, about 1,000 frames (29 September 2026): 167 minutes. Nil for a camera or a custom telescope;
-    /// Tonight's plan then gives a target the time it is well placed.
-    public static func stackMinutes(presetID: String?) -> Double? {
-        switch presetID {
-        case "dwarf-mini", "dwarf-3": 200 * 30 / 60
-        case "seestar-s50": 1000 * 10 / 60
-        default: nil
-        }
-    }
-
-    /// A plan slot's kit, from the same maker figures: "Duo-Band · 200 × 30 s". Nil where the tips give no filter name.
+    /// A plan row's kit, from the maker's figures: "Duo-Band · 200 × 30 s". Nil where the tips give no filter name, and for
+    /// the Moon, planets, stars and constellations, whose tips carry no deep-sky filter or frames (Saturn read "Duo-Band or
+    /// Astro · 200 × 30 s", owner's UAT, 29 September 2026).
     public static func planKit(_ t: RankedTarget, presetID: String?) -> String? {
         let k = kind(t)
+        guard [.emission, .broadband, .nebulaUnknown].contains(k) else { return nil }
         switch presetID {
         case "dwarf-mini", "dwarf-3":
             return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
@@ -209,6 +202,40 @@ public enum ShootingTips {
         default:
             return nil
         }
+    }
+
+    /// "How to see this" (owner's UAT, 29 September 2026): a target opened from Eyes and binoculars gets what it looks like,
+    /// where and when to look, and how to look, instead of telescope settings. `constellation`: the full name of the one it is
+    /// in, when known.
+    public static func eyeTip(for t: RankedTarget, eye: EyeView, constellation: String?, moonIllumination: Double, moonUp: Bool,
+                              site: Site) -> ShootingTip {
+        var rows = [ShootingTip.Row("Looks like", Copy.eyeLook(t, eye) + ".")]
+        let az = Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az
+        let direction = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"][Int((az / 45).rounded()) % 8]
+        let height = t.peakAltDeg >= 60 ? "high in the" : (t.peakAltDeg < 25 ? "low in the" : "in the")
+        let whereText = "\(height) \(direction) at \(Copy.hhmm(t.peakTime, site: site))"
+        if let c = constellation, t.group != .constellations {
+            rows.append(.init("Where", "In \(c), \(whereText)."))
+        } else {
+            rows.append(.init("Where", whereText.prefix(1).uppercased() + whereText.dropFirst() + "."))
+        }
+        let best = "best at \(Copy.hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded()))° up."
+        rows.append(.init("When", t.viewable.map { "Up from \(Copy.hhmm($0.start, site: site)); \(best)" } ?? best.prefix(1).uppercased() + best.dropFirst()))
+        // Bright points (the Moon, planets, stars) need no dark adaptation or averted vision; faint ones do.
+        let faint = t.id != "moon" && ![.planets, .stars].contains(t.group)
+        let adapt = "give your eyes 20 minutes away from lights. Looking slightly to one side of it shows faint detail better."
+        switch (eye, faint) {
+        case (.binoculars, true): rows.append(.init("Tips", "Brace your binoculars on a wall or a tripod, and \(adapt)"))
+        case (.binoculars, false): rows.append(.init("Tips", "Brace your binoculars on a wall or a tripod to hold the view steady."))
+        case (.nakedEye, true): rows.append(.init("Tips", "Find somewhere away from lights and " + adapt))
+        case (.nakedEye, false): break
+        }
+        if faint, moonUp, moonIllumination >= 0.5 {
+            rows.append(.init("Moon", "The Moon is \(Int((moonIllumination * 100).rounded()))% lit tonight, which makes it harder to see."))
+        }
+        var tip = ShootingTip(title: "How to see this with \(eye == .binoculars ? "binoculars" : "the naked eye")", rows: rows, source: nil)
+        tip.symbol = eye == .binoculars ? "binoculars" : "eye"
+        return tip
     }
 
     /// "How to shoot this" for an event (v1.0.1). No maker publishes settings for these, so it is guidance without numbers.

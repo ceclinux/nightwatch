@@ -49,6 +49,8 @@ public struct Config: Codable, Equatable, Sendable {
     /// Tonight's plan (#57): when the night's session must end, and whether Targets shows the plan.
     public var stopBy = StopBy()
     public var showPlan = true
+    /// Tonight's plan choices by night key ("2026-09-29"); synced with the rest of the settings (#49).
+    public var planChoices: [String: PlanChoices] = [:]
 
     public init() {}
 
@@ -120,7 +122,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan, planChoices
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -147,6 +149,7 @@ public struct Config: Codable, Equatable, Sendable {
         favourites = try c.decodeIfPresent([String].self, forKey: .favourites) ?? []
         stopBy = try c.decodeIfPresent(StopBy.self, forKey: .stopBy) ?? StopBy()
         showPlan = try c.decodeIfPresent(Bool.self, forKey: .showPlan) ?? true
+        planChoices = (try? c.decodeIfPresent([String: PlanChoices].self, forKey: .planChoices)) ?? [:]
     }
 }
 

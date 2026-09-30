@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-enum BrowserSection: Hashable { case favourites, eyes, group(TargetGroup), darkSites }
+enum BrowserSection: Hashable { case plan, favourites, eyes, group(TargetGroup), darkSites }
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
@@ -27,7 +27,6 @@ final class TargetsViewState: ObservableObject {
 
 struct TargetsView: View {
     @EnvironmentObject var store: Store
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var ui = TargetsViewState()
 
@@ -50,7 +49,10 @@ struct TargetsView: View {
         return .nebulae
     }
 
-    private var sections: [BrowserSection] { [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+    /// Tonight's plan first, as a page of its own (owner's UAT, 29 September 2026), unless it is switched off in Settings.
+    private var sections: [BrowserSection] {
+        (store.config.showPlan ? [.plan] : []) + [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites]
+    }
 
     /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
     private func eyeView(_ t: RankedTarget) -> EyeView? { store.site.flatMap { EyeViews.view(t, bortle: $0.bortle) } }
@@ -84,7 +86,7 @@ struct TargetsView: View {
         case .eyes:
             let found = eyeTargets.filter { $0.matches(ui.search) }
             return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
-        case .darkSites:
+        case .darkSites, .plan:
             return []
         }
     }
@@ -124,23 +126,19 @@ struct TargetsView: View {
                 EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
             } else if let selected = ui.selected {
                 // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
-                DetailView(target: selected, plan: plan) { ui.selected = nil }.id(selected.id)
+                DetailView(target: selected, plan: plan, back: sectionTitle, eye: ui.section == .eyes ? eyeView(selected) : nil) { ui.selected = nil }
+                    .id(selected.id)
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
+                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
                 case .group, .favourites, .eyes: grid
                 }
             }
         }
+        // No "What the numbers mean" button here: it made the title bar busy (owner's UAT, 29 September 2026). Settings
+        // and About open the guide.
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
-        .toolbar {   // #59, beside the search
-            // Its full width, so the toolbar never squeezes the words (owner's screenshot, 29 September 2026).
-            ToolbarItem {
-                Button { openWindow(id: "numbers") } label: {
-                    Label("What the numbers mean", systemImage: "questionmark.circle").labelStyle(.titleAndIcon).fixedSize()
-                }
-            }
-        }
         .preferredColorScheme(.dark)
         .background(Theme.bg)
         .onAppear { consumeRequest() }
@@ -150,6 +148,9 @@ struct TargetsView: View {
     private func sidebarRow(_ section: BrowserSection) -> some View {
         HStack {
             switch section {
+            case .plan:
+                Label("Tonight's plan", systemImage: "list.bullet"); Spacer()
+                Text("\(store.session(for: plan)?.items.count ?? 0)").foregroundStyle(Tokens.textSecondary)
             case .favourites:
                 Label("Favourites", systemImage: "heart.fill"); Spacer(); Text("\(favourites.count)").foregroundStyle(Tokens.textSecondary)
             case .eyes:
@@ -224,7 +225,7 @@ struct TargetsView: View {
             }
             ScrollViewReader { proxy in
                 GlassGroup(spacing: 12) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2), spacing: 12) {
                         ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
                         ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
                     }.padding(20)
@@ -242,21 +243,19 @@ struct TargetsView: View {
     }
 
     private var grid: some View {
-        let session = isEvents || ui.section == .eyes || !store.config.showPlan ? nil : store.session(for: plan)
-        let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
+        // Each card in the plan says its place in it; the plan itself is a page of its own.
+        let session = isEvents || ui.section == .eyes ? nil : store.session(for: plan)
+        let order = Dictionary(uniqueKeysWithValues: (session?.items ?? []).enumerated().map { ($1.id, $0) })
         return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                // Title and controls on one line when they fit; otherwise the controls go under the title, so a long title
-                // ("Eyes and binoculars") is never squeezed into a column (owner's screenshot, 29 September 2026).
-                ViewThatFits(in: .horizontal) {
-                    HStack { headerTitle; headerControls }
-                    VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
-                }
+                // The title on its own line and the controls under it, on every page: a short title ("Stars") sat beside
+                // the controls while the others sat above them (owner's UAT, 29 September 2026).
+                VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
                 // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
                 // Tonight, so it never jumps to tomorrow by itself on a later refresh.
                 Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                 if let p = plan, let s = store.site {
-                    ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
+                    // No hour bars here: the popover and the medium and large widgets already show them (owner's UAT, 29 September 2026).
                     if showingTomorrow, let w = p.primary {
                         Text("Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s)): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))")
                             .font(.caption).foregroundStyle(Tokens.textSecondary)
@@ -303,10 +302,6 @@ struct TargetsView: View {
                     }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
-            if let p = plan, let s = store.site, let session {
-                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations, columns: ui.narrow ? 2 : 3) { ui.selected = $0 }
-                    .padding(.horizontal, 20).padding(.top, 12)
-            }
             GlassGroup(spacing: 12) {
                 TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
                     if isEvents {
@@ -379,6 +374,17 @@ struct TargetsView: View {
 
     /// Three columns, or two once a column would be narrower than a card can be read at (#60).
     private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.narrow ? 2 : 3) }
+
+    /// The page's name, for a target page's back link.
+    private var sectionTitle: String {
+        switch ui.section {
+        case .plan: return "Tonight's plan"
+        case .favourites: return "Favourites"
+        case .eyes: return "Eyes and binoculars"
+        case .group(let g): return g.displayName
+        case .darkSites: return "Dark sites"
+        }
+    }
 
     private var headerTitle: some View {
         Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
@@ -510,6 +516,7 @@ struct DarkSiteCard: View {
     var body: some View {
         let s = plan.site
         VStack(alignment: .leading, spacing: 8) {
+            SiteMapView(site: s)
             HStack(alignment: .firstTextBaseline) {
                 Text(s.name).font(.callout.weight(.semibold)).lineLimit(2)
                 Spacer()
@@ -528,6 +535,9 @@ struct DarkSiteCard: View {
                     Text("\(siteSky), home Bortle \(home.bortle)").font(.caption).foregroundStyle(Theme.dim)
                 }
             }
+            if s.isComputed {
+                Text("Found from light-pollution data: check access and park considerately.").font(.caption).foregroundStyle(Theme.dim)
+            }
             if let w = plan.primary, let home = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(.caption)
             } else if plan.forecastMissing {
@@ -535,14 +545,18 @@ struct DarkSiteCard: View {
             } else {
                 Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
             }
+            // Cards in a row share the tallest one's height, with the buttons along the bottom (owner UAT, 29 September 2026).
+            Spacer(minLength: 0)
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
+                Button("Open in Maps") { SiteMaps.open(s) }.font(.caption)
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
                 Button("Observe from here") { store.visit(s) }.font(.caption)
             }
         }
         .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }

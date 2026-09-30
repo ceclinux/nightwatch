@@ -39,6 +39,9 @@ struct TargetEntity: AppEntity {
     static let defaultQuery = TargetQuery()
     let id: String
     let name: String
+    /// What Spotlight's index holds for Siri (SiriIndex.swift); empty where an action only needs the name.
+    var summary = ""
+    var keywords: [String] = []
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
 }
 
@@ -60,7 +63,7 @@ struct TargetQuery: EntityStringQuery {
     }
 }
 
-struct ShowTargetIntent: AppIntent {
+struct ShowTargetIntent: OpenIntent {   // also what Spotlight's result for a target runs
     static let title: LocalizedStringResource = "Show Target"
     static let description = IntentDescription("Opens a target's page in the Targets window.")
     static let openAppWhenRun = true

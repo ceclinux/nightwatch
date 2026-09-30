@@ -127,6 +127,32 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(!galaxy.rows.contains { $0.label == "Frames" })
     let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: 60, site: site)
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
-    #expect(ShootingTips.stackMinutes(presetID: "draco") == nil)
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco") == "Hα + O III")
+}
+
+// Planets, the Moon, stars and constellations get no deep-sky kit in a plan row (owner's UAT: Saturn read "Duo-Band or Astro").
+@Test func planRowsGiveNoDeepSkyKitOutsideDeepSky() {
+    for id in ["planet-saturn", "moon"] {
+        #expect(ShootingTips.planKit(target(id, .planets, "Planet"), presetID: "dwarf-mini") == nil)
+    }
+    #expect(ShootingTips.planKit(target("Capella", .stars, "Star"), presetID: "seestar-s50") == nil)
+    #expect(ShootingTips.planKit(target("Cyg", .constellations, "Constellation"), presetID: "dwarf-mini") == nil)
+    #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "dwarf-mini") == "Astro · 200 × 30 s")
+}
+
+// How to see this (owner's UAT, 29 September 2026): a target opened from Eyes and binoculars.
+@Test func eyesAndBinocularsPagesSayHowToSeeNotHowToShoot() {
+    let cluster = target("NGC6939", .clusters, "Open cluster")
+    let b = ShootingTips.eyeTip(for: cluster, eye: .binoculars, constellation: "Cepheus", moonIllumination: 0.88, moonUp: true, site: site)
+    #expect(b.title == "How to see this with binoculars" && b.symbol == "binoculars" && b.copyLine == nil && b.source == nil)
+    #expect(b.rows.map(\.label) == ["Looks like", "Where", "When", "Tips", "Moon"])
+    #expect(b.rows[1].text.hasPrefix("In Cepheus, high in the ") && b.rows[1].text.hasSuffix(" at 01:30."))   // peak 70° at 01:30
+    #expect(b.rows[2].text == "Up from 23:00; best at 01:30, 70° up.")
+    #expect(b.rows[3].text.hasPrefix("Brace your binoculars on a wall or a tripod, and give your eyes 20 minutes"))
+    #expect(b.rows[4].text == "The Moon is 88% lit tonight, which makes it harder to see.")
+    let planet = ShootingTips.eyeTip(for: target("planet-saturn", .planets, "Planet"), eye: .nakedEye, constellation: nil, moonIllumination: 0.88,
+                                     moonUp: true, site: site)
+    #expect(planet.title == "How to see this with the naked eye" && planet.symbol == "eye")
+    #expect(planet.rows.map(\.label) == ["Looks like", "Where", "When"])   // a bright point: no dark adaptation, and the Moon does not hide it
+    #expect(ShootingTips.tip(for: cluster, presetID: "dwarf-mini", presetName: nil, stackMinutes: nil, site: site).symbol == "camera.aperture")
 }

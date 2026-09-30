@@ -2,24 +2,22 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-/// A popover stat tile: label over value, an optional warning-colour hint, and a warning state (warning-colour outline and dot).
-/// A missing value reads "No data" in the secondary colour. Values wrap rather than truncate.
+/// A popover stat tile: label over value and an optional hint ("Dew heater advised"). No tile is singled out with a colour or
+/// outline: the words are enough (owner's UAT, 29 September 2026). A missing value reads "No data" in the secondary colour.
+/// Values wrap rather than truncate.
 struct StatTile: View {
     let label: String
     let value: String?
     var hint: String? = nil
-    var warning = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             Text(value ?? "No data").font(.system(size: 12.5, weight: .medium))
                 .foregroundStyle(value == nil ? Tokens.textSecondary : Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
-            if let hint { Text(hint).font(.system(size: 9)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true) }
+            if let hint { Text(hint).font(.system(size: 9)).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true) }
         }
         .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, maxHeight: .infinity, alignment: .topLeading)   // fills its TileRow
-        .overlay(alignment: .topTrailing) { if warning { WarningDot(size: 5).padding(7) } }
-        .overlay { if warning { RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning.opacity(0.59), lineWidth: 0.75) } }
         .accessibilityElement(children: .combine)
         // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
         // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).

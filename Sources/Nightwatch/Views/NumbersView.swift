@@ -2,8 +2,8 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-/// "What the numbers mean" (#59, owner-approved mock-up, 29 September 2026): a window of its own, opened from About,
-/// Settings and the Targets window. The same native sidebar as Targets (a hand-made split left the title bar looking odd,
+/// "What the numbers mean" (#59, owner-approved mock-up, 29 September 2026): a window of its own, opened from About
+/// and Settings (the Targets toolbar button went at the owner's UAT, 29 September 2026). The same native sidebar as Targets (a hand-made split left the title bar looking odd,
 /// owner, 29 September 2026): a list of terms that Tab and the arrow keys reach, beside plain sections a screen reader
 /// reads in order. No hover tooltips.
 struct NumbersView: View {

@@ -194,11 +194,7 @@ public struct Copy: Sendable {
         return f.string(from: date)
     }
 
-    // Tonight's plan (#57, owner-approved mock-up, 29 September 2026).
-    static let ordinalWords = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
-    static let countWords = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"]
-    /// "first" for slot 0.
-    public static func ordinal(_ i: Int) -> String { i < ordinalWords.count ? ordinalWords[i] : "number \(i + 1)" }
+    // Tonight's plan (#57, redesigned at the owner's UAT, 29 September 2026).
 
     /// "5 h", "1 h 40 min", "40 min".
     public static func duration(_ seconds: TimeInterval) -> String {
@@ -209,43 +205,31 @@ public struct Copy: Sendable {
     /// "20:40–03:10".
     public static func span(_ from: Date, _ to: Date, site: Site) -> String { "\(hhmm(from, site: site))–\(hhmm(to, site: site))" }
 
-    /// The strip's summary: "Clear 20:40–03:10 · three targets, 5 h", with "stop by 00:30" when that ends it first.
-    public static func planHeader(_ s: SessionPlan, window: ClearWindow, site: Site) -> String {
-        let n = s.slots.count
-        let count = "\(n < countWords.count ? countWords[n] : String(n)) target\(n == 1 ? "" : "s"), \(duration(s.hours * 3600))"
-        let stop = s.end < window.end ? " · stop by \(hhmm(s.end, site: site))" : ""
-        return "Clear \(span(window.start, window.end, site: site))\(stop) · \(count)"
+    /// The plan page's summary: "Clear 21:40–02:10 · 4.5 h · Moon 78%", with "finish by 00:30" when that ends it first.
+    public static func planSummary(_ s: SessionPlan, plan: NightPlan, site: Site) -> String {
+        let full = plan.primary ?? s.window
+        let stop = s.window.end < full.end ? " · finish by \(hhmm(s.window.end, site: site))" : ""
+        return "Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%"
     }
 
-    /// A slot's second line: "Crescent Nebula, in Cygnus".
-    public static func slotName(_ t: RankedTarget, constellations: [Constellation]) -> String {
-        let abbr = t.subtitle.components(separatedBy: " in ").last ?? ""
-        guard let c = constellations.first(where: { $0.id == abbr }) else { return t.cardName }
-        return "\(t.cardName), in \(c.name)"
+    /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for
+    /// a target that is not a favourite.
+    public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
+        let t = item.target
+        var parts = item.added ? ["Added for this night"] : []
+        if let v = t.viewable { parts.append("Up \(span(v.start, v.end, site: site))") }
+        parts.append("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°")
+        if let kit = ShootingTips.planKit(t, presetID: presetID) { parts.append(kit) }
+        let text = parts.joined(separator: " · ")
+        return text.prefix(1).uppercased() + text.dropFirst()
     }
 
-    /// A slot's third line: "Best 21:20, so first · Duo-Band · 200 × 30 s"; a favourite or added target says so instead.
-    public static func slotDetail(_ slot: PlanSlot, index: Int, presetID: String?, site: Site) -> String {
-        let best = hhmm(slot.target.peakTime, site: site)
-        let why = switch slot.reason {
-        case .bestPlaced: "Best \(best), so \(ordinal(index))"
-        case .favourite: "Favourite · best \(best)"
-        case .added: "Added by you · best \(best)"
-        }
-        return ShootingTips.planKit(slot.target, presetID: presetID).map { "\(why) · \($0)" } ?? why
-    }
-
-    /// "01:40–03:10: 1 h 30 min left, too short for another stack." Nil without a leftover.
-    public static func planLeftover(_ s: SessionPlan, site: Site) -> String? {
-        guard let l = s.leftover else { return nil }
-        let left = "\(span(l.start, l.end, site: site)): \(duration(l.end.timeIntervalSince(l.start))) left"
-        return s.leftoverTooShort ? "\(left), too short for another stack." : "\(left), with nothing else up long enough to add."
-    }
-
-    /// The power-bank note (owner, 29 September 2026: the battery is not a limit, but say when a plan outlasts it).
-    public static func planBattery(_ s: SessionPlan, telescope: String) -> String? {
-        guard let b = s.outlastsBatteryHours else { return nil }
-        return "This plan runs \(duration(s.hours * 3600)), longer than a \(telescope) battery (about \(duration(b * 3600))): you may need a power bank or a spare battery."
+    /// "Best at the same time as the Crescent Nebula", or with two or more, "…as the Crescent Nebula and M31". Nil without a clash.
+    public static func planClash(_ item: PlanItem) -> String? {
+        guard !item.clashes.isEmpty else { return nil }
+        let names = item.clashes.map { $0.commonName.map { "the \($0)" } ?? $0.catalogueID }
+        let list = names.count == 1 ? names[0] : names.dropLast().joined(separator: ", ") + " and " + names.last!
+        return "Best at the same time as \(list)"
     }
 
     /// A target card in the plan: "In the plan, 1st".
@@ -254,18 +238,20 @@ public struct Copy: Sendable {
         return "In the plan, \(n)\(suffix)"
     }
 
-    /// The heads-up with a plan: "Start with the Crescent Nebula at 20:40, then the Bubble Nebula at 22:20." and, only when
-    /// dew is likely during the plan, "Fit the dew heater: dew likely after 23:00."
-    public static func headsUpPlan(_ s: SessionPlan, plan: NightPlan, site: Site) -> String {
+    /// The heads-up with a plan: "Your plan: the North America Nebula, best at 21:50, then the Eastern Veil, best at 22:30."
+    /// and, only when dew is likely while the plan's targets are up, "Fit the dew heater: dew likely after 23:00." Nil with
+    /// nothing in the plan.
+    public static func headsUpPlan(_ s: SessionPlan, plan: NightPlan, site: Site) -> String? {
+        guard let first = s.items.first else { return nil }
         func name(_ t: RankedTarget) -> String { t.commonName.map { "the \($0)" } ?? t.catalogueID }
-        var text = s.slots.prefix(2).enumerated().map { i, slot in
-            "\(i == 0 ? "Start with" : "then") \(name(slot.target)) at \(hhmm(slot.start, site: site))"
-        }.joined(separator: ", ") + "."
+        var text = "Your plan: " + s.items.prefix(2).map { "\(name($0.target)), best at \(hhmm($0.target.peakTime, site: site))" }
+            .joined(separator: ", then ") + "."
+        let from = (first.target.viewable?.start ?? s.window.start).addingTimeInterval(-1800)
         let dew = plan.darkHours.first { h in
-            guard h.time >= s.slots[0].start.addingTimeInterval(-1800), h.time < s.end, let t = h.tempC, let d = h.dewPointC else { return false }
+            guard h.time >= from, h.time < s.window.end, let t = h.tempC, let d = h.dewPointC else { return false }
             return t - d < 2
         }
-        if let d = dew { text += " Fit the dew heater: dew likely after \(hhmm(max(d.time, s.slots[0].start), site: site))." }
+        if let d = dew { text += " Fit the dew heater: dew likely after \(hhmm(max(d.time, s.window.start), site: site))." }
         return text
     }
 
@@ -305,11 +291,15 @@ public struct Copy: Sendable {
     /// "Best Targets Tonight": Tonight's plan when there is one, else the popover's best three ("M31, best 00:40 · 64° up").
     public static func siriBest(_ s: WidgetSnapshot?, session: SessionPlan?, site: Site?) -> String {
         guard let s else { return siriTonight(nil) }
-        if let session, let site {
-            let list = session.slots.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.start, site: site))" }
+        if let session, let site, !session.items.isEmpty {
+            let list = session.items.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.target.peakTime, site: site))" }
             return "Tonight's plan: " + list.joined(separator: ", then ") + "."
         }
-        guard !s.targets.isEmpty else { return [sentence(s.headline), "No targets are suggested tonight."].joined(separator: " ") }
+        // On a cloudy night with a clear one tomorrow, say so, as the Targets window does (owner's UAT, 29 September 2026).
+        guard !s.targets.isEmpty else {
+            let tomorrow = s.tomorrow.map { "Tomorrow night looks clear \($0.replacingOccurrences(of: "Tomorrow ", with: ""))." }
+            return ([sentence(s.headline), "No targets are suggested tonight."] + [tomorrow].compactMap { $0 }).joined(separator: " ")
+        }
         // `best` already reads "Best 00:40 · 64° up"; lower-cased after the name.
         return "Tonight's best targets: " + s.targets.map { "\($0.name), \($0.best.prefix(1).lowercased() + $0.best.dropFirst())" }
             .joined(separator: "; ") + "."

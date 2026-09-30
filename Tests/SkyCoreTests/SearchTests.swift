@@ -158,14 +158,18 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
 // What the numbers mean (#59): every term the popover and target cards show has a plain entry.
 @Test func everyTermOnScreenIsExplained() {
     let titles = NumbersGuide.entries.map(\.title).joined(separator: " ").lowercased()
-    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "frame"] {
+    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "labels"] {
         #expect(titles.contains(term), "no entry for \(term)")
     }
     let text = NumbersGuide.entries.map(\.body).joined(separator: " ")
-    for shown in ["Held back by", "Fills 28% of frame", "Small in frame", "Mosaic", "Moon-washed", "Near Moon", "Naked eye", "Binoculars", "arcseconds"] {
+    for shown in ["Held back by", "of frame", "Small in frame", "Mosaic", "Moon-washed", "Near Moon", "Naked eye", "Binoculars", "arcseconds"] {
         #expect(text.contains(shown), "\(shown) is not explained")
     }
     #expect(Set(NumbersGuide.entries.map(\.id)).count == NumbersGuide.entries.count)
+    // The sky score says which way is better and keeps its weights to itself; nobody but a developer says "chips" (owner, 29 September 2026).
+    let score = NumbersGuide.entries.first { $0.id == "score" }!.body
+    #expect(score.contains("the higher, the better") && !score.contains("points") && !score.contains("(15)"))
+    #expect(!text.lowercased().contains("chip") && !titles.contains("chip"))
     // The figures quoted are the app's own.
     let rule = GoRule()
     #expect(text.contains("at least \(Int(rule.minHours)) hours") && text.contains("\(rule.maxCloudPct)%") && text.contains("\(Int(rule.minAltitudeDeg))° up"))

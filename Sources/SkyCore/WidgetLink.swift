@@ -4,6 +4,8 @@ import Foundation
 /// `nightwatch://targets` and `nightwatch://target/<id>`, the id percent-encoded so "/" or a space in it survives.
 public enum WidgetLink: Equatable, Sendable {
     case targets
+    /// The Targets window on Tonight's plan.
+    case plan
     case target(String)
     /// The Targets window with its search field filled in (Siri's in-app search, #72).
     case search(String)
@@ -15,6 +17,7 @@ public enum WidgetLink: Equatable, Sendable {
     public var url: URL {
         switch self {
         case .targets: URL(string: "\(Self.scheme)://targets")!
+        case .plan: URL(string: "\(Self.scheme)://plan")!
         case .target(let id): URL(string: "\(Self.scheme)://target/\(id.addingPercentEncoding(withAllowedCharacters: Self.unreserved) ?? id)")!
         case .search(let text): URL(string: "\(Self.scheme)://search?q=\(text.addingPercentEncoding(withAllowedCharacters: Self.unreserved) ?? "")")!
         }
@@ -24,6 +27,7 @@ public enum WidgetLink: Equatable, Sendable {
         guard url.scheme == Self.scheme, let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
         switch c.host {
         case "targets": self = .targets
+        case "plan": self = .plan
         case "target":
             guard let id = String(c.percentEncodedPath.dropFirst()).removingPercentEncoding, !id.isEmpty else { return nil }
             self = .target(id)

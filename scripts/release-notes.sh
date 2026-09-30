@@ -34,6 +34,8 @@ for line in open('docs/product-overview.md', encoding='utf-8'):
 
 Download `Nightwatch-{v}.dmg` below, open it and drag Nightwatch to Applications. It is signed with a Developer ID and notarised by Apple. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Its SHA-256 checksum is in `Nightwatch-{v}.dmg.sha256`.
 
+If the desktop widget shows only grey bars after you replace an older copy, macOS is still holding the old version on record: the [Desktop widget section of the README](https://github.com/rsutcliffe/nightwatch#desktop-widget-optional) has the two Terminal commands that clear it.
+
 From 0.6.7 on, Nightwatch checks once a day for a newer version and says so in its popover. Questions and ideas: [Discussions](https://github.com/rsutcliffe/nightwatch/discussions). Problems: [Issues](https://github.com/rsutcliffe/nightwatch/issues).''')
         sys.exit(0)
 sys.exit(f'release-notes: no row for {v} in the release history of docs/product-overview.md')

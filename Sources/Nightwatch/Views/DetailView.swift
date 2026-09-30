@@ -9,6 +9,10 @@ struct DetailView: View {
     let target: RankedTarget
     /// The night the Targets window shows: tonight, or tomorrow night when chosen (owner, 28 September 2026).
     let plan: NightPlan?
+    /// The page it was opened from, for the back link ("Eyes and binoculars", not the target's group: owner's UAT).
+    var back: String? = nil
+    /// Opened from Eyes and binoculars: how to see it, in place of telescope settings until How to shoot this is chosen.
+    var eye: EyeView? = nil
     let onBack: () -> Void
     @StateObject private var hero = ThumbnailLoader()
     @StateObject private var tipsUI = TipsState()
@@ -19,7 +23,7 @@ struct DetailView: View {
     private var fov: FieldOfView { FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg)) }
 
     var body: some View {
-        DetailPage(back: target.group.displayName, onBack: onBack) {
+        DetailPage(back: back ?? target.group.displayName, onBack: onBack) {
             if !fitted {
                 Label(showsWholeFieldOfView ? "Shown at your field of view" : "Dashed box = your field of view", systemImage: "viewfinder").captionPill()
             }
@@ -121,23 +125,18 @@ struct DetailView: View {
         }
     }
 
-    /// "Add to tonight's plan" (#57): on a night with a clear window, in the dark.
+    /// Tonight's plan from a target's page (#57, redesigned at the owner's UAT): a favourite can be taken off for the night
+    /// or put back; any other target up in the clear window can be added for that night only.
     @ViewBuilder private var planButton: some View {
-        // Only for a target the plan can take: deep sky, in tonight's list or a favourite usable tonight.
-        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan, SessionPlanner.canTake(target),
-           (plan.targets + plan.favourites.filter { $0.notTonight == nil }.map(\.target)).contains(where: { $0.id == target.id }) {
-            let inPlan = store.session(for: plan)?.slots.contains { $0.id == target.id } ?? false
-            let asked = store.planEdits.nightKey == plan.night.key && store.planEdits.added.contains(target.id)
+        if let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
+            let inPlan = session.items.contains { $0.id == target.id }
+            let favourite = store.config.favourites.contains(target.id)
             let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"
-            HStack(spacing: 6) {
-                Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
-                    Label(inPlan ? "Remove from \(night)" : "Add to \(night)", systemImage: inPlan ? "minus.circle" : "plus.circle")
-                }
-                .captionButton()
-                if asked && !inPlan {
-                    Text("Not up long enough in the clear window for a stack").font(.system(size: 10.5)).foregroundStyle(Theme.dim)
-                }
+            let label = inPlan ? (favourite ? "Take off \(night)" : "Remove from \(night)") : (favourite ? "Put back in \(night)" : "Add to \(night)")
+            Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
+                Label(label, systemImage: inPlan ? "minus.circle" : "plus.circle")
             }
+            .captionButton()
         }
     }
 
@@ -163,6 +162,16 @@ extension DetailView {
     /// opening it never resizes the image, and it is never clipped by the window's bottom edge (owner, 25 Sep 2026).
     @ViewBuilder var tipsOverlay: some View {
         if tipsUI.shown, let s = store.site { tipsCard(site: s) }
+        else if let eye, let s = store.site { eyeCard(eye, site: s) }
+    }
+
+    /// "How to see this" for a target opened from Eyes and binoculars (owner's UAT, 29 September 2026).
+    func eyeCard(_ eye: EyeView, site: Site) -> some View {
+        let abbr = target.subtitle.components(separatedBy: " in ").last ?? ""
+        let moonUp = plan.flatMap(Planner.moonTonight).map { $0 != .down } ?? false
+        let tip = ShootingTips.eyeTip(for: target, eye: eye, constellation: store.constellations.first { $0.id == abbr }?.name,
+                                      moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site)
+        return ShootingTipCard(tip: tip)
     }
 
     /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of

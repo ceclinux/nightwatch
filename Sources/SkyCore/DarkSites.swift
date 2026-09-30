@@ -73,10 +73,25 @@ public enum DarkSites {
 
     /// "Dark spot near Kielder" from Apple Maps' "Kielder, Northumberland": the town alone, as the card already
     /// gives the distance and direction. Nil for a blank place, and the spot keeps its coordinates.
-    public static func spotName(place: String) -> String? {
+    public static func spotName(place: String, lead: String = "Dark spot") -> String? {
         let town = place.split(separator: ",").first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
-        return town.isEmpty ? nil : "Dark spot near \(town)"
+        return town.isEmpty ? nil : "\(lead) near \(town)"
     }
+
+    /// A computed spot moves to a car park (owner's UAT, 29 September 2026). It must still be about as dark: no more than one
+    /// band brighter than the spot. Unknown darkness at either end is let through.
+    public static func darkEnough(_ candidate: DarknessBand?, spot: DarknessBand?) -> Bool {
+        guard let c = candidate, let s = spot, let ci = DarknessBand.allCases.firstIndex(of: c), let si = DarknessBand.allCases.firstIndex(of: s) else { return true }
+        return ci <= si + 1
+    }
+
+    /// The car park's own name ("Hafren Forest Car Park and Toilet Block"), or "Car park" when Apple Maps only calls it that,
+    /// so the town can be added ("Car park near Kettlewell").
+    public static func carParkName(_ name: String?) -> String {
+        let n = (name ?? "").trimmingCharacters(in: .whitespaces)
+        return ["", "car park", "parking", "car parking", "parking lot", "car park (public)"].contains(n.lowercased()) ? genericCarPark : n
+    }
+    public static let genericCarPark = "Car park"
 
     public static func toSite(_ s: DarkSite, timeZoneID: String) -> Site {
         Site(name: s.name, latitude: s.coordinate.latitude, longitude: s.coordinate.longitude, elevationM: 0, timeZoneID: timeZoneID,
