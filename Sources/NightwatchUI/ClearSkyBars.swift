@@ -26,7 +26,8 @@ public struct ClearSkyBars: View {
                     let clear = CGFloat(b.clearPct) / 100
                     VStack(spacing: 2) {
                         if labels, b.peak {
-                            Text("\(b.clearPct)%").font(.system(size: 8, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
+                            // "80%" alone read as visibility, or a clear night (owner's UAT, 30 September 2026).
+                            Text("\(b.clearPct)% clear").font(.system(size: 8, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
                         }
                         ZStack(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 2.5).fill(Tokens.surfaceTrack)
