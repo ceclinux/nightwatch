@@ -265,10 +265,10 @@ struct AddSiteSheet: View {
 
     private var trimmed: String { ui.newSite.name.trimmingCharacters(in: .whitespaces) }
     private var nameTaken: Bool { store.config.sites.contains { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame } }
-    /// Typed as text and parsed on Add, so a value is never lost to a field that has not committed; "−" is accepted.
-    private func degrees(_ s: String) -> Double? { Double(s.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "−", with: "-")) }
-    private var lat: Double? { degrees(ui.latText).flatMap { abs($0) <= 90 ? $0 : nil } }
-    private var lon: Double? { degrees(ui.lonText).flatMap { abs($0) <= 180 ? $0 : nil } }
+    /// Typed as text and parsed on Add, so a value is never lost to a field that has not committed. Degree signs and
+    /// N, S, E or W are accepted, as maps write them.
+    private var lat: Double? { Coordinates.degrees(ui.latText, latitude: true) }
+    private var lon: Double? { Coordinates.degrees(ui.lonText, latitude: false) }
     /// 0, 0 is in the Gulf of Guinea: almost certainly fields left empty rather than a real site.
     private var valid: Bool { !trimmed.isEmpty && !nameTaken && lat != nil && lon != nil && !(lat == 0 && lon == 0) }
 
@@ -280,7 +280,13 @@ struct AddSiteSheet: View {
                 if nameTaken { Text("You already have a site called \(trimmed).").font(.caption).foregroundStyle(Tokens.statusWarning) }
             }
             HStack(alignment: .top, spacing: 12) {
-                field("Latitude") { TextField("", text: $ui.latText, prompt: Text("53.381")) }
+                // A pair pasted into Latitude, as maps copy them ("53.381, -1.470"), fills both fields.
+                field("Latitude") {
+                    TextField("", text: $ui.latText, prompt: Text("53.381"))
+                        .onChange(of: ui.latText) { _, t in
+                            if let p = Coordinates.pair(t) { ui.latText = String(format: "%.4f", p.latitude); ui.lonText = String(format: "%.4f", p.longitude) }
+                        }
+                }
                 field("Longitude") { TextField("", text: $ui.lonText, prompt: Text("−1.470")) }
             }
             HStack(alignment: .top, spacing: 10) {
@@ -290,8 +296,10 @@ struct AddSiteSheet: View {
                     }
                 }
                 .disabled(store.autoSite == nil)
-                .help(store.autoSite == nil ? "Location Services has not given Nightwatch a fix yet" : "Copy this Mac's coordinates into the fields")
-                Text("or type decimal degrees, north and east positive: Sheffield is 53.381, −1.470")
+                // Said on screen, not in a hover tooltip (location entry check, 30 September 2026).
+                Text(store.autoSite == nil
+                     ? "This Mac's location is not available yet. Type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470"
+                     : "or type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470")
                     .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             field("How dark is the sky there?") {
