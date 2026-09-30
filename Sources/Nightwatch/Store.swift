@@ -499,8 +499,9 @@ final class Store: ObservableObject {
     /// and failed lookups are tried again after an hour.
     /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
     private func namedSpots(_ sites: [DarkSite], now: Date) -> [DarkSite] {
-        // Only a car park Apple Maps names just "Car park" needs its town ("Car park near Kettlewell").
-        let missing = sites.filter { $0.isComputed && $0.name == DarkSites.genericCarPark && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
+        // Every car park carries its town: two "Euro Car Parks" 6 km apart could not be told apart (owner's UAT,
+        // 30 September 2026), so "Euro Car Parks near Hetton", and "Car park near Kettlewell" for an unnamed one.
+        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
         if now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
             for s in missing {
                 spotLookups.insert(s.id)
@@ -522,8 +523,8 @@ final class Store: ObservableObject {
     }
 
     private func spotNamed(_ s: DarkSite) -> DarkSite {
-        guard s.isComputed, s.name == DarkSites.genericCarPark else { return s }
-        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: DarkSites.genericCarPark) }.map(s.named) ?? s
+        guard s.isComputed else { return s }
+        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: s.name) }.map(s.named) ?? s
     }
 
     /// Each computed spot's public place by the spot's id (nil inside: none within reach), found once and kept.

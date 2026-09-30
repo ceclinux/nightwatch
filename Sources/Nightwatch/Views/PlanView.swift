@@ -50,13 +50,13 @@ struct PlanView: View {
                         .font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
             } else if p.mode == .bright {
-                note("A bright night: Tonight's plan is for dark, clear nights. The Moon and planets are in Targets.")
+                note("A bright night: the plan is for dark, clear nights. The Moon and planets are in Targets.")
             } else if p.primary == nil, canPlanTomorrow, let w = store.tomorrow?.primary {
                 note("\(store.copy.noWindow) Tomorrow night looks clear \(Copy.span(w.start, w.end, site: s)): choose Tomorrow night above to plan it.")
             } else if p.primary == nil {
-                note(store.copy.noWindow)
+                note(isTomorrow ? "No clear window forecast for tomorrow night." : store.copy.noWindow)
             } else {
-                note("Your finish time comes before tonight's clear window opens.")
+                note("Your finish time comes before \(isTomorrow ? "tomorrow night's" : "tonight's") clear window opens.")
             }
         } else {
             note(store.lastError ?? "Waiting for the first forecast…")
