@@ -6,11 +6,11 @@
 
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
-<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover: tonight's sky score of 65, a clear window from 20:52 to 04:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
+<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover at the North York Moors: tonight's sky score of 41, a clear window from 22:00 to 02:00 with a second forecast seeing cloud from 01:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
 
 ## Screenshots
 
-Taken at the Malham National Park car park, in the Yorkshire Dales Dark Sky Reserve, with version 1.1 and a DWARF Mini.
+Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover and widgets) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the Targets window).
 
 **Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
@@ -34,7 +34,7 @@ Taken at the Malham National Park car park, in the Yorkshire Dales Dark Sky Rese
 
 **Desktop widgets:** small, medium and large.
 
-<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 49, clear 23:00 to 04:00"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score, clear window and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score, clear window, clear sky by hour and the three best targets">
+<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 41, clear 22:00 to 02:00"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score 41, clear 22:00 to 02:00, the reason and the second forecast, and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score 41, the clear window, clear sky by hour with its clearest hour, and the three best targets">
 
 ## Download
 
