@@ -66,7 +66,16 @@ killall chronod
 
 - Every 30 minutes it fetches cloud, dew point, wind and visibility for your site from Apple Weather (WeatherKit) when the app is signed for it, or from Open-Meteo otherwise, plus 7Timer for seeing and transparency. The popover footer says which one drove tonight's verdict.
 - It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, sky-survey thumbnails from CDS, the Moon image from NASA, comet/ISS element downloads, Apple Maps place names for dark spots, AuroraWatch UK's status after dark when aurora alerts are on, and the download's once-a-day update check. [PRIVACY.md](PRIVACY.md) says what each one receives.
-- A night qualifies when there is a contiguous run of at least 3 hours inside astronomical darkness with cloud at or under 25 % (all adjustable). Thin high cloud counts for half, since stacking and noise reduction work through it; low and middle cloud count in full. When a night misses, the popover says by how much and links to the go rule in Settings, for anyone happy to take a chance on a marginal night.
+- A night qualifies when there is a contiguous run of at least 3 hours inside astronomical darkness with cloud at or under 25 %. Thin high cloud counts for half, since stacking and noise reduction work through it; low and middle cloud count in full. When a night misses, the popover says by how much ("Longest clear run is 1 h from 22:00; the rule needs 3 h").
+- The go rule is yours to set, in Settings › Go rule:
+
+  | Setting | Default | Range | Loosen it when |
+  |---|---|---|---|
+  | Clear for at least | 3 h | 1–8 h | you shoot short sessions, or bright targets that need fewer frames |
+  | Cloud cover at most | 25 % | 5–60 % | you're happy to take a chance on patchy cloud; stacking rejects frames spoiled by passing cloud |
+  | Targets must reach | 30° altitude | 10–60° | you have a low, clear horizon |
+
+  Loosening it means more nights qualify, and more alerts, some of them for nights that turn out patchy. Tightening it means fewer, surer nights. Every part of the app follows the same rule: the popover's verdict, the clear window, the hour bars, the alerts and the targets it recommends.
 - Alerts: a heads-up one hour before local sunset, a nudge 30 minutes before the window opens, and a cancel notice if the forecast turns. Quiet hours default to 00:00–07:00. Nothing fires from a forecast older than six hours. The first clear window after installing opens its alert with "Your first clear window with Nightwatch", once.
 - Bright nights (opt-in, Settings › Bright nights): from about early May to early August at British latitudes there is no proper darkness, so the dark rule can never be met. With this on, Nightwatch suggests the Moon and the naked-eye planets instead and alerts for a one-hour clear run in nautical darkness (Sun 12° down) with a target at least 15° up. Deep-sky targets are never suggested on a bright night.
 - Aurora (opt-in, Settings › Aurora): after dark, Nightwatch checks AuroraWatch UK every 5 minutes and alerts when the status reaches your threshold (default amber) and this hour's forecast is clear. Status from AuroraWatch UK, Lancaster University, under its non-commercial terms. Quiet hours apply to aurora alerts too, and around midsummer the default quiet hours (00:00–07:00) cover almost all of the dark part of the night, so shorten them if you want summer aurora alerts.
