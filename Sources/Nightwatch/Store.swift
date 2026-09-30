@@ -302,8 +302,7 @@ final class Store: ObservableObject {
         return true
     }
 
-    /// The night whose sunset is coming up, or the one in progress: local date of (now − 9 h). ponytail: a fixed 9 h
-    /// offset means the previous night stays "tonight" until 09:00 local; sunrise-based switching if anyone minds.
+    /// The night in progress until its darkness ends, then the coming one (Ephemeris.currentNight).
     func recompute(now: Date) async {
         // Asked first: after this, everything up to the alert step runs without suspending, so two overlapping recomputes
         // can never step the alerts with an older plan or site.
@@ -324,6 +323,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
+        scheduleNightChange(at: Ephemeris.nightEnds(night))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
@@ -571,6 +571,20 @@ final class Store: ObservableObject {
             Store.write(spotPublic, "spot-public.json")
             // Once every search is back, the list again, now with the car parks.
             if publicLookups.isEmpty { await recomputeDarkSites(now: Date(), site: site, night: night) }
+        }
+    }
+
+    /// The popover and widget move to the coming night the minute darkness ends, not at the next half-hourly refresh.
+    /// A Mac asleep at that moment is caught by the refresh on wake.
+    private var nightChange: Task<Void, Never>?
+    private func scheduleNightChange(at end: Date) {
+        nightChange?.cancel()
+        let wait = end.timeIntervalSinceNow + 30
+        guard wait > 0 else { return }
+        nightChange = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled else { return }
+            await self?.recompute(now: Date())
         }
     }
 
