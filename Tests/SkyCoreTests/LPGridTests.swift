@@ -90,3 +90,13 @@ private func sampleGrid() -> LPGrid {
     #expect(d == d.sorted())                                    // nearest first among equals
     #expect(d.allSatisfy { $0 < 2 })
 }
+
+/// Add a site suggests the sky's darkness from the grid, with the same band-to-Bortle mapping the dark sites use
+/// (place search, 30 September 2026).
+@Test func addASiteSuggestsBortleFromTheGrid() {
+    #expect(DarknessBand.allCases.map(\.bortle) == [2, 3, 4, 6, 8])
+    let g = [sampleGrid()]
+    #expect(DarkSites.suggestedBortle(at: Coordinate(latitude: 53.05, longitude: -1.75), grids: g) == 2)   // 0.1: very dark
+    #expect(DarkSites.suggestedBortle(at: Coordinate(latitude: 53.25, longitude: -1.75), grids: g) == 8)   // 40: bright
+    #expect(DarkSites.suggestedBortle(at: Coordinate(latitude: 40.0, longitude: -74.0), grids: g) == nil)  // outside the grid
+}

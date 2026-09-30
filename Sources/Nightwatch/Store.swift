@@ -56,6 +56,7 @@ final class Store: ObservableObject {
     private let showers: [MeteorShower]
     private let certified: [CertifiedSite]
     private let grids: [LPGrid]
+    func suggestedBortle(at c: Coordinate) -> Int? { DarkSites.suggestedBortle(at: c, grids: grids) }
     private var comets: [CometElements] = []
     private var tle: TLE?
     private var configModDate: Date?
