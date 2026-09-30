@@ -21,7 +21,7 @@ final class TargetsViewState: ObservableObject {
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
     @Published var eventSort: EventSort = .time
-    /// Tonight | Tomorrow night: planning for tomorrow night while tonight has no clear window (owner, 28 September 2026).
+    /// Tonight | Tomorrow night: planning for tomorrow night (owner, 28 September 2026).
     @Published var tomorrow = false
 }
 
@@ -30,8 +30,9 @@ struct TargetsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var ui = TargetsViewState()
 
-    /// Tomorrow night can be planned from the window when tonight has no clear window and tomorrow night has one.
-    private var canPlanTomorrow: Bool { store.plan != nil && store.plan?.primary == nil && store.tomorrow?.primary != nil }
+    /// Tomorrow night can be planned whenever it has a forecast, clear or not: tied to tonight being cloudy and tomorrow
+    /// clear, the switch came and went with each refresh (owner's UAT, 30 September 2026).
+    private var canPlanTomorrow: Bool { store.plan != nil && store.tomorrow != nil }
     /// Events are tonight's only, so their page always reads tonight.
     private var showingTomorrow: Bool { ui.tomorrow && canPlanTomorrow && !isEvents }
     /// The night the whole window shows: groups, counts, search, favourites and pages all switch together.
@@ -251,13 +252,15 @@ struct TargetsView: View {
                 // The title on its own line and the controls under it, on every page: a short title ("Stars") sat beside
                 // the controls while the others sat above them (owner's UAT, 29 September 2026).
                 VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
-                // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
-                // Tonight, so it never jumps to tomorrow by itself on a later refresh.
+                // A refresh that takes the switch away (no forecast for tomorrow) also puts it back to Tonight, so it
+                // never jumps to tomorrow by itself on a later refresh.
                 Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                 if let p = plan, let s = store.site {
                     // No hour bars here: the popover and the medium and large widgets already show them (owner's UAT, 29 September 2026).
-                    if showingTomorrow, let w = p.primary {
-                        Text("Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s)): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))")
+                    if showingTomorrow {
+                        let day = "Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s))"
+                        Text(p.primary.map { w in "\(day): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))" }
+                             ?? (p.darkSpan == nil ? "\(day): no astronomical darkness." : "\(day): no clear window forecast."))
                             .font(.caption).foregroundStyle(Tokens.textSecondary)
                     } else if p.darkSpan == nil {
                         Text("No astronomical darkness tonight.").font(.caption).foregroundStyle(Tokens.textSecondary)
@@ -290,7 +293,7 @@ struct TargetsView: View {
                     let q = ui.search.trimmingCharacters(in: .whitespaces)
                     let matches = eyeTargets.contains { $0.matches(ui.search) } || !eyeEvents.isEmpty
                     Text(!q.isEmpty && !matches ? "Nothing here matches “\(q)”."
-                         : eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope tonight."
+                         : eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope \(showingTomorrow ? "tomorrow night" : "tonight")."
                          : "No telescope needed. Look first with your eyes; binoculars show the rest.")
                         .font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
