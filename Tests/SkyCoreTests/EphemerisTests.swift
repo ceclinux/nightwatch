@@ -104,15 +104,19 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     #expect(!n.hasNauticalDarkness)
 }
 
-/// Tonight switches to the coming night at sunrise, not at 09:00 (v1.0.1).
-@Test func theCurrentNightSwitchesAtSunrise() throws {
+/// Tonight switches to the coming night when darkness ends (owner's UAT, 30 September 2026), not at sunrise or 09:00.
+@Test func theCurrentNightSwitchesWhenDarknessEnds() throws {
     let lastNight = try Ephemeris.night(localDate: utc(2026, 9, 26, 12, 0), site: sheffield)
     #expect(lastNight.key == "2026-09-26")
     func key(_ d: Date) throws -> String { try Ephemeris.currentNight(now: d, site: sheffield).key }
     #expect(try key(utc(2026, 9, 26, 21, 0)) == "2026-09-26")                              // evening: the night ahead
     #expect(try key(utc(2026, 9, 27, 1, 0)) == "2026-09-26")                               // small hours: still that night
-    #expect(try key(lastNight.sunrise.addingTimeInterval(-60)) == "2026-09-26")           // a minute before sunrise
-    #expect(try key(lastNight.sunrise.addingTimeInterval(60)) == "2026-09-27")            // a minute after: the coming night
+    let darkEnd = try #require(lastNight.darkEnd)
+    #expect(darkEnd < lastNight.sunrise)
+    #expect(Ephemeris.nightEnds(lastNight) == darkEnd)
+    #expect(try key(darkEnd.addingTimeInterval(-60)) == "2026-09-26")                     // a minute before darkness ends
+    #expect(try key(darkEnd.addingTimeInterval(60)) == "2026-09-27")                      // a minute after: the coming night
+    #expect(try key(lastNight.sunrise.addingTimeInterval(-60)) == "2026-09-27")           // before sunrise, already the next
     #expect(try key(utc(2026, 9, 27, 6, 37)) == "2026-09-27")                              // 07:37 BST, the recording's time
     #expect(try key(utc(2026, 9, 27, 12, 0)) == "2026-09-27")
     #expect(try key(utc(2026, 9, 27, 22, 30)) == "2026-09-27")                             // 23:30 BST, before midnight
