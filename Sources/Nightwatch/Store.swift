@@ -302,8 +302,7 @@ final class Store: ObservableObject {
         return true
     }
 
-    /// The night whose sunset is coming up, or the one in progress: local date of (now − 9 h). ponytail: a fixed 9 h
-    /// offset means the previous night stays "tonight" until 09:00 local; sunrise-based switching if anyone minds.
+    /// The night in progress until its darkness ends, then the coming one (Ephemeris.currentNight).
     func recompute(now: Date) async {
         // Asked first: after this, everything up to the alert step runs without suspending, so two overlapping recomputes
         // can never step the alerts with an older plan or site.
@@ -324,6 +323,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
+        scheduleNightChange(at: Ephemeris.nightEnds(night))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
@@ -499,8 +499,9 @@ final class Store: ObservableObject {
     /// and failed lookups are tried again after an hour.
     /// ponytail: one retry clock for all spots, so a new site's spots can wait up to an hour after an unrelated failure.
     private func namedSpots(_ sites: [DarkSite], now: Date) -> [DarkSite] {
-        // Only a car park Apple Maps names just "Car park" needs its town ("Car park near Kettlewell").
-        let missing = sites.filter { $0.isComputed && $0.name == DarkSites.genericCarPark && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
+        // Every car park carries its town: two "Euro Car Parks" 6 km apart could not be told apart (owner's UAT,
+        // 30 September 2026), so "Euro Car Parks near Hetton", and "Car park near Kettlewell" for an unnamed one.
+        let missing = sites.filter { $0.isComputed && spotPlaces[$0.id] == nil && !spotLookups.contains($0.id) }
         if now.timeIntervalSince(spotLookupFailedAt ?? .distantPast) >= 3600 {
             for s in missing {
                 spotLookups.insert(s.id)
@@ -522,8 +523,8 @@ final class Store: ObservableObject {
     }
 
     private func spotNamed(_ s: DarkSite) -> DarkSite {
-        guard s.isComputed, s.name == DarkSites.genericCarPark else { return s }
-        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: DarkSites.genericCarPark) }.map(s.named) ?? s
+        guard s.isComputed else { return s }
+        return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: s.name) }.map(s.named) ?? s
     }
 
     /// Each computed spot's public place by the spot's id (nil inside: none within reach), found once and kept.
@@ -570,6 +571,20 @@ final class Store: ObservableObject {
             Store.write(spotPublic, "spot-public.json")
             // Once every search is back, the list again, now with the car parks.
             if publicLookups.isEmpty { await recomputeDarkSites(now: Date(), site: site, night: night) }
+        }
+    }
+
+    /// The popover and widget move to the coming night the minute darkness ends, not at the next half-hourly refresh.
+    /// A Mac asleep at that moment is caught by the refresh on wake.
+    private var nightChange: Task<Void, Never>?
+    private func scheduleNightChange(at end: Date) {
+        nightChange?.cancel()
+        let wait = end.timeIntervalSinceNow + 30
+        guard wait > 0 else { return }
+        nightChange = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled else { return }
+            await self?.recompute(now: Date())
         }
     }
 

@@ -374,7 +374,7 @@ public enum Events {
     public static func markClear(_ events: [SkyEvent], hours: [HourlyConditions], maxCloudPct: Int) -> [SkyEvent] {
         events.map { e in
             var e = e
-            e.clear = hours.first { $0.time <= e.when && e.when < $0.time.addingTimeInterval(3600) }.map { $0.cloudTotal <= maxCloudPct }
+            e.clear = hours.first { $0.time <= e.when && e.when < $0.time.addingTimeInterval(3600) }.map { $0.effectiveCloud <= maxCloudPct }
             return e
         }
     }

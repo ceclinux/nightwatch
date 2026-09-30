@@ -63,4 +63,8 @@ import Foundation
     #expect(DarkSites.carParkName("Hafren Forest Car Park and Toilet Block") == "Hafren Forest Car Park and Toilet Block")
     #expect(DarkSites.carParkName("Car Park") == "Car park" && DarkSites.carParkName("Parking") == "Car park" && DarkSites.carParkName(nil) == "Car park")
     #expect(DarkSites.spotName(place: "Kettlewell, North Yorkshire", lead: DarkSites.genericCarPark) == "Car park near Kettlewell")
+    #expect(DarkSites.spotName(place: "Hetton, North Yorkshire", lead: "Euro Car Parks") == "Euro Car Parks near Hetton")
+    // Names that already say where they are, or were already renamed, are left alone.
+    #expect(DarkSites.spotName(place: "Malham", lead: "Malham National Park car park") == "Malham National Park car park")
+    #expect(DarkSites.spotName(place: "Hetton", lead: "Euro Car Parks near Hetton") == "Euro Car Parks near Hetton")
 }

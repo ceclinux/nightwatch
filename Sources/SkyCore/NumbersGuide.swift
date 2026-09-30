@@ -14,7 +14,7 @@ public enum NumbersGuide {
         GuideEntry(id: "score", title: "Sky score",
                    body: "How good tonight is for imaging from where you are, out of 100: the higher, the better. Cloud during darkness counts most, then the Moon, then seeing and transparency, then wind and damp air. “Held back by” names what cost the most tonight."),
         GuideEntry(id: "rule", title: "Go rule and clear window",
-                   body: "The clear window is an unbroken run of clear sky in astronomical darkness, long enough to take and stack many images of a target. You can change the rule in Settings › Go rule. By default the run lasts at least 3 hours, with cloud at or under 25%, and targets count when they are at least 30° up. Clear sky by hour shows each hour’s cloud: a full bar is clear."),
+                   body: "The clear window is an unbroken run of clear sky in astronomical darkness, long enough to take and stack many images of a target. You can change the rule in Settings › Go rule. By default the run lasts at least 3 hours, with cloud at or under 25%, and targets count when they are at least 30° up. Thin high cloud counts for half, since stacking works through it; low and middle cloud count in full. Clear sky by hour shows each hour’s cloud, judged the same way: a full bar is clear."),
         GuideEntry(id: "dark", title: "Dark",
                    body: "Astronomical darkness: the Sun more than 18° below the horizon, when the sky is as dark as it gets. In a British midsummer there is none, which is what Bright nights in Settings is for."),
         GuideEntry(id: "moon", title: "Moon",

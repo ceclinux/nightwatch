@@ -11,11 +11,11 @@ public struct ClearSkyBar: Codable, Equatable, Sendable {
 
 extension Planner {
     public static func clearSkyBars(plan: NightPlan, site: Site) -> [ClearSkyBar] {
-        let peak = plan.darkHours.min { $0.cloudTotal < $1.cloudTotal }
+        let peak = plan.darkHours.min { $0.effectiveCloud < $1.effectiveCloud }
         return plan.darkHours.map { h in
-            ClearSkyBar(hour: String(Copy.hhmm(h.time, site: site).prefix(2)), clearPct: max(0, min(100, 100 - h.cloudTotal)),
+            ClearSkyBar(hour: String(Copy.hhmm(h.time, site: site).prefix(2)), clearPct: max(0, min(100, 100 - h.effectiveCloud)),
                         lit: plan.windows.contains { $0.overlapsHour(startingAt: h.time) },
-                        peak: h.time == peak?.time && h.cloudTotal < 100)
+                        peak: h.time == peak?.time && h.effectiveCloud < 100)
         }
     }
 
@@ -37,7 +37,7 @@ extension Copy {
     /// The bars' screen-reader sentence.
     public static func barsLabel(plan: NightPlan, site: Site) -> String {
         var s = "Clear sky by hour."
-        if let p = plan.darkHours.min(by: { $0.cloudTotal < $1.cloudTotal }) { s += " Clearest \(hhmm(p.time, site: site)) at \(max(0, 100 - p.cloudTotal))% clear." }
+        if let p = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += " Clearest \(hhmm(p.time, site: site)) at \(max(0, 100 - p.effectiveCloud))% clear." }
         if let w = plan.primary { s += " Clear window \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))." }
         return s
     }

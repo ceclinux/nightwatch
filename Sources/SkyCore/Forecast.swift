@@ -21,13 +21,36 @@ public struct HourlyConditions: Codable, Equatable, Sendable {
         self.tempC = tempC; self.dewPointC = dewPointC; self.humidityPct = humidityPct; self.windKmh = windKmh; self.gustKmh = gustKmh
         self.visibilityM = visibilityM; self.seeing = seeing; self.transparency = transparency
     }
+
+    /// Cloud as the go rule judges it: see `CloudCover.effective`.
+    public var effectiveCloud: Int { CloudCover.effective(total: cloudTotal, low: cloudLow, mid: cloudMid, high: cloudHigh) }
 }
 
-/// One hour of a second source's total cloud: all the agreement line compares.
+public enum CloudCover {
+    /// Thin high cloud counts for half (owner's UAT, 30 September 2026): stacking and noise reduction work through a veil
+    /// of cirrus, while low and mid cloud block the sky. The layers are combined as if they overlapped at random, and the
+    /// result is never worse than the source's own total. Without layers it is the total.
+    /// ponytail: a fixed half weight for high cloud; a setting, or thickness from another source, if it misjudges.
+    public static let highCloudWeight = 0.5
+    public static func effective(total: Int, low: Int?, mid: Int?, high: Int?) -> Int {
+        guard let low, let mid, let high else { return total }
+        func clear(_ pct: Int, _ weight: Double = 1) -> Double { 1 - weight * Double(min(max(pct, 0), 100)) / 100 }
+        let weighted = Int((100 * (1 - clear(low) * clear(mid) * clear(high, highCloudWeight))).rounded())
+        return min(total, weighted)
+    }
+}
+
+/// One hour of a second source's cloud: all the agreement line compares. The layers let it judge high cloud the way the
+/// go rule does; a forecast saved before they were kept has none, and is judged on its total.
 public struct HourlyCloud: Codable, Equatable, Sendable {
     public var time: Date
     public var cloudTotal: Int
-    public init(time: Date, cloudTotal: Int) { self.time = time; self.cloudTotal = cloudTotal }
+    public var cloudLow: Int?
+    public var cloudMid: Int?
+    public var cloudHigh: Int?
+    public init(time: Date, cloudTotal: Int, cloudLow: Int? = nil, cloudMid: Int? = nil, cloudHigh: Int? = nil) {
+        self.time = time; self.cloudTotal = cloudTotal; self.cloudLow = cloudLow; self.cloudMid = cloudMid; self.cloudHigh = cloudHigh
+    }
 }
 
 /// Open-Meteo's cloud beside Apple Weather's, for the agreement line (v0.5). Never drives the verdict; never logged.
@@ -213,7 +236,7 @@ public enum ForecastService {
             hours = r.hours; cloudSource = r.source; markURL = r.markURL; legalURL = r.legalURL
             if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3, pastDays: 1)),
                let om = try? OpenMeteo.parse(data), !om.isEmpty {
-                second = SecondOpinion(source: "Open-Meteo", hours: om.map { HourlyCloud(time: $0.time, cloudTotal: $0.cloudTotal) })
+                second = SecondOpinion(source: "Open-Meteo", hours: om.map { HourlyCloud(time: $0.time, cloudTotal: $0.cloudTotal, cloudLow: $0.cloudLow, cloudMid: $0.cloudMid, cloudHigh: $0.cloudHigh) })
             }
         } else {
             hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)))

@@ -75,7 +75,9 @@ public enum DarkSites {
     /// gives the distance and direction. Nil for a blank place, and the spot keeps its coordinates.
     public static func spotName(place: String, lead: String = "Dark spot") -> String? {
         let town = place.split(separator: ",").first.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
-        return town.isEmpty ? nil : "\(lead) near \(town)"
+        if town.isEmpty { return nil }
+        // Already says where it is ("Malham car park"), or already named: left alone, so renaming twice is harmless.
+        return lead.localizedCaseInsensitiveContains(town) ? lead : "\(lead) near \(town)"
     }
 
     /// A computed spot moves to a car park (owner's UAT, 29 September 2026). It must still be about as dark: no more than one

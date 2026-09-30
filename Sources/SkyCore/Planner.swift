@@ -76,7 +76,7 @@ public enum Planner {
             run = []
         }
         for h in dark {
-            let clear = h.cloudTotal <= rule.maxCloudPct
+            let clear = h.effectiveCloud <= rule.maxCloudPct
             let contiguous = run.last.map { h.time.timeIntervalSince($0.time) == 3600 } ?? true
             if clear && contiguous { run.append(h) } else { flush(); if clear { run = [h] } }
         }
@@ -93,7 +93,7 @@ public enum Planner {
 
     static func terms(_ s: ScoreInputs) -> ScoreTerms? {
         guard let (ds, de) = s.darkness, de > ds, !s.darkHours.isEmpty else { return nil }
-        let clearHours = Double(s.darkHours.filter { $0.cloudTotal <= s.maxCloudPct }.count)
+        let clearHours = Double(s.darkHours.filter { $0.effectiveCloud <= s.maxCloudPct }.count)
         let clearFraction = min(1, clearHours / Double(s.darkHours.count))
         let primaryHours = s.windows.map(\.hours).max() ?? 0
         let contiguity = clearHours > 0 ? min(1, primaryHours / clearHours) : 0
@@ -612,7 +612,7 @@ extension Planner {
         let usable = forecast.hours.map { h -> HourlyConditions in
             let centre = min(max(h.time.addingTimeInterval(1800), ns), ne)
             guard h.time.addingTimeInterval(3600) > ns, h.time < ne, brightTargets(at: centre, site: site).isEmpty else { return h }
-            var masked = h; masked.cloudTotal = Int.max; return masked
+            var masked = h; masked.cloudTotal = Int.max; masked.cloudLow = nil; masked.cloudMid = nil; masked.cloudHigh = nil; return masked
         }
         let brightRule = GoRule(minHours: bright.minHours, maxCloudPct: rule.maxCloudPct, minAltitudeDeg: rule.minAltitudeDeg)
         let windows = Planner.windows(hours: usable, darkStart: ns, darkEnd: ne, rule: brightRule)
@@ -640,7 +640,7 @@ extension Planner {
         for h in hours {
             let from = max(h.time, start), to = min(h.time.addingTimeInterval(3600), end)
             let centre = min(max(h.time.addingTimeInterval(1800), start), end)   // sampled exactly as brightPlan samples
-            let usable = h.cloudTotal <= rule.maxCloudPct && !brightTargets(at: centre, site: site).isEmpty
+            let usable = h.effectiveCloud <= rule.maxCloudPct && !brightTargets(at: centre, site: site).isEmpty
             let len = max(0, to.timeIntervalSince(from)) / 3600
             let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
             if usable { run = (contiguous && run != nil) ? (run!.start, run!.hours + len) : (from, len) } else { run = nil }
@@ -667,15 +667,15 @@ extension Planner {
         }
         let dark = darkHours.sorted { $0.time < $1.time }
         guard !dark.isEmpty else { return nil }
-        let clear = dark.filter { $0.cloudTotal <= rule.maxCloudPct }
+        let clear = dark.filter { $0.effectiveCloud <= rule.maxCloudPct }
         if clear.isEmpty {
-            let low = dark.map(\.cloudTotal).min() ?? 0
+            let low = dark.map(\.effectiveCloud).min() ?? 0
             return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
         }
         if mode == .bright { return brightRunReason(dark, from: darkStart, to: darkEnd, rule: rule, site: site) }
         var best: (start: Date, hours: Int) = (dark[0].time, 0), run: (start: Date, hours: Int)? = nil, prev: Date? = nil
         for h in dark {
-            let isClear = h.cloudTotal <= rule.maxCloudPct
+            let isClear = h.effectiveCloud <= rule.maxCloudPct
             let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
             if isClear { run = (contiguous && run != nil) ? (run!.start, run!.hours + 1) : (h.time, 1) } else { run = nil }
             if let r = run, r.hours > best.hours { best = r }

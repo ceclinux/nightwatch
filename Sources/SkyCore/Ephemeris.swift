@@ -77,13 +77,17 @@ public enum Ephemeris {
     private static let afterCrossing = 1.0 / 1440
 
     /// The night that begins on the local calendar date containing `localDate` at `site`.
-    /// The night Nightwatch plans for at `now`: the one in progress until its sunrise, then the coming evening's (v1.0.1).
-    /// The earlier rule, the night of the calendar day nine hours before, kept a finished night on show until 09:00, with
-    /// its hours already gone from the forecast (seen in the App Review recording, 27 September 2026).
+    /// The night Nightwatch plans for at `now`: the one in progress until its darkness ends, then the coming evening's.
+    /// 1.0.1 switched at sunrise, which still showed a finished night's past hours for an hour or more after dawn
+    /// (owner's UAT, 30 September 2026: the widget at 05:45 showing 04:00); before that the rule was 09:00.
     public static func currentNight(now: Date, site: Site) throws -> Night {
         let previous = try night(localDate: site.calendar.date(byAdding: .day, value: -1, to: now)!, site: site)
-        return now < previous.sunrise ? previous : try night(localDate: now, site: site)
+        return now < nightEnds(previous) ? previous : try night(localDate: now, site: site)
     }
+
+    /// When a night stops being worth planning: the end of astronomical darkness, or of nautical darkness on a summer
+    /// night without the astronomical kind, or sunrise on a night with neither.
+    public static func nightEnds(_ n: Night) -> Date { n.darkEnd ?? n.nauticalEnd ?? n.sunrise }
 
     public static func night(localDate: Date, site: Site) throws -> Night {
         let cal = site.calendar
