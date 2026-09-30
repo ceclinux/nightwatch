@@ -55,7 +55,7 @@ public struct Copy: Sendable {
     public static func bezelLabel(_ plan: NightPlan, site: Site) -> String {
         guard let w = plan.primary else { return "Sky score \(plan.score) of 100. No clear window." }
         var s = "Sky score \(plan.score) of 100. Clear from \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))"
-        if let h = plan.darkHours.min(by: { $0.cloudTotal < $1.cloudTotal }) { s += ", clearest hour \(hhmm(h.time, site: site)) at \(max(0, 100 - h.cloudTotal))% clear" }
+        if let h = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += ", clearest hour \(hhmm(h.time, site: site)) at \(max(0, 100 - h.effectiveCloud))% clear" }
         return s + "."
     }
 

@@ -217,3 +217,25 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
     #expect(p.mode == .bright && !p.qualifies)
     #expect(p.moonIllumination > 0.5)   // 27 June 2026 is two days before full
 }
+
+/// Thin high cloud counts for half; low and mid count in full; never worse than the source's total (owner's UAT, 30 September 2026).
+@Test func highCloudCountsForHalf() {
+    #expect(CloudCover.effective(total: 40, low: nil, mid: nil, high: nil) == 40)       // no layers: the total
+    #expect(CloudCover.effective(total: 40, low: 0, mid: 0, high: 40) == 20)            // a veil of cirrus
+    #expect(CloudCover.effective(total: 100, low: 0, mid: 0, high: 100) == 50)          // overcast cirrus still fails 25%
+    #expect(CloudCover.effective(total: 40, low: 40, mid: 0, high: 0) == 40)            // low cloud in full
+    #expect(CloudCover.effective(total: 25, low: 20, mid: 20, high: 0) == 25)           // never above the source's total
+    #expect(CloudCover.effective(total: 60, low: 20, mid: 0, high: 40) == 36)           // 1 − 0.8 × 0.8
+}
+
+@Test func aNightUnderHighCloudQualifies() {
+    let dark = (t0, t0.addingTimeInterval(6 * 3600))
+    let hours = (0..<6).map { i in
+        HourlyConditions(time: t0.addingTimeInterval(Double(i) * 3600), cloudTotal: 40, cloudLow: 0, cloudMid: 0, cloudHigh: 40,
+                         tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil)
+    }
+    // 40% total fails a 25% rule; as thin high cloud it counts as 20% and passes.
+    #expect(Planner.windows(hours: hours, darkStart: dark.0, darkEnd: dark.1, rule: rule).map(\.hours) == [6])
+    #expect(Planner.windows(hours: hours.map { var h = $0; h.cloudLow = 40; h.cloudHigh = 0; return h },
+                            darkStart: dark.0, darkEnd: dark.1, rule: rule).isEmpty)
+}

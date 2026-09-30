@@ -14,18 +14,19 @@ extension Planner {
     /// nil when there is no second opinion, no darkness, or the second source lacks an hour the comparison needs.
     public static func agreement(plan: NightPlan, second: SecondOpinion?, rule: GoRule) -> Agreement? {
         guard let second, let span = plan.darkSpan, !plan.darkHours.isEmpty else { return nil }
-        let cloud = Dictionary(second.hours.map { ($0.time, $0.cloudTotal) }, uniquingKeysWith: { a, _ in a })
+        let cloud = Dictionary(second.hours.map { ($0.time, $0) }, uniquingKeysWith: { a, _ in a })
         guard plan.darkHours.allSatisfy({ cloud[$0.time] != nil }) else { return nil }
         let hours = plan.darkHours.map { h in
-            HourlyConditions(time: h.time, cloudTotal: cloud[h.time]!, cloudLow: nil, cloudMid: nil, cloudHigh: nil, tempC: nil, dewPointC: nil,
+            let c = cloud[h.time]!
+            return HourlyConditions(time: h.time, cloudTotal: c.cloudTotal, cloudLow: c.cloudLow, cloudMid: c.cloudMid, cloudHigh: c.cloudHigh, tempC: nil, dewPointC: nil,
                              humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil)
         }
         if let w = plan.primary {
             let inside = hours.filter { w.overlapsHour(startingAt: $0.time) }
-            guard inside.contains(where: { $0.cloudTotal > rule.maxCloudPct }) else { return .agree }
+            guard inside.contains(where: { $0.effectiveCloud > rule.maxCloudPct }) else { return .agree }
             if let run = windows(hours: inside, darkStart: w.start, darkEnd: w.end, rule: rule).first {
                 // Cloud after the run has started is the news; cloud only before it means Open-Meteo clears later.
-                if let later = inside.first(where: { $0.time >= run.start && $0.cloudTotal > rule.maxCloudPct }) {
+                if let later = inside.first(where: { $0.time >= run.start && $0.effectiveCloud > rule.maxCloudPct }) {
                     return .cloudFrom(max(later.time, w.start))
                 }
                 return .clearFrom(max(run.start, w.start))

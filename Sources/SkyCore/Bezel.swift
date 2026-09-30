@@ -28,7 +28,7 @@ public enum Bezel {
             let mid = start.addingTimeInterval(offset * 60 + 360)
             if windows.contains(where: { $0.start <= mid && mid < $0.end }) { return .clear }
             guard dark.start <= mid, mid < dark.end else { return .daylight }
-            let cloud = hours.first { $0.time <= mid && mid < $0.time.addingTimeInterval(3600) }?.cloudTotal ?? 100
+            let cloud = hours.first { $0.time <= mid && mid < $0.time.addingTimeInterval(3600) }?.effectiveCloud ?? 100
             return cloud < 50 ? .partCloud : .cloudy
         }
     }

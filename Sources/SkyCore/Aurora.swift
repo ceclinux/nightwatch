@@ -70,7 +70,7 @@ public enum AuroraAlert {
               AuroraSettings.isFresh(status, now: now),   // a status cached from an earlier night must never fire
 
               Ephemeris.sunAltitude(at: now, site: site) <= sunBelowDeg,
-              let hour = hours.first(where: { $0.time <= now && now < $0.time.addingTimeInterval(3600) }), hour.cloudTotal <= rule.maxCloudPct,
+              let hour = hours.first(where: { $0.time <= now && now < $0.time.addingTimeInterval(3600) }), hour.effectiveCloud <= rule.maxCloudPct,
               !AlertEngine.inQuietHours(now, site: site, settings: alerts),
               s.lastLevel.map({ status.level > $0 }) ?? true
         else { return (nil, s) }

@@ -115,6 +115,9 @@ struct TonightView: View {
                     Text(store.copy.noWindow).font(.system(size: 15, weight: .medium)).fixedSize(horizontal: false, vertical: true)
                     if let why = noWindowReason(plan, site) {
                         Text(why).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                        // For those happy to chance a marginal night: the rule is theirs to loosen (owner's UAT, 30 September 2026).
+                        Button("Loosen the go rule in Settings") { open("settings") }
+                            .buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(Tokens.controlOn)
                     }
                     // No "Tomorrow" line: after sunrise the popover shows tomorrow night itself (owner, 28 September 2026).
                     agreementLine(plan, site)
