@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 import NightwatchUI
 import ServiceManagement
 import SkyCore
@@ -40,7 +41,7 @@ struct SettingsView: View {
                                 Text("From Dark sites · Bortle \(v.bortle) · \(Bortle.name(v.bortle).lowercased())").font(.caption).foregroundStyle(Theme.dim)
                             }
                             Spacer()
-                            Button("Keep") { store.keepVisiting() }.help("Save \(v.name) to your sites")
+                            Button("Keep") { store.keepVisiting() }.help("Save \(v.name) to your sites").disabled(!store.config.canAddSite)
                             Button("Back to \(store.homeLabel)") { store.goHome() }
                         }
                     }
@@ -51,7 +52,12 @@ struct SettingsView: View {
                         ui.latText = ""; ui.lonText = ""; ui.addingSite = true
                     }
                         .buttonStyle(.borderedProminent)
+                        .disabled(!store.config.canAddSite)
                     Spacer()
+                }
+                if !store.config.canAddSite {
+                    Text("You have \(store.config.sites.count) saved sites, the most Nightwatch keeps. Remove one to add another.")
+                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
                 Text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with.")
                     .font(.caption).foregroundStyle(Theme.dim)
@@ -262,6 +268,11 @@ struct AddSiteSheet: View {
     @EnvironmentObject var store: Store
     @ObservedObject var ui: SettingsViewState
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var search = PlaceSearch()
+    /// The name last filled in from a search, so a later search may replace it but a typed name is kept.
+    @State private var searchedName: String?
+    /// The darkness suggested from the light-pollution grid for the current coordinates; nil outside its coverage.
+    @State private var suggested: Int?
 
     private var trimmed: String { ui.newSite.name.trimmingCharacters(in: .whitespaces) }
     private var nameTaken: Bool { store.config.sites.contains { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame } }
@@ -272,9 +283,44 @@ struct AddSiteSheet: View {
     /// 0, 0 is in the Gulf of Guinea: almost certainly fields left empty rather than a real site.
     private var valid: Bool { !trimmed.isEmpty && !nameTaken && lat != nil && lon != nil && !(lat == 0 && lon == 0) }
 
+    private var coordinate: Coordinate? {
+        guard let lat, let lon, !(lat == 0 && lon == 0) else { return nil }
+        return Coordinate(latitude: lat, longitude: lon)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Add a site").font(.title3.weight(.semibold))
+            field("Search for a place") {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(Theme.dim).accessibilityHidden(true)
+                    TextField("", text: $search.query, prompt: Text("Malham Tarn"))
+                        .textFieldStyle(.plain)
+                        .accessibilityLabel("Search for a place")
+                }
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 6).stroke(Tokens.cardOutline))
+                if !search.results.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(search.results, id: \.self) { r in
+                            Button { choose(r) } label: {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(r.title).font(.system(size: 13, weight: .semibold))
+                                    if !r.subtitle.isEmpty { Text(r.subtitle).font(.system(size: 11)).foregroundStyle(Theme.dim) }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10).padding(.vertical, 6)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.surfaceTile))
+                }
+                Text("Places from Apple Maps. Only what you type is sent, never where you are.")
+                    .font(.caption).foregroundStyle(Theme.dim)
+            }
+            if let c = coordinate { SiteMapView(coordinate: c) }
             field("Name") {
                 TextField("", text: $ui.newSite.name, prompt: Text("Back garden"))
                 if nameTaken { Text("You already have a site called \(trimmed).").font(.caption).foregroundStyle(Tokens.statusWarning) }
@@ -298,8 +344,8 @@ struct AddSiteSheet: View {
                 .disabled(store.autoSite == nil)
                 // Said on screen, not in a hover tooltip (location entry check, 30 September 2026).
                 Text(store.autoSite == nil
-                     ? "This Mac's location is not available yet. Type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470"
-                     : "or type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470")
+                     ? "This Mac's location is not available yet. Search above, type the coordinates, or paste them as a pair from a map."
+                     : "or search above, type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470")
                     .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             field("How dark is the sky there?") {
@@ -307,7 +353,9 @@ struct AddSiteSheet: View {
                     ForEach(1...9, id: \.self) { Text("\($0) · \(Bortle.name($0))").tag($0) }
                 }
                 .labelsHidden()
-                Text("The Bortle scale, 1 darkest to 9 brightest. It is shown in the popover header; it does not change the forecast.")
+                Text(suggested != nil && suggested == ui.newSite.bortle
+                     ? "Suggested from light-pollution data for this spot. Change it if you know better. The Bortle scale, 1 darkest to 9 brightest."
+                     : "The Bortle scale, 1 darkest to 9 brightest. It is shown in the popover header; it does not change the forecast.")
                     .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
@@ -321,11 +369,27 @@ struct AddSiteSheet: View {
                     store.saveConfig()
                     dismiss()
                 }
-                .keyboardShortcut(.defaultAction).disabled(!valid)
+                .keyboardShortcut(.defaultAction).disabled(!valid || !store.config.canAddSite)
             }
         }
         .padding(20)
-        .frame(width: 420)
+        .frame(width: 480)
+        // New coordinates, however they arrived, get the grid's darkness where it covers them.
+        .onChange(of: coordinate) { _, c in
+            suggested = c.flatMap { store.suggestedBortle(at: $0) }
+            if let b = suggested { ui.newSite.bortle = b }
+        }
+    }
+
+    /// A chosen place fills the coordinates, its time zone, and the name unless one was typed.
+    private func choose(_ r: MKLocalSearchCompletion) {
+        Task {
+            guard let p = await search.resolve(r) else { return }
+            if trimmed.isEmpty || trimmed == searchedName { ui.newSite.name = p.name; searchedName = p.name }
+            ui.latText = String(format: "%.4f", p.coordinate.latitude); ui.lonText = String(format: "%.4f", p.coordinate.longitude)
+            if let tz = p.timeZoneID { ui.newSite.timeZoneID = tz }
+            search.clear()
+        }
     }
 
     private func field<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {

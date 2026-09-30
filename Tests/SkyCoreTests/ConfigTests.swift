@@ -222,3 +222,16 @@ private let york = site("University of York - Astrocampus", 53.943, -1.060, bort
     c.visit(york); c.keepVisiting()
     #expect(c.sites.last?.name == "University of York - Astrocampus (dark site)")
 }
+
+/// At most ten saved sites (owner, 30 September 2026); a longer synced list is kept, only adding stops.
+@Test func savedSitesStopAtTen() {
+    var c = Config()
+    c.sites = (0..<9).map { site("Site \($0)", 50 + Double($0) * 0.1, -1) }
+    #expect(c.canAddSite)
+    c.visit(york); c.keepVisiting()
+    #expect(c.sites.count == 10 && !c.canAddSite)
+    c.visit(site("Somewhere dark", 55.2, -2.6)); c.keepVisiting()
+    #expect(c.sites.count == 10 && c.visiting != nil)          // not kept: still only visiting
+    c.sites.append(site("Synced eleventh", 56, -3))            // a list from another Mac or an older version
+    #expect(c.sites.count == 11 && !c.canAddSite)
+}

@@ -11,6 +11,16 @@ public enum DarknessBand: String, Codable, CaseIterable, Sendable {
         case .bright: "Bright"
         }
     }
+    /// The Bortle class a band most resembles, for a site whose darkness is only known from the grid.
+    public var bortle: Int {
+        switch self {
+        case .veryDark: 2
+        case .dark: 3
+        case .rural: 4
+        case .suburban: 6
+        case .bright: 8
+        }
+    }
     /// Heuristic bands on VIIRS upward radiance (nW/cm²/sr). Not a Bortle class; the About window says so.
     public static func from(radiance r: Double) -> DarknessBand {
         switch r {
