@@ -10,6 +10,8 @@ final class Store: ObservableObject {
     @Published var config: Config = .default
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
+    /// The week ahead page: tonight, tomorrow and the nights after, as far as the forecast reaches.
+    @Published var week: [WeekNight] = []
     /// Tonight at home while observing from somewhere else, for the dark-site cards' comparison; the same as `plan` at home.
     @Published var homePlan: NightPlan?
     /// A newer release on GitHub, when there is one (v0.6.7).
@@ -309,7 +311,7 @@ final class Store: ObservableObject {
         let canNotify = config.notifyEnabled ? await Notifier.authorised() : false
         guard let site, let fc = forecast else { return }
         guard forecastMatches(site) else {
-            plan = nil; tomorrow = nil; events = []; darkSites = []; sitePlans = []; bestAway = nil
+            plan = nil; tomorrow = nil; week = []; events = []; darkSites = []; sitePlans = []; bestAway = nil
             lastError = "Forecast is for a different site; refreshing"
             clearWidgetSnapshot()
             return
@@ -323,6 +325,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
+        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights)
         scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
