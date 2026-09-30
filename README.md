@@ -10,11 +10,15 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
 ## Screenshots
 
-Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover and widgets) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the Targets window).
+Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover, widgets and the week ahead) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the rest of the Targets window).
 
 **Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
 <img src="docs/images/screenshot-plan.png" width="728" alt="Tomorrow night's plan, clear 22:00 to 03:00: the Iris Nebula at 22:00, the Little Sombrero Galaxy at 00:30 and Saturn at 01:00, both marked as best at the same time, and Capella at 03:00, each with a Not tomorrow button">
+
+**The week ahead:** up to ten nights in date order, each with its clear window or longest clear run, darkness and the Moon, so the best night of the week is easy to pick. Cloud from three days out is marked "Less certain".
+
+<img src="docs/images/screenshot-week-ahead.png" width="728" alt="The week ahead at the North York Moors: ten nights in date order, five with a clear window, tomorrow the longest at 7.4 hours, and nights from three days out marked Less certain">
 
 **Tonight or tomorrow night:** the whole Targets window can show tomorrow night instead, so you can plan ahead. Each card says how much of your frame the target fills, and when it is up in the clear window.
 
