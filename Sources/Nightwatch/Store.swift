@@ -554,7 +554,7 @@ final class Store: ObservableObject {
                                 band: LPGrids.radiance(at: c, in: grids).map(DarknessBand.from) ?? s.band, bortle: nil, source: nil,
                                 isComputed: true))
         }
-        return out.sorted { $0.distanceKm < $1.distanceKm }
+        return DarkSites.withoutDuplicates(out).sorted { $0.distanceKm < $1.distanceKm }
     }
 
     private func lookUpPublicPlace(for s: DarkSite, site: Site, night: Night) {
