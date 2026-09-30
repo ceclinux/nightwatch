@@ -323,7 +323,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
-        scheduleNightChange(at: Ephemeris.nightEnds(night))
+        scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
@@ -574,14 +574,15 @@ final class Store: ObservableObject {
         }
     }
 
-    /// The popover and widget move to the coming night the minute darkness ends, not at the next half-hourly refresh.
-    /// A Mac asleep at that moment is caught by the refresh on wake.
-    private var nightChange: Task<Void, Never>?
-    private func scheduleNightChange(at end: Date) {
-        nightChange?.cancel()
-        let wait = end.timeIntervalSinceNow + 30
-        guard wait > 0 else { return }
-        nightChange = Task { [weak self] in
+    /// A check at the next moment something falls due, not at the next half-hourly refresh: the heads-up, the go nudge,
+    /// and the move to the coming night when darkness ends. Each check schedules the next. A Mac asleep at that moment
+    /// is caught by the refresh on wake.
+    private var nextCheck: Task<Void, Never>?
+    private func scheduleCheck(at times: [Date]) {
+        nextCheck?.cancel()
+        guard let next = times.filter({ $0 > Date() }).min() else { return }
+        let wait = next.timeIntervalSinceNow + 5
+        nextCheck = Task { [weak self] in
             try? await Task.sleep(for: .seconds(wait))
             guard !Task.isCancelled else { return }
             await self?.recompute(now: Date())
