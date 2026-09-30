@@ -91,9 +91,14 @@ public struct Config: Codable, Equatable, Sendable {
         if let saved = sites.first(where: { Config.samePlace($0, s) }) { choose(savedName: saved.name) } else { visiting = s }
     }
 
+    /// At most ten saved sites (owner, 30 September 2026): a longer list crowds Settings. A synced or older list with more
+    /// keeps them all; only adding stops until one is removed.
+    public static let maxSites = 10
+    public var canAddSite: Bool { sites.count < Config.maxSites }
+
     /// Save the visited site, under a name no other saved site has ("X", then "X (dark site)", "X (dark site 2)", …).
     public mutating func keepVisiting() {
-        guard var v = visiting else { return }
+        guard var v = visiting, canAddSite else { return }
         if sites.isEmpty, homeSiteName == nil { homeIsThisMac = true }   // keeping a first site must not quietly move home
         let taken = Set(sites.map { $0.name.lowercased() }), base = v.name
         var n = 1

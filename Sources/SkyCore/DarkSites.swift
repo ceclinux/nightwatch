@@ -95,6 +95,12 @@ public enum DarkSites {
     }
     public static let genericCarPark = "Car park"
 
+    /// The sky's darkness at a place being added, from the bundled light-pollution grid; nil outside its coverage (Great
+    /// Britain and Ireland), where the person chooses (place search, owner-approved mock-up, 30 September 2026).
+    public static func suggestedBortle(at c: Coordinate, grids: [LPGrid]) -> Int? {
+        LPGrids.radiance(at: c, in: grids).map { DarknessBand.from(radiance: $0).bortle }
+    }
+
     /// A computed car park within 1 km of a certified site is that site again ("Car park near Malham" beside Malham
     /// National Park car park, owner's UAT, 30 September 2026): the certified one stays, with its source.
     public static func withoutDuplicates(_ sites: [DarkSite], withinKm: Double = 1) -> [DarkSite] {
@@ -104,6 +110,6 @@ public enum DarkSites {
 
     public static func toSite(_ s: DarkSite, timeZoneID: String) -> Site {
         Site(name: s.name, latitude: s.coordinate.latitude, longitude: s.coordinate.longitude, elevationM: 0, timeZoneID: timeZoneID,
-             bortle: s.bortle ?? (s.band.map { [DarknessBand.veryDark: 2, .dark: 3, .rural: 4, .suburban: 6, .bright: 8][$0]! } ?? 5))
+             bortle: s.bortle ?? s.band?.bortle ?? 5)
     }
 }

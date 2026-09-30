@@ -66,6 +66,14 @@ public enum AlertEngine {
         return a < b ? (h >= a && h < b) : (h >= a || h < b)
     }
 
+    /// When the heads-up and the go nudge fall due tonight, the same moments `step` tests. The app checks again at each,
+    /// so an alert goes out on the minute rather than at the next half-hourly refresh, up to 40 minutes late (owner's
+    /// review, 30 September 2026). A sleeping Mac still sends nothing until it wakes; the check on wake catches it.
+    public static func dueTimes(tonight: NightPlan, settings: AlertSettings) -> [Date] {
+        [tonight.night.sunset.addingTimeInterval(-3600),
+         tonight.primary?.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60)].compactMap { $0 }
+    }
+
     public static func step(now: Date, tonight: NightPlan, tomorrow: NightPlan?, state: AlertState?, settings: AlertSettings,
                             forecastFetchedAt: Date, site: Site, copy: Copy, session: SessionPlan? = nil) -> (notification: AlertNotification?, state: AlertState) {
         // A fresh install has no state and has not had its first clear window; any earlier file has (see firstClearSaid).
@@ -86,9 +94,9 @@ public enum AlertEngine {
         }
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
 
-        let headsUpAt = tonight.night.sunset.addingTimeInterval(-3600)
+        let headsUpAt = dueTimes(tonight: tonight, settings: settings)[0]
         let agreed = !settings.requireAgreement || Planner.agreementHolds(tonight.agreement)
-        let goAt = tonight.primary?.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60)
+        let goAt = tonight.primary.map { _ in dueTimes(tonight: tonight, settings: settings)[1] }
         var note: AlertNotification? = nil
 
         func window(_ p: NightPlan) -> (String, Double) {

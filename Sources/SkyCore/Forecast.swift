@@ -234,12 +234,12 @@ public enum ForecastService {
         var second: SecondOpinion? = nil
         if let primary, let r = try? await primary(site, now), !r.hours.isEmpty {
             hours = r.hours; cloudSource = r.source; markURL = r.markURL; legalURL = r.legalURL
-            if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3, pastDays: 1)),
+            if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 11, pastDays: 1)),
                let om = try? OpenMeteo.parse(data), !om.isEmpty {
                 second = SecondOpinion(source: "Open-Meteo", hours: om.map { HourlyCloud(time: $0.time, cloudTotal: $0.cloudTotal, cloudLow: $0.cloudLow, cloudMid: $0.cloudMid, cloudHigh: $0.cloudHigh) })
             }
         } else {
-            hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)))
+            hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 11)))
         }
         var seeingSource: String? = nil
         if let data = try? await fetcher.get(SevenTimer.url(latitude: site.latitude, longitude: site.longitude)),

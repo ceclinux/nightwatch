@@ -10,6 +10,8 @@ final class Store: ObservableObject {
     @Published var config: Config = .default
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
+    /// The week ahead page: tonight, tomorrow and the nights after, as far as the forecast reaches.
+    @Published var week: [WeekNight] = []
     /// Tonight at home while observing from somewhere else, for the dark-site cards' comparison; the same as `plan` at home.
     @Published var homePlan: NightPlan?
     /// A newer release on GitHub, when there is one (v0.6.7).
@@ -54,6 +56,7 @@ final class Store: ObservableObject {
     private let showers: [MeteorShower]
     private let certified: [CertifiedSite]
     private let grids: [LPGrid]
+    func suggestedBortle(at c: Coordinate) -> Int? { DarkSites.suggestedBortle(at: c, grids: grids) }
     private var comets: [CometElements] = []
     private var tle: TLE?
     private var configModDate: Date?
@@ -309,7 +312,7 @@ final class Store: ObservableObject {
         let canNotify = config.notifyEnabled ? await Notifier.authorised() : false
         guard let site, let fc = forecast else { return }
         guard forecastMatches(site) else {
-            plan = nil; tomorrow = nil; events = []; darkSites = []; sitePlans = []; bestAway = nil
+            plan = nil; tomorrow = nil; week = []; events = []; darkSites = []; sitePlans = []; bestAway = nil
             lastError = "Forecast is for a different site; refreshing"
             clearWidgetSnapshot()
             return
@@ -323,7 +326,8 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
-        scheduleNightChange(at: Ephemeris.nightEnds(night))
+        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights)
+        scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: rule.maxCloudPct)
@@ -574,14 +578,15 @@ final class Store: ObservableObject {
         }
     }
 
-    /// The popover and widget move to the coming night the minute darkness ends, not at the next half-hourly refresh.
-    /// A Mac asleep at that moment is caught by the refresh on wake.
-    private var nightChange: Task<Void, Never>?
-    private func scheduleNightChange(at end: Date) {
-        nightChange?.cancel()
-        let wait = end.timeIntervalSinceNow + 30
-        guard wait > 0 else { return }
-        nightChange = Task { [weak self] in
+    /// A check at the next moment something falls due, not at the next half-hourly refresh: the heads-up, the go nudge,
+    /// and the move to the coming night when darkness ends. Each check schedules the next. A Mac asleep at that moment
+    /// is caught by the refresh on wake.
+    private var nextCheck: Task<Void, Never>?
+    private func scheduleCheck(at times: [Date]) {
+        nextCheck?.cancel()
+        guard let next = times.filter({ $0 > Date() }).min() else { return }
+        let wait = next.timeIntervalSinceNow + 5
+        nextCheck = Task { [weak self] in
             try? await Task.sleep(for: .seconds(wait))
             guard !Task.isCancelled else { return }
             await self?.recompute(now: Date())
