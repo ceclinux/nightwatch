@@ -41,11 +41,13 @@ struct PlanView: View {
                 } else {
                     Text("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(isTomorrow ? "tomorrow night" : "tonight"): your choices are kept for this night, even if you make them the day before.")
                         .font(.callout).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    // Each target keeps its line style from night to night (owner, 1 October 2026).
+                    let styles = ChartLayout.styles(for: session.items.map(\.target.id), count: PlanLineStyle.all.count)
                     if !session.items.isEmpty {
                         PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
-                                  site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight")
+                                  site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight", styles: styles)
                     }
-                    VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: i, night: p.night.key, site: s) } }
+                    VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s) } }
                     if session.items.isEmpty {
                         Text("Nothing left in the plan for this night.").font(.callout).foregroundStyle(Tokens.textSecondary)
                     }

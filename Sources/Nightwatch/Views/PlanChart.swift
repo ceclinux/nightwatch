@@ -15,7 +15,7 @@ enum PlanLineStyle {
 
 /// A plan row's key: a short sample of its target's line.
 struct PlanLineKey: View {
-    let index: Int
+    let index: Int   // ChartLayout.styles, as the chart uses
     var body: some View {
         let s = PlanLineStyle.at(index)
         Path { p in p.move(to: CGPoint(x: 1, y: 5)); p.addLine(to: CGPoint(x: 25, y: 5)) }
@@ -36,6 +36,8 @@ struct PlanChart: View {
     let minAltitude: Double
     let site: Site
     var nightWords = "tonight"
+    /// Each target's line style (ChartLayout.styles), shared with the rows' keys.
+    let styles: [String: Int]
 
     private var span: TimeInterval { night.sunrise.timeIntervalSince(night.sunset) }
     private func frac(_ t: Date) -> Double { t.timeIntervalSince(night.sunset) / span }
@@ -46,35 +48,22 @@ struct PlanChart: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Altitude \(nightWords)").font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
                 GeometryReader { g in
-                    let x = { (f: Double) in g.size.width * max(0, min(1, f)) }
-                    let y = { (alt: Double) in g.size.height * (1 - max(0, min(90, alt)) / 90) }
+                    let w = g.size.width, h = g.size.height
+                    let x: (Double) -> CGFloat = { f in w * CGFloat(max(0, min(1, f))) }
+                    let y: (Double) -> CGFloat = { alt in h * CGFloat(1 - max(0, min(90, alt)) / 90) }
                     Rectangle().fill(Color.white.opacity(0.07))
                         .frame(width: max(0, x(frac(window.end)) - x(frac(window.start))), height: g.size.height)
                         .offset(x: x(frac(window.start)))
                     if site.horizon == nil {
                         Path { p in p.move(to: CGPoint(x: 0, y: y(minAltitude))); p.addLine(to: CGPoint(x: g.size.width, y: y(minAltitude))) }
                             .stroke(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        let floorY: CGFloat = y(minAltitude)
                         Text("\(Int(minAltitude))°").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary)
-                            .position(x: g.size.width - 12, y: y(minAltitude) - 7)
+                            .position(x: w - 12, y: floorY - 7)
                     }
+                    let labels = labelSpots(tracks, x: x, y: y, size: g.size)
                     ForEach(Array(tracks.enumerated()), id: \.offset) { i, samples in
-                        let style = PlanLineStyle.at(i)
-                        Path { p in for (k, s) in samples.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); k == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
-                            .stroke(style.colour.opacity(0.35), style: StrokeStyle(lineWidth: 1.2, dash: style.dash))
-                        Path { p in
-                            for run in AltitudeTrack.clearRuns(samples, window: window) {
-                                for (k, s) in run.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); k == 0 ? p.move(to: pt) : p.addLine(to: pt) }
-                            }
-                        }
-                        .stroke(style.colour, style: StrokeStyle(lineWidth: 2.6, dash: style.dash))
-                        let t = items[i].target
-                        if t.peakTime >= night.sunset, t.peakTime <= night.sunrise {
-                            let px = x(frac(t.peakTime)), py = y(t.peakAltDeg)
-                            Circle().fill(style.colour).frame(width: 7, height: 7).position(x: px, y: py)
-                            Text("\(shortName(t)) \(Copy.hhmm(t.peakTime, site: site))")
-                                .font(.system(size: 10, weight: .medium)).foregroundStyle(style.colour).fixedSize()
-                                .position(x: min(max(px, 60), g.size.width - 60), y: max(8, py - 11))
-                        }
+                        targetLine(i, samples, x: x, y: y, spot: labels[i])
                     }
                 }
                 .frame(height: 170)
@@ -92,6 +81,37 @@ struct PlanChart: View {
         .accessibilityLabel("Altitude \(nightWords)")
         .accessibilityValue(items.map { "\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees" }
             .joined(separator: "; "))
+    }
+
+    /// One target's line, faint all night and bold where clear, with its peak and name.
+    @ViewBuilder private func targetLine(_ i: Int, _ samples: [AltitudeSample], x: @escaping (Double) -> CGFloat, y: @escaping (Double) -> CGFloat,
+                                         spot: (x: Double, y: Double)) -> some View {
+        let style = PlanLineStyle.at(styles[items[i].target.id] ?? i)
+        let t = items[i].target
+        Path { p in
+            for (k, s) in samples.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); if k == 0 { p.move(to: pt) } else { p.addLine(to: pt) } }
+        }
+        .stroke(style.colour.opacity(0.35), style: StrokeStyle(lineWidth: 1.2, dash: style.dash))
+        Path { p in
+            for run in AltitudeTrack.clearRuns(samples, window: window) {
+                for (k, s) in run.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); if k == 0 { p.move(to: pt) } else { p.addLine(to: pt) } }
+            }
+        }
+        .stroke(style.colour, style: StrokeStyle(lineWidth: 2.6, dash: style.dash))
+        if t.peakTime >= night.sunset, t.peakTime <= night.sunrise {
+            Circle().fill(style.colour).frame(width: 7, height: 7).position(x: x(frac(t.peakTime)), y: y(t.peakAltDeg))
+            Text(label(t)).font(.system(size: 10, weight: .medium)).foregroundStyle(style.colour).fixedSize().position(x: CGFloat(spot.x), y: CGFloat(spot.y))
+        }
+    }
+
+    private func label(_ t: RankedTarget) -> String { "\(shortName(t)) \(Copy.hhmm(t.peakTime, site: site))" }
+
+    /// Where each name goes: near its peak, clear of the other names and the other targets' lines (ChartLayout).
+    private func labelSpots(_ tracks: [[AltitudeSample]], x: (Double) -> CGFloat, y: (Double) -> CGFloat, size: CGSize) -> [(x: Double, y: Double)] {
+        let anchors = items.map { (x: Double(x(frac($0.target.peakTime))), y: Double(y($0.target.peakAltDeg))) }
+        let sizes = items.map { (width: Double(label($0.target).count) * 5.9 + 4, height: 13.0) }   // ponytail: estimated text width at 10 pt
+        let lines = tracks.map { $0.map { (x: Double(x($0.fraction)), y: Double(y($0.alt))) } }
+        return ChartLayout.placeLabels(anchors: anchors, sizes: sizes, lines: lines, width: Double(size.width), height: Double(size.height))
     }
 
     /// The name people know, as short as the line label allows: "Iris" for the Iris Nebula, else the catalogue name.
