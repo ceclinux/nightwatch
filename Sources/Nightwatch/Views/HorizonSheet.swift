@@ -9,6 +9,7 @@ struct HorizonSheet: View {
     @Environment(\.dismiss) private var dismiss
     let siteName: String
     @State private var heights: [Double] = []
+    @State private var measuring: PhotoChoice?
 
     private static let names = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
     private var openDeg: Double { store.config.goRule.minAltitudeDeg }
@@ -34,6 +35,7 @@ struct HorizonSheet: View {
             Text("To measure: stand where the telescope goes, face each way, and read the angle to the top of the roof or trees with a clinometer app on your phone. Steps of 5° are plenty.")
                 .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack {
+                Button { measuring = PhotoChoice.pick() } label: { Label("Measure from a photo…", systemImage: "camera") }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Done") { save(); dismiss() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
@@ -41,6 +43,14 @@ struct HorizonSheet: View {
         }
         .padding(24)
         .frame(width: 560)
+        // A photo dropped on the sheet is measured as one chosen from the button.
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let u = urls.first else { return false }
+            measuring = PhotoChoice(url: u); return true
+        }
+        .sheet(item: $measuring) { c in
+            MeasurePhotoSheet(choice: c) { dir, deg in if heights.indices.contains(dir) { heights[dir] = deg } }
+        }
         .onAppear {
             heights = store.config.sites.first { $0.name == siteName }?.horizon ?? Array(repeating: openDeg, count: 8)
         }

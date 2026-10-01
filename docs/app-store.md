@@ -178,7 +178,7 @@ the external services it uses, regional differences, and any regulation or prote
 
 1. Release the download as usual (`releasing.md`). Every release raises the build number, which the App Store requires.
 2. From the same tagged commit, run `scripts/appstore.sh`. It stops with a pointer to this page if anything from the setup
-   is missing, and refuses to package a build that still has the update check, a sandbox exception or user-selected file access.
+   is missing, and refuses to package a build that still has the update check or a sandbox exception.
 3. `open -a Transporter build/appstore/Nightwatch-<version>.pkg`, then **Deliver** (step 7).
 4. In App Store Connect, create the new version and paste **What's New in This Version** (required for every update) from
    `scripts/release-notes.sh --appstore <version>`. It prints the release-history row as plain bullets without the release
@@ -270,6 +270,8 @@ Entitlements and where to see each one:
   other Macs". Change a setting on one Mac and it appears on another signed in to the same Apple Account.
 - App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
   Edit Widgets; it shows the same sky score as the popover.
+- User-selected files, read only (files.user-selected.read-only): Settings > Where you observe > Horizon... >
+  "Measure from a photo..." opens a photo the user chooses, reads its direction, lens and tilt, and is not kept.
 ```
 
 The table behind it, for checking against the build (`codesign -d --entitlements - --xml` on the store app):
@@ -282,10 +284,12 @@ The table behind it, for checking against the build (`codesign -d --entitlements
 | `com.apple.developer.weatherkit` | Apple Weather forecast | Popover, Apple Weather mark |
 | `com.apple.developer.ubiquity-kvstore-identifier` | Settings sync (#49) | Settings › App caption |
 | `com.apple.security.application-groups` | Forecast shared with the widget (app and widget) | Desktop widget |
+| `com.apple.security.files.user-selected.read-only` | Opening a photo to measure a site's horizon | Settings › Where you observe › Horizon… › Measure from a photo… |
 
 Deliberately **not** in the store build (`scripts/appstore.sh` strips them and fails if they return): the temporary
-sandbox exceptions and `com.apple.security.files.user-selected.read-only`. Both exist only to import 0.6 settings,
-which an App Store user never had, so a reviewer could never see them used. The download keeps them.
+sandbox exceptions, which exist only to import 0.6 settings that an App Store user never had, so a reviewer could never
+see them used. The download keeps them. User-selected file access was stripped too until 1.1 gave it a visible use
+(Measure from a photo).
 
 ### Before pressing Submit
 
