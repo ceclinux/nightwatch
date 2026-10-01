@@ -183,8 +183,13 @@ the external services it uses, regional differences, and any regulation or prote
 4. In App Store Connect, create the new version and paste **What's New in This Version** (required for every update) from
    `scripts/release-notes.sh --appstore <version>`. It prints the release-history row as plain bullets without the release
    name, fails over Apple's 4,000 characters, and warns about download-only wording (GitHub, the DMG, the update check)
-   to edit out first. Attach the build, then **Save**, **Add for Review** and **Submit** (step 12). Review usually takes a
-   day or two.
+   to edit out first. Attach the build.
+5. Paste **App Review Information › Notes** from *Notes for App Review* above, so every entitlement in the build is
+   listed with where to see it. *1.1 is the first update after 1.0.0 and adds two the reviewer has not seen:
+   iCloud key-value storage (settings sync) and user-selected file access (Horizon › Measure from a photo).* Check the
+   table against `codesign -d --entitlements - --xml` on `build/appstore`'s app, then go through *Before pressing Submit*.
+6. **Save**, **Add for Review** and **Submit** (step 12), and confirm the status reads Waiting for Review. Review usually
+   takes a day or two.
 
 ## Listing text
 
