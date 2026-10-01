@@ -41,7 +41,11 @@ struct PlanView: View {
                 } else {
                     Text("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(isTomorrow ? "tomorrow night" : "tonight"): your choices are kept for this night, even if you make them the day before.")
                         .font(.callout).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
-                    VStack(spacing: 8) { ForEach(session.items) { row($0, night: p.night.key, site: s) } }
+                    if !session.items.isEmpty {
+                        PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
+                                  site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight")
+                    }
+                    VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: i, night: p.night.key, site: s) } }
                     if session.items.isEmpty {
                         Text("Nothing left in the plan for this night.").font(.callout).foregroundStyle(Tokens.textSecondary)
                     }
@@ -80,10 +84,11 @@ struct PlanView: View {
         .frame(maxWidth: 460).frame(maxWidth: .infinity).padding(.top, 40)
     }
 
-    private func row(_ item: PlanItem, night: String, site: Site) -> some View {
+    private func row(_ item: PlanItem, index: Int, night: String, site: Site) -> some View {
         let t = item.target
         return HStack(spacing: 16) {
             HStack(spacing: 16) {
+                PlanLineKey(index: index)
                 Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: 18, weight: .semibold)).monospacedDigit().frame(width: 58, alignment: .leading)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {

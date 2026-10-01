@@ -205,14 +205,8 @@ struct AltitudeChart: View {
     private func frac(_ t: Date) -> Double { t.timeIntervalSince(night.sunset) / span }
 
     var body: some View {
-        // Every 10 minutes, plus the window's own edges so the red run starts and ends exactly there.
-        let times = (stride(from: 0.0, through: 1.0, by: 1.0 / 72).map { night.sunset.addingTimeInterval($0 * span) } + [window.start, window.end])
-            .filter { $0 >= night.sunset && $0 <= night.sunrise }.sorted()
-        // With a site horizon the floor follows the target's direction (Site.floorDeg); without one it is the go rule's line.
-        let samples: [(f: Double, t: Date, alt: Double, floor: Double)] = times.map { t in
-            let (alt, az) = Ephemeris.altAz(raHours: target.raHours, decDeg: target.decDeg, at: t, site: site)
-            return (frac(t), t, alt, site.floorDeg(azimuthDeg: az, minAlt: minAltitude, replacesFloor: true))
-        }
+        // Shared with Tonight's plan's chart (#92), so the two always agree.
+        let samples = AltitudeTrack.samples(raHours: target.raHours, decDeg: target.decDeg, night: night, window: window, site: site, minAlt: minAltitude)
         VStack(alignment: .leading, spacing: 3) {
             Text("Altitude \(nightWords)").font(.system(size: 10)).foregroundStyle(Theme.dim)
             GeometryReader { g in
@@ -227,21 +221,18 @@ struct AltitudeChart: View {
                 } else {
                     // The horizon the target is behind, as a shaded band under the floor in its direction.
                     Path { p in
-                        p.move(to: CGPoint(x: x(samples.first?.f ?? 0), y: g.size.height))
-                        for s in samples { p.addLine(to: CGPoint(x: x(s.f), y: y(s.floor))) }
-                        p.addLine(to: CGPoint(x: x(samples.last?.f ?? 1), y: g.size.height)); p.closeSubpath()
+                        p.move(to: CGPoint(x: x(samples.first?.fraction ?? 0), y: g.size.height))
+                        for s in samples { p.addLine(to: CGPoint(x: x(s.fraction), y: y(s.floor))) }
+                        p.addLine(to: CGPoint(x: x(samples.last?.fraction ?? 1), y: g.size.height)); p.closeSubpath()
                     }
                     .fill(Color.white.opacity(0.14))
                     Text("Horizon").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
                 }
-                Path { p in for (i, s) in samples.enumerated() { let pt = CGPoint(x: x(s.f), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
+                Path { p in for (i, s) in samples.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
                     .stroke(Color.white.opacity(0.55), lineWidth: 1.5)
                 Path { p in
-                    var drawing = false
-                    for s in samples {
-                        guard s.t >= window.start, s.t <= window.end, s.alt >= s.floor else { drawing = false; continue }
-                        let pt = CGPoint(x: x(s.f), y: y(s.alt))
-                        if drawing { p.addLine(to: pt) } else { p.move(to: pt); drawing = true }
+                    for run in AltitudeTrack.clearRuns(samples, window: window) {
+                        for (i, s) in run.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) }
                     }
                 }
                 .stroke(Theme.accent, lineWidth: 2.5)

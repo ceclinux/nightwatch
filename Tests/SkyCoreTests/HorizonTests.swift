@@ -88,3 +88,17 @@ private func walled(_ h: [Double]) -> Site { var s = open; s.horizon = h; return
     #expect(!hidden.clear)
     #expect(Events.highest(raHours: 19.846, decDeg: 8.87, from: night2.darkStart!, to: night2.darkEnd!, site: open).clear)
 }
+
+@Test func altitudeSamplesRunSunsetToSunriseAndBoldOnlyWhereClear() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: open)
+    let w = ClearWindow(start: night.darkStart!.addingTimeInterval(3600), end: night.darkStart!.addingTimeInterval(4 * 3600))
+    let s = AltitudeTrack.samples(raHours: 19.846, decDeg: 8.87, night: night, window: w, site: open, minAlt: 30)
+    #expect(s.first?.time == night.sunset && s.last?.time == night.sunrise && s.first?.fraction == 0 && s.last?.fraction == 1)
+    #expect(s.contains { $0.time == w.start } && s.contains { $0.time == w.end })
+    let runs = AltitudeTrack.clearRuns(s, window: w)
+    #expect(!runs.isEmpty && runs.allSatisfy { $0.allSatisfy { $0.isClear(in: w) && $0.alt >= 30 } })
+    #expect(runs.flatMap { $0 }.count == s.filter { $0.isClear(in: w) }.count)
+    let walledSite = walled([20, 20, 20, 20, 85, 85, 20, 20])
+    let hidden = AltitudeTrack.samples(raHours: 19.846, decDeg: 8.87, night: night, window: w, site: walledSite, minAlt: 30)
+    #expect(AltitudeTrack.clearRuns(hidden, window: w).flatMap { $0 }.count < runs.flatMap { $0 }.count)
+}
