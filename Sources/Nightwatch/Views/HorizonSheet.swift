@@ -49,7 +49,13 @@ struct HorizonSheet: View {
             measuring = PhotoChoice(url: u); return true
         }
         .sheet(item: $measuring) { c in
-            MeasurePhotoSheet(choice: c) { dir, deg in if heights.indices.contains(dir) { heights[dir] = deg } }
+            MeasurePhotoSheet(choice: c, site: store.config.sites.first { $0.name == siteName }, unit: store.distanceUnit,
+                              onUse: { dir, deg in if heights.indices.contains(dir) { heights[dir] = deg } },
+                              onMove: { t in
+                                  guard let i = store.config.sites.firstIndex(where: { $0.name == siteName }) else { return }
+                                  store.config.sites[i].latitude = t.latitude; store.config.sites[i].longitude = t.longitude
+                                  store.saveConfig()
+                              })
         }
         .onAppear {
             heights = store.config.sites.first { $0.name == siteName }?.horizon ?? Array(repeating: openDeg, count: 8)

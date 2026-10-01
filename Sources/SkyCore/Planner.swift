@@ -301,18 +301,23 @@ extension Planner {
                       replacesFloor: Bool = true) -> (fraction: Double, peakAlt: Double, peakTime: Date, viewable: ClearWindow?) {
         var t = window.start
         var above = 0, n = 0
-        var peak = -90.0, peakTime = window.start
+        // The best moment is the highest one clear of the floor (with a site horizon, the highest point can be behind the
+        // house); with nothing clear, simply the highest. Without a horizon the two are the same.
+        var peak = -90.0, peakTime = window.start, clearPeak = -90.0, clearTime: Date?
         var first: Date?, last: Date?, lastSample = window.start
         while t <= window.end {
             let (alt, az) = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site)
             n += 1
-            if alt >= site.floorDeg(azimuthDeg: az, minAlt: minAlt, replacesFloor: replacesFloor) { above += 1; if first == nil { first = t }; last = t }
+            if alt >= site.floorDeg(azimuthDeg: az, minAlt: minAlt, replacesFloor: replacesFloor) {
+                above += 1; if first == nil { first = t }; last = t
+                if alt > clearPeak { clearPeak = alt; clearTime = t }
+            }
             if alt > peak { peak = alt; peakTime = t }
             lastSample = t
             t = t.addingTimeInterval(1800)
         }
         let viewable = first.map { ClearWindow(start: $0, end: last! == lastSample ? window.end : last!) }
-        return (n == 0 ? 0 : Double(above) / Double(n), peak, peakTime, viewable)
+        return (n == 0 ? 0 : Double(above) / Double(n), clearTime == nil ? peak : clearPeak, clearTime ?? peakTime, viewable)
     }
 
     /// `count` evenly spaced altitudes across `span`.
@@ -501,8 +506,8 @@ extension Planner {
             if window == nil { reason = "No astronomical darkness tonight" }
             else if case .moon = src, moon.illumination <= 0.05 { reason = "New Moon tonight" }   // too thin for the list
             else if b.fraction >= 0.5 { reason = nil }
-            else if b.fraction == 0 { reason = "Below \(floor)° in tonight's window" }
-            else { reason = "Above \(floor)° for under half of tonight's window" }
+            else if b.fraction == 0 { reason = site.horizon == nil ? "Below \(floor)° in tonight's window" : "Behind your horizon in tonight's window" }
+            else { reason = site.horizon == nil ? "Above \(floor)° for under half of tonight's window" : "Clear of your horizon for under half of tonight's window" }
             return FavouriteTarget(target: b.target, notTonight: reason)
         }
     }

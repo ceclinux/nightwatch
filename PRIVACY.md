@@ -55,6 +55,10 @@ Other requests carry nothing about you or your location:
 - **GitHub**, once a day, to check for a newer version. This is in the download from GitHub or delphi-dolphin.com
   only, and Settings › Updates turns it off. The Mac App Store version has no update check: the App Store updates it.
 
+**Measure from a photo** (Settings › Where you observe › Horizon…) reads a photo you choose, on this Mac only: which way it
+faced, its lens, the phone's tilt and where it was taken. Nothing from it is sent anywhere, and the photo is not copied or
+kept. Only the heights you use are saved, and the photo's position only if you press Move to put the site there.
+
 Nightwatch's own requests (all of the above except Apple Weather and Apple Maps) identify themselves as Nightwatch and its version, as
 the services ask. These services receive your IP
 address as part of any internet request, and their own privacy policies apply. Nightwatch shares nothing else with them

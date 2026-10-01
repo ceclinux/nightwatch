@@ -256,7 +256,7 @@ public struct Copy: Sendable {
     /// at their peak and comets never: both are on the list for weeks, which would put the same line on every heads-up.
     public static func alsoTonight(_ events: [SkyEvent], night: Night, site: Site) -> String? {
         let picks = events.filter { e in
-            e.clear == true && e.when >= night.sunset && e.when < night.sunrise && e.kind != .comet && (e.kind != .meteorShower || e.atPeak)
+            e.clear == true && !e.behindHorizon && e.when >= night.sunset && e.when < night.sunrise && e.kind != .comet && (e.kind != .meteorShower || e.atPeak)
         }.sorted { $0.when < $1.when }.prefix(2)
         guard !picks.isEmpty else { return nil }
         return "Also tonight: " + picks.map { "\($0.kind == .meteorShower ? $0.title + " at peak" : $0.title) at \(hhmm($0.when, site: site))" }

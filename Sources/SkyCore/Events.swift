@@ -68,6 +68,9 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     public var radiantConstellation: String? = nil
     /// An ISS pass's track across the sky, for the compass drawing: where it appears, peaks and goes.
     public var path: [SkyPathPoint] = []
+    /// Behind the site's horizon at its best (v1.1): a pass under the roofline, a comet or pair that never clears the trees,
+    /// a shower whose radiant stays hidden. Kept off the heads-up's "Also tonight".
+    public var behindHorizon = false
     /// What "Add to Calendar" adds when it differs from tonight: a shower's peak night, weeks ahead (1 October 2026).
     public var calendarSpan: CalendarSpan? = nil
     /// The time to show: `best`, else `time`.
@@ -92,6 +95,7 @@ extension SkyEvent {
         radiantConstellation = try c.decodeIfPresent(String.self, forKey: .radiantConstellation)
         path = try c.decodeIfPresent([SkyPathPoint].self, forKey: .path) ?? []
         calendarSpan = try c.decodeIfPresent(CalendarSpan.self, forKey: .calendarSpan)
+        behindHorizon = try c.decodeIfPresent(Bool.self, forKey: .behindHorizon) ?? false
     }
 }
 
@@ -152,16 +156,19 @@ public enum Events {
         sep + (includesMoon ? 0.26 : 0) <= max(fov.widthDeg, fov.heightDeg) * 0.9
     }
 
-    /// The highest point of a fixed sky position between `from` and `to`, sampled every 15 minutes.
-    static func highest(raHours: Double, decDeg: Double, from: Date, to: Date, site: Site) -> (time: Date, alt: Double) {
+    /// The highest point of a fixed sky position between `from` and `to`, sampled every 15 minutes, clear of the site's
+    /// horizon where it has one; `clear` false when it never clears it, and then simply the highest point.
+    static func highest(raHours: Double, decDeg: Double, from: Date, to: Date, site: Site) -> (time: Date, alt: Double, clear: Bool) {
         var best = (time: from, alt: -90.0)
+        var clearBest: (time: Date, alt: Double)?
         var t = from
         while t <= to {
-            let alt = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site).alt
+            let (alt, az) = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site)
             if alt > best.alt { best = (t, alt) }
+            if alt >= (site.horizonDeg(azimuthDeg: az) ?? -90), alt > (clearBest?.alt ?? -91) { clearBest = (t, alt) }
             t = t.addingTimeInterval(900)
         }
-        return best
+        return clearBest.map { ($0.time, $0.alt, true) } ?? (best.time, best.alt, false)
     }
 
     /// "5 November"
@@ -217,6 +224,7 @@ public enum Events {
             e.brief = up ? "\(peakText) · radiant in \(where_)" : e.detail
             e.best = up ? top.time : nil
             e.atPeak = days == 0 || days == 1
+            e.behindHorizon = up && !top.clear
             e.radiantConstellation = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).symbol
             // Peak still to come: the calendar gets the peak night's darkness and its own best hour, not tonight's.
             if days >= 2, let pn = try? Ephemeris.night(localDate: eve.addingTimeInterval(12 * 3600), site: site) {
@@ -306,6 +314,7 @@ public enum Events {
                     let top = highest(raHours: pa.raHours, decDeg: pa.decDeg, from: d.start, to: d.end, site: site)
                     if top.alt > 0 {
                         e.best = top.time
+                        e.behindHorizon = !top.clear
                         e.brief = detail
                         detail += " · best \(Copy.hhmm(top.time, site: site))"
                         e.facts.append(EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"))
@@ -331,6 +340,7 @@ public enum Events {
                          detail: String(format: "mag %.1f · in %@ · best %@, %.0f° up", pos.magnitude, where_, Copy.hhmm(top.time, site: site), top.alt),
                          time: d.start, endTime: d.end, raHours: pos.raHours, decDeg: pos.decDeg)
         e.best = top.time
+        e.behindHorizon = !top.clear
         e.brief = String(format: "mag %.1f · in %@, %.0f° up at best", pos.magnitude, where_, top.alt)
         var mag = String(format: "%.1f", pos.magnitude)
         if let l = later {
@@ -363,6 +373,7 @@ public enum Events {
                          detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(hi.time, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
                          time: start, endTime: end, raHours: nil, decDeg: nil)
         e.best = hi.time
+        e.behindHorizon = site.horizonDeg(azimuthDeg: hi.az).map { hi.alt < $0 } ?? false   // even its highest seen point
         let first_ = SkyPathPoint(label: emerges ? "Appears" : "Rises", time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
                                   altitudeDeg: emerges ? (p.appearsElevationDeg ?? 0) : 0)
         let last_ = SkyPathPoint(label: fades ? "Fades" : "Sets", time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,

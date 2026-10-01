@@ -16,9 +16,12 @@ public struct HorizonPhoto: Equatable, Sendable {
     public let pitchDeg: Double?
     /// The focal length in pixels; nil when the photo has no lens details.
     public let focalPx: Double?
+    /// Where the photo was taken; nil when it has no position. Read only to compare with the site (owner-approved
+    /// mock-up, 1 October 2026), and kept only if the person moves the site here.
+    public let taken: Coordinate?
 
-    public init(width: Double, height: Double, bearingDeg: Double?, pitchDeg: Double?, focal35mm: Double?) {
-        self.width = width; self.height = height; self.bearingDeg = bearingDeg; self.pitchDeg = pitchDeg
+    public init(width: Double, height: Double, bearingDeg: Double?, pitchDeg: Double?, focal35mm: Double?, taken: Coordinate? = nil) {
+        self.width = width; self.height = height; self.bearingDeg = bearingDeg; self.pitchDeg = pitchDeg; self.taken = taken
         // 35 mm equivalence is by the diagonal (43.27 mm), which holds for a 4:3 phone sensor as for 3:2 film.
         focalPx = focal35mm.flatMap { $0 > 0 ? (width * width + height * height).squareRoot() * $0 / 43.27 : nil }
     }
@@ -32,10 +35,37 @@ public struct HorizonPhoto: Equatable, Sendable {
         let exif = p[kCGImagePropertyExifDictionary] as? [CFString: Any]
         let apple = p[kCGImagePropertyMakerAppleDictionary] as? [String: Any]
         let g = (apple?["8"] as? [Any])?.compactMap { ($0 as? NSNumber)?.doubleValue ?? Double("\($0)") }
+        var taken: Coordinate?
+        if let lat = (gps?[kCGImagePropertyGPSLatitude] as? NSNumber)?.doubleValue, let lon = (gps?[kCGImagePropertyGPSLongitude] as? NSNumber)?.doubleValue {
+            taken = Coordinate(latitude: (gps?[kCGImagePropertyGPSLatitudeRef] as? String) == "S" ? -lat : lat,
+                               longitude: (gps?[kCGImagePropertyGPSLongitudeRef] as? String) == "W" ? -lon : lon)
+        }
         self.init(width: w, height: h,
                   bearingDeg: (gps?[kCGImagePropertyGPSImgDirection] as? NSNumber)?.doubleValue,
                   pitchDeg: g.flatMap(Self.pitch(gravity:)),
-                  focal35mm: (exif?[kCGImagePropertyExifFocalLenIn35mmFilm] as? NSNumber)?.doubleValue)
+                  focal35mm: (exif?[kCGImagePropertyExifFocalLenIn35mmFilm] as? NSNumber)?.doubleValue,
+                  taken: taken)
+    }
+
+    /// Where the photo was taken, against the site being measured.
+    public enum Place: Equatable, Sendable {
+        /// Within 50 m: the same place.
+        case asSet
+        /// 50 m to 5 km: the site can move here.
+        case near(km: Double)
+        /// Over 5 km: probably the wrong photo.
+        case far(km: Double)
+    }
+
+    public func place(relativeTo site: Site) -> Place? {
+        guard let t = taken else { return nil }
+        let km = Geo.distanceKm(t, Coordinate(latitude: site.latitude, longitude: site.longitude))
+        return km < 0.05 ? .asSet : km <= 5 ? .near(km: km) : .far(km: km)
+    }
+
+    /// "240 m" under a kilometre in kilometres, else as the dark-site distances read ("1.2 km", "12 km", "0.4 mi").
+    public static func distanceText(km: Double, unit: DistanceUnit) -> String {
+        unit == .km && km < 1 ? "\(Int((km * 100).rounded()) * 10) m" : Geo.format(km: km, unit: unit)
     }
 
     /// The camera's tilt from the gravity vector in the phone's own axes: x across the screen, y up it, z out of it.

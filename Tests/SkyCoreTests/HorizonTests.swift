@@ -46,3 +46,45 @@ private func walled(_ h: [Double]) -> Site { var s = open; s.horizon = h; return
     #expect(Copy.horizonSummary(walled(Array(repeating: 30, count: 8)), openDeg: 30) == "Horizon: open sky")
     #expect(Copy.horizonSummary(walled([30, 30, 25, 40, 45, 45, 30, 20]), openDeg: 30) == "Horizon: 45° S, SW · 40° SE · 25° E · 20° NW")
 }
+
+@Test func theBestMomentIsTheHighestOneClearOfTheHorizon() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: open)
+    let w = ClearWindow(start: night.darkStart!, end: night.darkEnd!)
+    // Altair crosses the south early in the window: with the south walled off, its best moment moves off the meridian.
+    let plain = Planner.track(raHours: 19.846, decDeg: 8.87, window: w, site: open, minAlt: 20)
+    let walled = walled([20, 20, 20, 20, 80, 20, 20, 20])
+    let house = Planner.track(raHours: 19.846, decDeg: 8.87, window: w, site: walled, minAlt: 20)
+    #expect(house.peakTime != plain.peakTime && house.peakAlt < plain.peakAlt)
+    let (alt, az) = Ephemeris.altAz(raHours: 19.846, decDeg: 8.87, at: house.peakTime, site: walled)
+    #expect(alt >= walled.floorDeg(azimuthDeg: az, minAlt: 20, replacesFloor: true))
+    let again = Planner.track(raHours: 19.846, decDeg: 8.87, window: w, site: open, minAlt: 20)
+    #expect(again.peakTime == plain.peakTime && again.peakAlt == plain.peakAlt)   // no horizon: unchanged
+}
+
+@Test func aFavouriteBehindTheHorizonSaysSo() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: open)
+    let w = ClearWindow(start: night.darkStart!, end: night.darkEnd!)
+    let fov = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
+    func reason(_ s: Site) -> String? {
+        Planner.favouriteTargets(["planet-saturn"], ranked: [], catalog: Catalog(objects: []), constellations: [], stars: [], window: w,
+                                 night: night, site: s, fov: fov, rule: GoRule()).first?.notTonight
+    }
+    #expect(reason(walled(Array(repeating: 85, count: 8))) == "Behind your horizon in tonight's window")
+    #expect(reason(open).map { !$0.contains("horizon") } ?? true)
+}
+
+@Test func eventsBehindTheHorizonAreMarkedAndLeftOutOfTheHeadsUp() throws {
+    let pass = SatellitePass(rise: utc(2026, 10, 1, 19, 10), peak: utc(2026, 10, 1, 19, 14), set: utc(2026, 10, 1, 19, 18),
+                             maxElevationDeg: 40, peakAzimuthDeg: 250, riseAzimuthDeg: 300, setAzimuthDeg: 180)
+    let house = walled([30, 30, 30, 30, 35, 50, 55, 45])
+    #expect(Events.issPass(pass, site: house).behindHorizon)          // 40° in the WSW, under the 55° wall
+    #expect(!Events.issPass(pass, site: open).behindHorizon)
+    var e = Events.issPass(pass, site: house)
+    e.clear = true
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: house)
+    #expect(Copy.alsoTonight([e], night: night, site: house) == nil)
+    let night2 = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: open)
+    let hidden = Events.highest(raHours: 19.846, decDeg: 8.87, from: night2.darkStart!, to: night2.darkEnd!, site: walled(Array(repeating: 85, count: 8)))
+    #expect(!hidden.clear)
+    #expect(Events.highest(raHours: 19.846, decDeg: 8.87, from: night2.darkStart!, to: night2.darkEnd!, site: open).clear)
+}

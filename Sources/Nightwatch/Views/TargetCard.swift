@@ -155,6 +155,9 @@ struct EventChips: View {
             if event.atPeak { Chip(text: "At peak", icon: "sparkle") }
             if let f = event.fits { Chip(text: f ? "Fits frame" : "Too wide", icon: "viewfinder") }
             if let c = event.clear { Chip(text: onPage ? (c ? "Clear then" : "Cloudy then") : (c ? "Clear" : "Cloudy"), icon: c ? "checkmark" : "cloud.fill", warning: !c) }
+            if event.behindHorizon {
+                Chip(text: event.kind == .meteorShower ? "Radiant behind your horizon" : "Behind your horizon", icon: "eye.slash", warning: true)
+            }
         }
         if onPage { HStack(spacing: 6) { chips } } else { VStack(alignment: .trailing, spacing: 4) { chips } }
     }

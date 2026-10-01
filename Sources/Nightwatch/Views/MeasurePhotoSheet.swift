@@ -26,7 +26,13 @@ struct PhotoChoice: Identifiable {
 struct MeasurePhotoSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State var choice: PhotoChoice
+    /// The site being measured, to say where the photo was taken against it; nil skips that.
+    var site: Site?
+    var unit: DistanceUnit = .km
     let onUse: (_ direction: Int, _ degrees: Double) -> Void
+    /// Moves the site to where the photo was taken.
+    var onMove: ((Coordinate) -> Void)?
+    @State private var moved = false
     @State private var image: NSImage?
     @State private var photo: HorizonPhoto?
     @State private var skylineY: Double = 0
@@ -75,6 +81,7 @@ struct MeasurePhotoSheet: View {
         let props = CGImageSourceCreateWithURL(c.url as CFURL, nil).flatMap { CGImageSourceCopyPropertiesAtIndex($0, 0, nil) as? [CFString: Any] }
         photo = props.map(HorizonPhoto.init(properties:))
         pickedDirection = nil
+        moved = false
         skylineY = (photo?.height ?? 0) * 0.3
     }
 
@@ -143,8 +150,18 @@ struct MeasurePhotoSheet: View {
                     fact("Tilted", photo.pitchDeg.map { p in abs(p) < 0.5 ? "Level" : "\(Int(abs(p).rounded()))° \(p > 0 ? "up" : "down"), allowed for" } ?? "Not known")
                     if let f = photo.focalPx { fact("Lens", "\(Int((2 * atan(photo.height / 2 / f) * 180 / .pi).rounded()))° top to bottom") }
                     if let c = photo.covers { fact("Covers", "\(Int(c.from.rounded()))°–\(Int(c.to.rounded()))°: \(coveredDirections(c))") }
+                    if let site, let place = photo.place(relativeTo: site) { takenAt(place, site: site) }
                 }
                 .font(.caption)
+                if let site, case .near = photo.place(relativeTo: site), let t = photo.taken, !moved {
+                    Text("If this is where the telescope stands, \(site.name) can move here. Forecasts and darkness hardly change over this distance; dark sites are measured from the new spot.")
+                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    Button("Move \(site.name) here") { onMove?(t); moved = true }
+                }
+                if let site, case .far = photo.place(relativeTo: site) {
+                    Text("A horizon belongs to where it was measured. Use a photo taken where the telescope stands at \(site.name), or add the place it was taken as a site of its own.")
+                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                }
                 if photo.direction == nil {
                     problem("No compass direction in this photo", "It was taken with location off, or on another camera. Which way were you facing?")
                     Picker("Facing", selection: $pickedDirection) {
@@ -182,6 +199,21 @@ struct MeasurePhotoSheet: View {
             return c.from <= c.to ? (a >= c.from && a <= c.to) : (a >= c.from || a <= c.to)
         }.map { Site.horizonDirections[$0] }
         return inside.isEmpty ? "between directions" : ListFormatter.localizedString(byJoining: inside)
+    }
+
+    /// "Otley, as set", "240 m from where Otley is set", or a warning that it is far away (owner-approved mock-up).
+    @ViewBuilder private func takenAt(_ place: HorizonPhoto.Place, site: Site) -> some View {
+        switch place {
+        case .asSet: fact("Taken at", "\(site.name), as set")
+        case .near(let km):
+            fact("Taken at", moved ? "\(site.name) moved to where this photo was taken."
+                                   : "\(HorizonPhoto.distanceText(km: km, unit: unit)) from where \(site.name) is set")
+        case .far(let km):
+            GridRow {
+                Text("Taken at").foregroundStyle(Theme.dim)
+                Text("\(HorizonPhoto.distanceText(km: km, unit: unit)) from \(site.name): is it the right photo?").foregroundStyle(Tokens.statusWarning)
+            }
+        }
     }
 
     private func fact(_ label: String, _ value: String) -> some View {

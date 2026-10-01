@@ -43,3 +43,19 @@ private func iphone(tiltZ: Any = "0.0947", bearing: Double? = 197) -> [CFString:
     #expect(HorizonPhoto.horizonValue(26.2) == 30 && HorizonPhoto.horizonValue(25) == 25)
     #expect(HorizonPhoto.horizonValue(-3) == 0 && HorizonPhoto.horizonValue(84) == 80)
 }
+
+@Test func aPhotoSaysWhereItWasTakenAgainstTheSite() throws {
+    var p = iphone()
+    p[kCGImagePropertyGPSDictionary] = [kCGImagePropertyGPSImgDirection: 197, kCGImagePropertyGPSLatitude: 54.0, kCGImagePropertyGPSLatitudeRef: "N",
+                                        kCGImagePropertyGPSLongitude: 2.15, kCGImagePropertyGPSLongitudeRef: "W"] as [CFString: Any]
+    let photo = HorizonPhoto(properties: p)
+    #expect(photo.taken == Coordinate(latitude: 54.0, longitude: -2.15))
+    func site(_ lat: Double, _ lon: Double) -> Site { Site(name: "Moor", latitude: lat, longitude: lon, elevationM: 300, timeZoneID: "Europe/London", bortle: 3) }
+    #expect(photo.place(relativeTo: site(54.0002, -2.15)) == .asSet)                       // about 22 m
+    guard case .near(let km)? = photo.place(relativeTo: site(54.0022, -2.15)) else { Issue.record("expected near"); return }
+    #expect(abs(km - 0.245) < 0.01)
+    #expect(HorizonPhoto.distanceText(km: 0.24, unit: .km) == "240 m")
+    guard case .far? = photo.place(relativeTo: site(54.11, -2.15)) else { Issue.record("expected far"); return }
+    #expect(HorizonPhoto.distanceText(km: 12.2, unit: .km) == "12 km" && HorizonPhoto.distanceText(km: 1.6, unit: .mi) == "1.0 mi")
+    #expect(HorizonPhoto(properties: iphone()).place(relativeTo: site(54, -2)) == nil)   // no position: nothing to say
+}
