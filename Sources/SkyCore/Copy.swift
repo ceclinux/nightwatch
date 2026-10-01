@@ -217,7 +217,7 @@ public struct Copy: Sendable {
     public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
         let t = item.target
         var parts = item.added ? ["Added for this night"] : []
-        if let v = t.viewable { parts.append("Up \(span(v.start, v.end, site: site))") }
+        if let v = t.viewable { parts.append("\(site.horizon == nil ? "Up" : "Clear of your horizon") \(span(v.start, v.end, site: site))") }
         parts.append("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°")
         if let kit = ShootingTips.planKit(t, presetID: presetID) { parts.append(kit) }
         let text = parts.joined(separator: " · ")
@@ -241,6 +241,16 @@ public struct Copy: Sendable {
     /// The heads-up with a plan: "Your plan: the North America Nebula, best at 21:50, then the Eastern Veil, best at 22:30."
     /// and, only when dew is likely while the plan's targets are up, "Fit the dew heater: dew likely after 23:00." Nil with
     /// nothing in the plan.
+    /// A site's horizon for its Settings row: "Horizon: 45° S, SW · 40° SE · 20° NW", the directions that differ from open
+    /// sky (`openDeg`, the go rule's height), highest first; "Horizon: open sky" when none does.
+    public static func horizonSummary(_ site: Site, openDeg: Double) -> String {
+        guard let h = site.horizon, h.count == 8 else { return "Horizon: open sky" }
+        let groups = Dictionary(grouping: h.indices.filter { h[$0] != openDeg }, by: { h[$0] }).sorted { $0.key > $1.key }
+        guard !groups.isEmpty else { return "Horizon: open sky" }
+        return "Horizon: " + groups.map { deg, idx in "\(Int(deg))° " + idx.sorted().map { Site.horizonDirections[$0] }.joined(separator: ", ") }
+            .joined(separator: " · ")
+    }
+
     /// The heads-up's "Also tonight" line (owner, 1 October 2026, from the competitor review): up to two events the
     /// Events page has in tonight's clear sky, so a clear night with an ISS pass or a shower's peak says so. Showers only
     /// at their peak and comets never: both are on the list for weeks, which would put the same line on every heads-up.

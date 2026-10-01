@@ -12,6 +12,8 @@ final class SettingsViewState: ObservableObject {
     @Published var addingSite = false
     @Published var latText = ""
     @Published var lonText = ""
+    /// The saved site whose horizon sheet is open.
+    @Published var horizonFor: String?
 }
 
 struct SettingsView: View {
@@ -183,6 +185,9 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store) }
+        .sheet(isPresented: Binding(get: { ui.horizonFor != nil }, set: { if !$0 { ui.horizonFor = nil } })) {
+            if let name = ui.horizonFor { HorizonSheet(siteName: name).environmentObject(store) }
+        }
         .preferredColorScheme(.dark)
         .tint(Tokens.controlOn)
     }
@@ -245,8 +250,10 @@ struct SettingsView: View {
         let isHome = !store.config.homeIsThisMac && store.homeSite?.name == s.name
         let selected = store.config.visiting == nil && store.site?.name == s.name
         return HStack(spacing: 12) {
-            siteRow(title: s.name, detail: String(format: "%.3f, %.3f · Bortle %d · %@", s.latitude, s.longitude, s.bortle, Bortle.name(s.bortle).lowercased()),
+            siteRow(title: s.name, detail: String(format: "%.3f, %.3f · Bortle %d · %@", s.latitude, s.longitude, s.bortle, Bortle.name(s.bortle).lowercased())
+                        + "\n" + Copy.horizonSummary(s, openDeg: store.config.goRule.minAltitudeDeg),
                     selected: selected, home: isHome) { store.config.choose(savedName: s.name); store.saveConfig() }
+            Button("Horizon…") { ui.horizonFor = s.name }.accessibilityLabel("Horizon at \(s.name)")
             homeStar(isHome: isHome, name: s.name) { store.config.homeSiteName = s.name; store.config.homeIsThisMac = false; store.saveConfig() }
             Button(role: .destructive) { store.config.remove(savedName: s.name); store.saveConfig() } label: { Image(systemName: "trash") }
                 .buttonStyle(.plain).foregroundStyle(Theme.dim).help("Remove \(s.name)").accessibilityLabel("Remove \(s.name)")

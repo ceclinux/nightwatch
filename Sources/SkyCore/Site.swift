@@ -8,6 +8,12 @@ public struct Site: Codable, Equatable, Sendable {
     public var elevationM: Double
     public var timeZoneID: String
     public var bortle: Int
+    /// How high houses, trees or hills block the sky, in degrees, towards N, NE, E, SE, S, SW, W and NW (owner-approved
+    /// mock-up, 1 October 2026). Nil: open sky, the go rule's "Targets must reach" height all round. Optional, so a site
+    /// saved before it existed still decodes.
+    public var horizon: [Double]? = nil
+
+    public static let horizonDirections = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
     public init(name: String, latitude: Double, longitude: Double, elevationM: Double, timeZoneID: String, bortle: Int) {
         self.name = name; self.latitude = latitude; self.longitude = longitude
@@ -20,6 +26,21 @@ public struct Site: Codable, Equatable, Sendable {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = timeZone
         return c
+    }
+
+    /// The horizon's height towards `azimuthDeg` (0 north, 90 east), or nil when the site has none.
+    public func horizonDeg(azimuthDeg az: Double) -> Double? {
+        guard let h = horizon, h.count == 8 else { return nil }
+        let a = (az.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
+        return h[Int((a + 22.5) / 45) % 8]
+    }
+
+    /// The height a target must clear towards `azimuthDeg`. One held to the go rule (`replacesFloor`) takes the horizon
+    /// in its place, lower or higher; one with its own lower floor (the Moon, a constellation's centre, an event) is only
+    /// raised by it.
+    public func floorDeg(azimuthDeg az: Double, minAlt: Double, replacesFloor: Bool) -> Double {
+        guard let h = horizonDeg(azimuthDeg: az) else { return minAlt }
+        return replacesFloor ? h : max(minAlt, h)
     }
 
     var observer: astro_observer_t { Astronomy_MakeObserver(latitude, longitude, elevationM) }

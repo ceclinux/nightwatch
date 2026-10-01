@@ -147,7 +147,7 @@ struct DetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 TileRow(spacing: 6) {
                     StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
-                    StatTile(label: "Above \(Int(store.config.goRule.minAltitudeDeg))°", value: "\(Int(target.visibleFraction * 100))% of window")
+                    StatTile(label: s.horizon == nil ? "Above \(Int(store.config.goRule.minAltitudeDeg))°" : "Clear of your horizon", value: "\(Int(target.visibleFraction * 100))% of window")
                     // The Moon's own page has no separation to give: it says how much of it is lit instead.
                     if target.id == "moon" { StatTile(label: "Illuminated", value: target.typeName.components(separatedBy: " ").first) }
                     else { StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°") }
@@ -208,8 +208,10 @@ struct AltitudeChart: View {
         // Every 10 minutes, plus the window's own edges so the red run starts and ends exactly there.
         let times = (stride(from: 0.0, through: 1.0, by: 1.0 / 72).map { night.sunset.addingTimeInterval($0 * span) } + [window.start, window.end])
             .filter { $0 >= night.sunset && $0 <= night.sunrise }.sorted()
-        let samples: [(f: Double, t: Date, alt: Double)] = times.map { t in
-            (frac(t), t, Ephemeris.altAz(raHours: target.raHours, decDeg: target.decDeg, at: t, site: site).alt)
+        // With a site horizon the floor follows the target's direction (Site.floorDeg); without one it is the go rule's line.
+        let samples: [(f: Double, t: Date, alt: Double, floor: Double)] = times.map { t in
+            let (alt, az) = Ephemeris.altAz(raHours: target.raHours, decDeg: target.decDeg, at: t, site: site)
+            return (frac(t), t, alt, site.floorDeg(azimuthDeg: az, minAlt: minAltitude, replacesFloor: true))
         }
         VStack(alignment: .leading, spacing: 3) {
             Text("Altitude \(nightWords)").font(.system(size: 10)).foregroundStyle(Theme.dim)
@@ -218,15 +220,26 @@ struct AltitudeChart: View {
                 let y = { (alt: Double) in g.size.height * (1 - max(0, min(90, alt)) / 90) }
                 Rectangle().fill(Color.white.opacity(0.07)).frame(width: max(0, x(frac(window.end)) - x(frac(window.start))), height: g.size.height)
                     .offset(x: x(frac(window.start)))
-                Path { p in p.move(to: CGPoint(x: 0, y: y(minAltitude))); p.addLine(to: CGPoint(x: g.size.width, y: y(minAltitude))) }
-                    .stroke(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                Text("\(Int(minAltitude))°").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 10, y: y(minAltitude) - 7)
+                if site.horizon == nil {
+                    Path { p in p.move(to: CGPoint(x: 0, y: y(minAltitude))); p.addLine(to: CGPoint(x: g.size.width, y: y(minAltitude))) }
+                        .stroke(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    Text("\(Int(minAltitude))°").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 10, y: y(minAltitude) - 7)
+                } else {
+                    // The horizon the target is behind, as a shaded band under the floor in its direction.
+                    Path { p in
+                        p.move(to: CGPoint(x: x(samples.first?.f ?? 0), y: g.size.height))
+                        for s in samples { p.addLine(to: CGPoint(x: x(s.f), y: y(s.floor))) }
+                        p.addLine(to: CGPoint(x: x(samples.last?.f ?? 1), y: g.size.height)); p.closeSubpath()
+                    }
+                    .fill(Color.white.opacity(0.14))
+                    Text("Horizon").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
+                }
                 Path { p in for (i, s) in samples.enumerated() { let pt = CGPoint(x: x(s.f), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
                     .stroke(Color.white.opacity(0.55), lineWidth: 1.5)
                 Path { p in
                     var drawing = false
                     for s in samples {
-                        guard s.t >= window.start, s.t <= window.end, s.alt >= minAltitude else { drawing = false; continue }
+                        guard s.t >= window.start, s.t <= window.end, s.alt >= s.floor else { drawing = false; continue }
                         let pt = CGPoint(x: x(s.f), y: y(s.alt))
                         if drawing { p.addLine(to: pt) } else { p.move(to: pt); drawing = true }
                     }

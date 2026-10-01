@@ -76,7 +76,7 @@ public enum SessionPlanner {
             guard let t = byID[id] else { continue }
             if let reason = reasons[id] ?? nil { omitted.append(PlanOmission(target: t, reason: reason)); continue }
             if t.moonWashed { omitted.append(PlanOmission(target: t, reason: "Washed out by the Moon")); continue }
-            guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: "Not up in the clear window")); continue }
+            guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: site.horizon == nil ? "Not up in the clear window" : "Behind your horizon in the clear window")); continue }
             guard v.start < end else {
                 omitted.append(PlanOmission(target: t, reason: "Up only after your finish time, \(Copy.hhmm(end, site: site))")); continue
             }

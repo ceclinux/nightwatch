@@ -296,15 +296,17 @@ extension Planner {
     /// Sample a window every 30 minutes: the fraction of samples at or above `minAlt`, the peak and its time, and the viewable
     /// span from the first sample above to the last, run on to the window's end when the last sample is above.
     /// ponytail: 30-minute resolution at the span's interior edges; sample finer if the timeline ever looks coarse.
-    static func track(raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> (fraction: Double, peakAlt: Double, peakTime: Date, viewable: ClearWindow?) {
+    /// With a site horizon, "above" means clear of it in the target's direction (`Site.floorDeg`).
+    static func track(raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double,
+                      replacesFloor: Bool = true) -> (fraction: Double, peakAlt: Double, peakTime: Date, viewable: ClearWindow?) {
         var t = window.start
         var above = 0, n = 0
         var peak = -90.0, peakTime = window.start
         var first: Date?, last: Date?, lastSample = window.start
         while t <= window.end {
-            let alt = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site).alt
+            let (alt, az) = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site)
             n += 1
-            if alt >= minAlt { above += 1; if first == nil { first = t }; last = t }
+            if alt >= site.floorDeg(azimuthDeg: az, minAlt: minAlt, replacesFloor: replacesFloor) { above += 1; if first == nil { first = t }; last = t }
             if alt > peak { peak = alt; peakTime = t }
             lastSample = t
             t = t.addingTimeInterval(1800)
@@ -348,7 +350,7 @@ extension Planner {
     /// A fixed sky position tracked across `window`, for an event card's timeline (v1.0.1): the same viewable span and
     /// altitude samples a target card uses.
     public static func skyTrack(id: String, name: String, raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> RankedTarget {
-        let tr = track(raHours: raHours, decDeg: decDeg, window: window, site: site, minAlt: minAlt)
+        let tr = track(raHours: raHours, decDeg: decDeg, window: window, site: site, minAlt: minAlt, replacesFloor: false)
         return described(RankedTarget(id: id, name: name, subtitle: "", group: .events, raHours: raHours, decDeg: decDeg, sizeArcmin: nil,
                                       magnitude: nil, fit: .small, peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 90, moonWashed: false,
                                       visibleFraction: tr.fraction),
@@ -406,7 +408,7 @@ extension Planner {
                               viewable: tr.viewable, site: site, typeName: "Planet", catalogueID: p.displayName)
             return (t, tr.fraction, rule.minAltitudeDeg)
         case .moon:
-            let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10)
+            let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10, replacesFloor: false)
             guard passes(tr) else { return nil }
             let lit = "\(Int((moon.illumination * 100).rounded()))% illuminated"
             let t = described(RankedTarget(id: "moon", name: "Moon", subtitle: lit, group: .planets,
@@ -417,7 +419,7 @@ extension Planner {
             return (t, tr.fraction, 10)
         case .constellation(let c):
             // From the constellation's centre; never Moon-washed, since a constellation spans too much sky to be washed out.
-            let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
+            let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20, replacesFloor: false)
             guard passes(tr) else { return nil }
             let t = described(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
                                            raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
@@ -595,7 +597,7 @@ extension Planner {
             t = t.addingTimeInterval(1800)
         }
         return best.values.map { x in
-            described(x, viewable: track(raHours: x.raHours, decDeg: x.decDeg, window: w, site: site, minAlt: brightTargetFloorDeg).viewable,
+            described(x, viewable: track(raHours: x.raHours, decDeg: x.decDeg, window: w, site: site, minAlt: brightTargetFloorDeg, replacesFloor: false).viewable,
                       site: site, typeName: x.typeName, catalogueID: x.catalogueID, frameFill: x.id == "moon" ? frameFill(sizeArcmin: 31, fov: fov) : nil)
         }.sorted { ($0.id == "moon" ? 0 : 1, -$0.peakAltDeg) < ($1.id == "moon" ? 0 : 1, -$1.peakAltDeg) }
     }
