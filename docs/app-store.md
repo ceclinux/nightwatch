@@ -167,7 +167,9 @@ the external services it uses, regional differences, and any regulation or prote
    `ffmpeg -i in.mov -vf "scale=1920:-2,fps=30" -c:v libx264 -crf 23 -pix_fmt yuv420p -an out.mp4` gave 5 MB.
 2. **Reply to App Review** with the answers and the recording attached. The box takes 4,000 characters, and *arrows,
    ellipses and "›" did not survive the paste*: use plain ASCII ("->", "...", ">").
-3. Put the same information, shorter, in App Review Information › **Notes**, and **Save**.
+3. Put the same information, shorter, in App Review Information › **Notes** (see *Notes for App Review*), and **Save**.
+   If Apple asks how an entitlement is used, it says no new binary is needed: answer from the entitlement table there.
+   *Replying alone leaves Resubmit to App Review grey (nothing was edited); Apple's message asks only for the reply.*
 4. *Saving moves the version to "Ready for Review", which means added to a submission but not yet submitted.* Press
    **Resubmit to App Review** (or **Update Review** on the version page), and it becomes "Waiting for Review". The build
    stays the same.
@@ -176,7 +178,7 @@ the external services it uses, regional differences, and any regulation or prote
 
 1. Release the download as usual (`releasing.md`). Every release raises the build number, which the App Store requires.
 2. From the same tagged commit, run `scripts/appstore.sh`. It stops with a pointer to this page if anything from the setup
-   is missing, and refuses to package a build that still has the update check or a sandbox exception.
+   is missing, and refuses to package a build that still has the update check, a sandbox exception or user-selected file access.
 3. `open -a Transporter build/appstore/Nightwatch-<version>.pkg`, then **Deliver** (step 7).
 4. In App Store Connect, create the new version and paste **What's New in This Version** (required for every update) from
    `scripts/release-notes.sh --appstore <version>`. It prints the release-history row as plain bullets without the release
@@ -236,10 +238,62 @@ Nothing else is collected.
 
 ## Notes for App Review
 
-> Nightwatch needs a place to forecast for. On first launch, choose "Use this Mac's location" (and Allow) or "Add a
-> site…". The popover then shows tonight's forecast. Alerts only fire on nights that meet the go rule, so the fastest
-> check is the popover and Settings; notifications can be seen by lowering Settings › Go rule › Clear for at least to
-> 1 h on a partly clear night. The app uses no login.
+Both 1.0.0 rejections asked for information, not fixes, and each answer cost days back in the queue. So the Notes answer
+the questions before they are asked: what the app is for, how to set it up, the outside services, and **every
+entitlement with the steps that show it in use**. App Review asks about any entitlement it cannot see working (guideline
+2.4.5(i): on 1 October 2026 it asked about location, because the reviewer had not pressed "Use this Mac's location").
+
+Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
+whenever an entitlement or a setup step changes.
+
+```
+Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
+photograph the sky, and suggests what to point a telescope at. No account or login.
+
+Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" choose
+"Use this Mac's location" and Allow (or "Add a site..." and search for a town). The menu-bar popover then shows
+tonight's forecast. Alerts fire only on nights that pass the go rule; to see one sooner, lower
+Settings > Go rule > "Clear for at least" to 1 h on a partly clear night.
+
+Outside services (read only, no user data except the site's coordinates for forecasts): Apple WeatherKit,
+Open-Meteo and 7Timer (forecasts), AuroraWatch UK (aurora status), CDS hips2fits (sky-survey images), NASA SVS
+(Moon image), Minor Planet Center and CelesTrak (comets, space station), Apple Maps (place search and maps).
+
+Entitlements and where to see each one:
+- App Sandbox: required for the Mac App Store.
+- Location (personal-information.location): Welcome step 2 "Use this Mac's location"; Settings > Where you observe >
+  "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". One fix at
+  kilometre accuracy, used to work out sunset, darkness and what is visible.
+- Outgoing network connections (network.client): the forecasts, images and data above.
+- WeatherKit: the forecast in the popover; the Apple Weather mark under it links to the legal attribution.
+- iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
+  other Macs". Change a setting on one Mac and it appears on another signed in to the same Apple Account.
+- App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
+  Edit Widgets; it shows the same sky score as the popover.
+```
+
+The table behind it, for checking against the build (`codesign -d --entitlements - --xml` on the store app):
+
+| Entitlement | Used for | Where a reviewer sees it |
+|---|---|---|
+| `com.apple.security.app-sandbox` | Mac App Store requirement | — |
+| `com.apple.security.personal-information.location` | One location fix (`LocationProvider`) | Welcome step 2; Settings › Where you observe |
+| `com.apple.security.network.client` | Forecasts, images, data feeds, Apple Maps | Everything the popover and Targets show |
+| `com.apple.developer.weatherkit` | Apple Weather forecast | Popover, Apple Weather mark |
+| `com.apple.developer.ubiquity-kvstore-identifier` | Settings sync (#49) | Settings › App caption |
+| `com.apple.security.application-groups` | Forecast shared with the widget (app and widget) | Desktop widget |
+
+Deliberately **not** in the store build (`scripts/appstore.sh` strips them and fails if they return): the temporary
+sandbox exceptions and `com.apple.security.files.user-selected.read-only`. Both exist only to import 0.6 settings,
+which an App Store user never had, so a reviewer could never see them used. The download keeps them.
+
+### Before pressing Submit
+
+- The Notes above are current, and list every entitlement the build carries.
+- A short screen recording (launch, Welcome with "Use this Mac's location", popover, Targets, Settings, widget)
+  is in App Review Information › **Attachment**, not only in a reply.
+- After **Submit** (or **Resubmit to App Review**), the status reads **Waiting for Review**. "Ready for Review"
+  means not submitted.
 
 ## Screenshots
 

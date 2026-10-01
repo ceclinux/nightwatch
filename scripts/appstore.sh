@@ -52,12 +52,16 @@ cp "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
 # quarantined file anywhere in the app (error 91109), so strip it before signing; step 3 checks it has gone.
 xattr -dr com.apple.quarantine "$APP"
 
-# The store build's entitlements are the everyday build's, minus the temporary sandbox exceptions (they exist only to copy
-# 0.6 settings, which a new App Store user never had) and minus Xcode's debugging entitlement on the widget. Derived rather
-# than written out again, so the two builds cannot drift apart.
+# The store build's entitlements are the everyday build's, minus what only importing 0.6 settings needs (a new App Store
+# user never had them): the temporary sandbox exceptions, and the user-selected file access behind the welcome's "Import
+# settings…", which without the exceptions can never appear. App Review asks about any entitlement it cannot see in use
+# (guideline 2.4.5(i), 1 October 2026). Also minus Xcode's debugging entitlement on the widget. Derived rather than
+# written out again, so the two builds cannot drift apart.
+STORE_DROPS=(com.apple.security.temporary-exception.files.home-relative-path.read-only
+             com.apple.security.files.user-selected.read-only com.apple.security.get-task-allow)
 store_entitlements() {   # bundle, output file
   codesign -d --entitlements - --xml "$1" > "$2" 2>/dev/null || fail "could not read the entitlements of $1"
-  for k in com.apple.security.temporary-exception.files.home-relative-path.read-only com.apple.security.get-task-allow; do
+  for k in "${STORE_DROPS[@]}"; do
     /usr/libexec/PlistBuddy -c "Delete :$k" "$2" >/dev/null 2>&1 || true
   done
 }
@@ -81,6 +85,7 @@ codesign --verify --deep --strict --verbose=2 "$APP"
 for b in "$APP" "$APPEX"; do
   ents=$(codesign -d --entitlements - --xml "$b" 2>/dev/null)
   [[ "$ents" == *temporary-exception* ]] && fail "the store build must carry no temporary sandbox exception ($b)"
+  [[ "$ents" == *files.user-selected* ]] && fail "the store build must carry no user-selected file access: nothing in it can use it ($b)"
 done
 attrs=$(xattr -r "$APP" 2>/dev/null)
 [[ "$attrs" == *com.apple.quarantine* ]] && fail "a file in the store build is quarantined, which App Store Connect rejects (error 91109)"
