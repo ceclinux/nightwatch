@@ -24,7 +24,7 @@ public enum AltitudeTrack {
         return times.map { t in
             let (alt, az) = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site)
             return AltitudeSample(fraction: t.timeIntervalSince(night.sunset) / span, time: t, alt: alt,
-                                  floor: site.floorDeg(azimuthDeg: az, minAlt: minAlt, replacesFloor: true))
+                                  floor: site.floorDeg(azimuthDeg: az, minAlt: minAlt))
         }
     }
 

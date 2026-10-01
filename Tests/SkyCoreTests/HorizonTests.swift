@@ -13,13 +13,13 @@ private func walled(_ h: [Double]) -> Site { var s = open; s.horizon = h; return
     #expect(open.horizonDeg(azimuthDeg: 180) == nil)
 }
 
-@Test func theHorizonReplacesTheGoRuleButOnlyRaisesALowerFloor() {
+@Test func theHorizonOnlyEverRaisesTheFloor() {
     let s = walled([20, 30, 30, 30, 45, 30, 30, 30])
-    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 30, replacesFloor: true) == 20)    // lower than usual to the north
-    #expect(s.floorDeg(azimuthDeg: 180, minAlt: 30, replacesFloor: true) == 45)  // the house to the south
-    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 10, replacesFloor: false) == 20)   // the Moon: raised to the horizon
-    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 25, replacesFloor: false) == 25)
-    #expect(open.floorDeg(azimuthDeg: 180, minAlt: 30, replacesFloor: true) == 30)
+    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 30) == 30)     // lower than the go rule: the atmosphere still sets 30°
+    #expect(s.floorDeg(azimuthDeg: 180, minAlt: 30) == 45)   // the house to the south
+    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 10) == 20)     // the Moon: raised to the horizon
+    #expect(s.floorDeg(azimuthDeg: 0, minAlt: 25) == 25)
+    #expect(open.floorDeg(azimuthDeg: 180, minAlt: 30) == 30)
 }
 
 @Test func aBlockedSouthShortensWhenATargetCountsAsUp() throws {
@@ -44,7 +44,7 @@ private func walled(_ h: [Double]) -> Site { var s = open; s.horizon = h; return
 @Test func theSettingsRowSummarisesTheHorizon() {
     #expect(Copy.horizonSummary(open, openDeg: 30) == "Horizon: open sky")
     #expect(Copy.horizonSummary(walled(Array(repeating: 30, count: 8)), openDeg: 30) == "Horizon: open sky")
-    #expect(Copy.horizonSummary(walled([30, 30, 25, 40, 45, 45, 30, 20]), openDeg: 30) == "Horizon: 45° S, SW · 40° SE · 25° E · 20° NW")
+    #expect(Copy.horizonSummary(walled([30, 30, 25, 40, 45, 45, 30, 20]), openDeg: 30) == "Horizon: 45° S, SW · 40° SE")   // below 30° changes nothing
 }
 
 @Test func theBestMomentIsTheHighestOneClearOfTheHorizon() throws {
@@ -56,7 +56,7 @@ private func walled(_ h: [Double]) -> Site { var s = open; s.horizon = h; return
     let house = Planner.track(raHours: 19.846, decDeg: 8.87, window: w, site: walled, minAlt: 20)
     #expect(house.peakTime != plain.peakTime && house.peakAlt < plain.peakAlt)
     let (alt, az) = Ephemeris.altAz(raHours: 19.846, decDeg: 8.87, at: house.peakTime, site: walled)
-    #expect(alt >= walled.floorDeg(azimuthDeg: az, minAlt: 20, replacesFloor: true))
+    #expect(alt >= walled.floorDeg(azimuthDeg: az, minAlt: 20))
     let again = Planner.track(raHours: 19.846, decDeg: 8.87, window: w, site: open, minAlt: 20)
     #expect(again.peakTime == plain.peakTime && again.peakAlt == plain.peakAlt)   // no horizon: unchanged
 }

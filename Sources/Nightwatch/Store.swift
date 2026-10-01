@@ -254,6 +254,47 @@ final class Store: ObservableObject {
         }
         let siteChanged = site.map { !forecastMatches($0) } ?? false
         Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }
+        checkTerrain()
+    }
+
+    // MARK: terrain (#108)
+
+    /// The saved site whose hills are being fetched now, for the Horizon sheet's "Checking the hills…".
+    @Published var terrainChecking: String?
+    /// Saved sites whose check failed in this launch; tried again at the next launch, or from "Try again".
+    @Published var terrainFailed: Set<String> = []
+    private var terrainBusy = false
+
+    /// Fetches the hills once for each saved site that has none, one site at a time (owner, 1 October 2026: check once,
+    /// keep it with the site, sync it). Called after every save and refresh, so a site added, kept or moved here or on
+    /// another Mac is checked; a site with terrain is never asked about again until it moves.
+    func checkTerrain() {
+        guard !terrainBusy, !configLoadFailed else { return }
+        guard let next = config.sites.first(where: { $0.terrain == nil && !terrainFailed.contains($0.name) }) else { return }
+        terrainBusy = true
+        terrainChecking = next.name
+        Task { @MainActor in
+            do {
+                let t = try await Terrain.fetch(site: next, fetcher: URLSessionFetcher())
+                // Only if the site is still where it was when asked.
+                if let i = config.sites.firstIndex(where: { $0.name == next.name && $0.latitude == next.latitude && $0.longitude == next.longitude }) {
+                    config.sites[i].terrain = t
+                    terrainChecking = nil
+                    saveConfig()   // saves and syncs; its own checkTerrain() returns, as this one is still busy
+                }
+            } catch {
+                terrainFailed.insert(next.name)
+            }
+            terrainChecking = nil
+            try? await Task.sleep(for: .seconds(10))   // a breather between sites: Open-Meteo refuses quick runs
+            terrainBusy = false
+            checkTerrain()
+        }
+    }
+
+    func retryTerrain(_ name: String) {
+        terrainFailed.remove(name)
+        checkTerrain()
     }
 
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
@@ -267,6 +308,7 @@ final class Store: ObservableObject {
             return
         }
         refreshing = true
+        checkTerrain()
         let now = Date()
         if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > 30 * 60 }) ?? true {
             do {

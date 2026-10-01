@@ -13,6 +13,8 @@ struct HorizonSheet: View {
 
     private static let names = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
     private var openDeg: Double { store.config.goRule.minAltitudeDeg }
+    private var site: Site? { store.config.sites.first { $0.name == siteName } }
+    private var terrain: [Double]? { site?.terrain.flatMap { $0.count == 8 ? $0 : nil } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -21,8 +23,8 @@ struct HorizonSheet: View {
                 .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .top, spacing: 24) {
                 VStack(spacing: 6) {
-                    HorizonDial(heights: heights, openDeg: openDeg).frame(width: 220, height: 220)
-                    Text("Seen from above, north at the top. Grey is blocked; the dashed ring is \(Int(openDeg))°.")
+                    HorizonDial(heights: heights, openDeg: openDeg, terrain: terrain).frame(width: 220, height: 220)
+                    Text("Seen from above, north at the top. Grey is blocked\(terrain == nil ? "" : "; brown at the edge is the hills"); the dashed ring is \(Int(openDeg))°.")
                         .font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center).frame(width: 220)
                 }
                 .accessibilityElement(children: .ignore)
@@ -32,6 +34,7 @@ struct HorizonSheet: View {
                     Button("Open sky: \(Int(openDeg))° all round") { heights = Array(repeating: openDeg, count: 8) }.padding(.top, 4)
                 }
             }
+            terrainBox
             Text("To measure: stand where the telescope goes, face each way, and read the angle to the top of the roof or trees with a clinometer app on your phone. Steps of 5° are plenty.")
                 .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack {
@@ -42,7 +45,7 @@ struct HorizonSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 560)
+        .frame(width: 600)
         // A photo dropped on the sheet is measured as one chosen from the button.
         .dropDestination(for: URL.self) { urls, _ in
             guard let u = urls.first else { return false }
@@ -54,6 +57,7 @@ struct HorizonSheet: View {
                               onMove: { t in
                                   guard let i = store.config.sites.firstIndex(where: { $0.name == siteName }) else { return }
                                   store.config.sites[i].latitude = t.latitude; store.config.sites[i].longitude = t.longitude
+                                  store.config.sites[i].terrain = nil   // checked again for the new spot
                                   store.saveConfig()
                               })
         }
@@ -72,8 +76,7 @@ struct HorizonSheet: View {
     private func row(_ i: Int) -> some View {
         HStack(spacing: 10) {
             Text(Site.horizonDirections[i]).font(.system(size: 13, weight: .semibold)).frame(width: 30, alignment: .leading)
-            Text(heights[i] == openDeg ? "open sky" : heights[i] < openDeg ? "lower than usual" : "blocked")
-                .font(.caption).foregroundStyle(Theme.dim).frame(width: 110, alignment: .leading)
+            Text(note(i)).font(.caption).foregroundStyle(Theme.dim).frame(width: 150, alignment: .leading)
             Button { heights[i] = max(0, heights[i] - 5) } label: { Image(systemName: "minus") }
                 .accessibilityLabel("Lower \(Self.names[i])").disabled(heights[i] <= 0)
             Text("\(Int(heights[i]))°").monospacedDigit().frame(width: 34)
@@ -81,6 +84,43 @@ struct HorizonSheet: View {
                 .accessibilityLabel("Raise \(Self.names[i])").disabled(heights[i] >= 80)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    /// "open sky", "below your Go rule" (it changes nothing: Site.floorDeg) or "blocked", and the hills when known.
+    private func note(_ i: Int) -> String {
+        let base = heights[i] == openDeg ? "open sky" : heights[i] < openDeg ? "below your Go rule" : "blocked"
+        return terrain.map { "\(base) · hills \(Int($0[i].rounded()))°" } ?? base
+    }
+
+    /// The hills, as checked once for the site (#108): checking, failed with Try again, or what they reach and whether
+    /// any stand above what is set, with a button to raise those directions. Hills only ever raise a direction.
+    @ViewBuilder private var terrainBox: some View {
+        if store.terrainChecking == siteName {
+            HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the hills around \(siteName)…").font(.caption).foregroundStyle(Theme.dim) }
+        } else if store.terrainFailed.contains(siteName), terrain == nil {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Couldn't check the terrain just now").font(.callout.weight(.semibold))
+                Text("Open-Meteo is busy or out of reach. Try again in a minute; the horizon is unchanged.").font(.caption).foregroundStyle(Theme.dim)
+                Button("Try again") { store.retryTerrain(siteName) }
+            }
+        } else if let t = terrain {
+            let raise = Terrain.raises(terrain: t, site: edited, openDeg: openDeg)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Copy.terrainSummary(t)).font(.callout.weight(.semibold))
+                Text(raise.isEmpty ? "Lower than your horizon in every direction, so nothing changes. The terrain sees hills only, not trees or buildings: add those by hand or from a photo."
+                                   : "Higher than what is set there: a steep valley side or a cliff. The terrain sees hills only, not trees or buildings.")
+                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                if !raise.isEmpty {
+                    let dirs = raise.keys.sorted()
+                    Button("Raise \(ListFormatter.localizedString(byJoining: dirs.map { "\(Site.horizonDirections[$0]) to \(Int(raise[$0]!))°" }))") {
+                        for (i, v) in raise { heights[i] = max(heights[i], v) }
+                    }
+                }
+                Text("Terrain: Copernicus DEM GLO-90, via Open-Meteo").font(.system(size: 10)).foregroundStyle(Theme.dim)
+            }
+            .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+        }
     }
 
     /// All at open sky saves no horizon, so the site follows the go rule if its height changes later.
@@ -95,6 +135,8 @@ struct HorizonSheet: View {
 struct HorizonDial: View {
     let heights: [Double]
     let openDeg: Double
+    /// The hills (#108), drawn brown from the rim inward.
+    var terrain: [Double]? = nil
 
     var body: some View {
         Canvas { ctx, size in
@@ -109,6 +151,14 @@ struct HorizonDial: View {
                 p.addArc(center: c, radius: R, startAngle: a1, endAngle: a0, clockwise: true)
                 p.closeSubpath()
                 ctx.fill(p, with: .color(.gray.opacity(h > openDeg ? 0.6 : 0.45)))
+            }
+            for (i, h) in (terrain ?? []).enumerated() where h > 0.2 {
+                let a0 = Angle.degrees(Double(i) * 45 - 22.5 - 90), a1 = Angle.degrees(Double(i) * 45 + 22.5 - 90)
+                var p = Path()
+                p.addArc(center: c, radius: r(h), startAngle: a0, endAngle: a1, clockwise: false)
+                p.addArc(center: c, radius: R, startAngle: a1, endAngle: a0, clockwise: true)
+                p.closeSubpath()
+                ctx.fill(p, with: .color(Color(red: 0.54, green: 0.42, blue: 0.25)))
             }
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r(openDeg), y: c.y - r(openDeg), width: 2 * r(openDeg), height: 2 * r(openDeg))),
                        with: .color(.white.opacity(0.45)), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))

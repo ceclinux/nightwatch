@@ -9,9 +9,12 @@ public struct Site: Codable, Equatable, Sendable {
     public var timeZoneID: String
     public var bortle: Int
     /// How high houses, trees or hills block the sky, in degrees, towards N, NE, E, SE, S, SW, W and NW (owner-approved
-    /// mock-up, 1 October 2026). Nil: open sky, the go rule's "Targets must reach" height all round. Optional, so a site
+    /// mock-up, 1 October 2026). Nil: open sky. A height below the go rule's "Targets must reach" changes nothing (floorDeg). Optional, so a site
     /// saved before it existed still decodes.
     public var horizon: [Double]? = nil
+    /// The hills' height in the same eight directions, from terrain data (#108), shown on the horizon dial; it raises the
+    /// horizon only when the person chooses to. Nil until checked; cleared when the site moves.
+    public var terrain: [Double]? = nil
 
     public static let horizonDirections = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
@@ -35,12 +38,12 @@ public struct Site: Codable, Equatable, Sendable {
         return h[Int((a + 22.5) / 45) % 8]
     }
 
-    /// The height a target must clear towards `azimuthDeg`. One held to the go rule (`replacesFloor`) takes the horizon
-    /// in its place, lower or higher; one with its own lower floor (the Moon, a constellation's centre, an event) is only
-    /// raised by it.
-    public func floorDeg(azimuthDeg az: Double, minAlt: Double, replacesFloor: Bool) -> Double {
-        guard let h = horizonDeg(azimuthDeg: az) else { return minAlt }
-        return replacesFloor ? h : max(minAlt, h)
+    /// The height a target must clear towards `azimuthDeg`: its own floor (the go rule's "Targets must reach", which stands
+    /// for the atmosphere, or the Moon's or a constellation's lower one), raised wherever the horizon is higher. The horizon
+    /// only says what is in the way, so it never lowers the floor (owner, 1 October 2026: below about 20° there is three
+    /// times the air or more, whatever is in the way).
+    public func floorDeg(azimuthDeg az: Double, minAlt: Double) -> Double {
+        max(minAlt, horizonDeg(azimuthDeg: az) ?? minAlt)
     }
 
     var observer: astro_observer_t { Astronomy_MakeObserver(latitude, longitude, elevationM) }

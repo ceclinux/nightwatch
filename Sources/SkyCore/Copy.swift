@@ -241,14 +241,25 @@ public struct Copy: Sendable {
     /// The heads-up with a plan: "Your plan: the North America Nebula, best at 21:50, then the Eastern Veil, best at 22:30."
     /// and, only when dew is likely while the plan's targets are up, "Fit the dew heater: dew likely after 23:00." Nil with
     /// nothing in the plan.
-    /// A site's horizon for its Settings row: "Horizon: 45° S, SW · 40° SE · 20° NW", the directions that differ from open
-    /// sky (`openDeg`, the go rule's height), highest first; "Horizon: open sky" when none does.
+    /// A site's horizon for its Settings row: "Horizon: 45° S, SW · 40° SE", the directions higher than open sky (`openDeg`,
+    /// the go rule's height), highest first; "Horizon: open sky" when none is. Lower ones change nothing (Site.floorDeg).
     public static func horizonSummary(_ site: Site, openDeg: Double) -> String {
         guard let h = site.horizon, h.count == 8 else { return "Horizon: open sky" }
-        let groups = Dictionary(grouping: h.indices.filter { h[$0] != openDeg }, by: { h[$0] }).sorted { $0.key > $1.key }
+        let groups = Dictionary(grouping: h.indices.filter { h[$0] > openDeg }, by: { h[$0] }).sorted { $0.key > $1.key }
         guard !groups.isEmpty else { return "Horizon: open sky" }
         return "Horizon: " + groups.map { deg, idx in "\(Int(deg))° " + idx.sorted().map { Site.horizonDirections[$0] }.joined(separator: ", ") }
             .joined(separator: " · ")
+    }
+
+    /// The terrain box's heading: "Hills reach 7° to the NW, 6° to the N, NE and W", the highest two heights.
+    public static func terrainSummary(_ terrain: [Double]) -> String {
+        let rounded = terrain.map { Int($0.rounded()) }
+        guard let top = rounded.max(), top > 0 else { return "No hills above the horizon around here" }
+        let heights = Array(Set(rounded.filter { $0 > 0 })).sorted(by: >).prefix(2)
+        return "Hills reach " + heights.map { h in
+            let dirs = rounded.indices.filter { rounded[$0] == h }.map { Site.horizonDirections[$0] }
+            return "\(h)° to the " + ListFormatter.localizedString(byJoining: dirs)
+        }.joined(separator: ", ")
     }
 
     /// The heads-up's "Also tonight" line (owner, 1 October 2026, from the competitor review): up to two events the

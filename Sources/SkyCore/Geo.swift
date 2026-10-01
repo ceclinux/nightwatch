@@ -12,7 +12,7 @@ public enum DistanceUnit: String, Codable, Sendable {
 }
 
 public enum Geo {
-    static let earthRadiusKm = 6371.0088
+    public static let earthRadiusKm = 6371.0088
     private static let d2r = Double.pi / 180
 
     public static func distanceKm(_ a: Coordinate, _ b: Coordinate) -> Double {

@@ -3,6 +3,7 @@ Nightwatch bundles or fetches data from these sources. Their terms apply to that
 Astronomy Engine, Don Cross, MIT. https://github.com/cosinekitty/astronomy
 SatelliteKit, Gavin Eadie, MIT. https://github.com/gavineadie/SatelliteKit
 Weather data by Open-Meteo.com, CC BY 4.0. https://open-meteo.com
+Terrain heights for a site's horizon via the Open-Meteo Elevation API: produced using Copernicus WorldDEM-90 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved. https://open-meteo.com/en/docs/elevation-api
 Apple Weather via WeatherKit when the build is signed for it; attribution and legal notice per Apple's WeatherKit terms. https://weatherkit.apple.com/legal-attribution.html
 Seeing and transparency from 7Timer (Shanghai Astronomical Observatory), non-commercial use. http://www.7timer.info
 Aurora alert status from AuroraWatch UK, Lancaster University, used under its non-commercial terms. https://aurorawatch.lancs.ac.uk
