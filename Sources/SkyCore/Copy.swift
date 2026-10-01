@@ -241,6 +241,18 @@ public struct Copy: Sendable {
     /// The heads-up with a plan: "Your plan: the North America Nebula, best at 21:50, then the Eastern Veil, best at 22:30."
     /// and, only when dew is likely while the plan's targets are up, "Fit the dew heater: dew likely after 23:00." Nil with
     /// nothing in the plan.
+    /// The heads-up's "Also tonight" line (owner, 1 October 2026, from the competitor review): up to two events the
+    /// Events page has in tonight's clear sky, so a clear night with an ISS pass or a shower's peak says so. Showers only
+    /// at their peak and comets never: both are on the list for weeks, which would put the same line on every heads-up.
+    public static func alsoTonight(_ events: [SkyEvent], night: Night, site: Site) -> String? {
+        let picks = events.filter { e in
+            e.clear == true && e.when >= night.sunset && e.when < night.sunrise && e.kind != .comet && (e.kind != .meteorShower || e.atPeak)
+        }.sorted { $0.when < $1.when }.prefix(2)
+        guard !picks.isEmpty else { return nil }
+        return "Also tonight: " + picks.map { "\($0.kind == .meteorShower ? $0.title + " at peak" : $0.title) at \(hhmm($0.when, site: site))" }
+            .joined(separator: ", ") + "."
+    }
+
     public static func headsUpPlan(_ s: SessionPlan, plan: NightPlan, site: Site) -> String? {
         guard let first = s.items.first else { return nil }
         func name(_ t: RankedTarget) -> String { t.commonName.map { "the \($0)" } ?? t.catalogueID }

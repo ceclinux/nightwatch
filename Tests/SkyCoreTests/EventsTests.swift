@@ -298,3 +298,19 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(t.altitudeSamples.count == 9 && t.viewable != nil)
     #expect(t.peakAltDeg > 45 && t.peakAltDeg < 53)                     // culminates at about 51.6° from 53.4° N
 }
+
+@Test func aShowerAheadOfItsPeakGoesInTheCalendarOnItsPeakNight() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 1, 12, 0), site: site)
+    let sta = try #require(Events.showers(night: night, site: site, showers: try MeteorShowers.bundled()).first { $0.id == "shower-sta" })
+    let span = try #require(sta.calendarSpan)
+    let peakNight = try Ephemeris.night(localDate: utc(2026, 11, 4, 12, 0), site: site)
+    #expect(span.title == "Southern Taurids peak")
+    #expect(span.start == (peakNight.darkStart ?? peakNight.sunset) && span.end == (peakNight.darkEnd ?? peakNight.sunrise))
+    #expect(span.notes.hasPrefix("Radiant in ") && span.notes.contains(", highest at ") && span.notes.contains("ZHR"))
+    let ics = CalendarFile.ics(for: sta, site: site, now: night.sunset)
+    #expect(ics.contains("SUMMARY:Southern Taurids peak\r\n"))
+    #expect(ics.contains("DTSTART:\(CalendarFile.stamp(span.start))\r\n"))
+    #expect(!ics.contains("in 3"))   // tonight's countdown stays out of the calendar
+    let atPeak = try #require(Events.showers(night: peakNight, site: site, showers: try MeteorShowers.bundled()).first { $0.id == "shower-sta" })
+    #expect(atPeak.calendarSpan == nil)   // at its peak, tonight is the night
+}

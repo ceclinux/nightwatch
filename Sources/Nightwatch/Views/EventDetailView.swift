@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import NightwatchUI
 import SkyCore
 
@@ -49,8 +50,23 @@ struct EventDetailView: View {
             Text(event.detail).font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85)).frame(maxWidth: 420, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             EventChips(event: event, onPage: true).padding(.top, 2)
-            if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help("How to photograph this event") }
+            if let s = store.site {
+                HStack(spacing: 8) {
+                    HowToShootButton(shown: $tipsUI.shown).help("How to photograph this event")
+                    Button { addToCalendar(site: s) } label: {
+                        HStack(spacing: 5) { Image(systemName: "calendar.badge.plus").accessibilityHidden(true); Text("Add to Calendar") }
+                    }
+                    .captionButton().padding(.top, 4)
+                }
+            }
         }
+    }
+
+    /// Writes the event as an iCalendar file and hands it to Calendar, which asks which calendar to add it to.
+    private func addToCalendar(site: Site) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(event.title.replacingOccurrences(of: "/", with: "-")).ics")
+        guard (try? CalendarFile.ics(for: event, site: site).write(to: url, atomically: true, encoding: .utf8)) != nil else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private var facts: some View {

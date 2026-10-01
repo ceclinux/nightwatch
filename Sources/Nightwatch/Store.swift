@@ -335,7 +335,8 @@ final class Store: ObservableObject {
         writeWidgetSnapshot()
         if canNotify {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
-                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p))
+                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p),
+                                     events: events)
             alertState = r.state
             Store.writeFile(r.state, StateFiles.url(StateFiles.alerts))
             if let n = r.notification { Notifier.post(n) }

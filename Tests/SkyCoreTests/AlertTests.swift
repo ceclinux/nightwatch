@@ -396,3 +396,28 @@ private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement
     // A second before a due time sends nothing.
     #expect(AlertEngine.step(now: due[0].addingTimeInterval(-1), tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due[0], site: site, copy: copy).notification == nil)
 }
+
+private func event(_ id: String, _ kind: SkyEventKind, _ title: String, at t: Date, clear: Bool?, peak: Bool = false) -> SkyEvent {
+    var e = SkyEvent(id: id, kind: kind, title: title, detail: "", time: t, endTime: nil, raHours: nil, decDeg: nil)
+    e.clear = clear; e.atPeak = peak
+    return e
+}
+
+@Test func headsUpNamesUpToTwoClearEventsTonight() throws {
+    let (night, good, _, _) = try fixtures()
+    let w = good.primary!
+    let events = [
+        event("iss", .issPass, "ISS pass", at: w.start.addingTimeInterval(600), clear: true),
+        event("per", .meteorShower, "Orionids", at: w.start.addingTimeInterval(3600), clear: true, peak: true),
+        event("conj", .conjunction, "Moon near Saturn", at: w.start.addingTimeInterval(7200), clear: true),   // third: left out
+        event("cloudy", .issPass, "ISS pass", at: w.start.addingTimeInterval(300), clear: false),
+        event("weeks", .meteorShower, "Draconids", at: w.start.addingTimeInterval(400), clear: true),        // not at peak
+        event("comet", .comet, "C/2026 A1", at: w.start.addingTimeInterval(500), clear: true),
+    ]
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    let r = AlertEngine.step(now: due, tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy, events: events)
+    let body = try #require(r.notification?.body)
+    #expect(body.hasSuffix("Also tonight: ISS pass at \(Copy.hhmm(w.start.addingTimeInterval(600), site: site)), Orionids at peak at \(Copy.hhmm(w.start.addingTimeInterval(3600), site: site))."))
+    #expect(!body.contains("Saturn") && !body.contains("Draconids") && !body.contains("C/2026"))
+    #expect(Copy.alsoTonight([events[3], events[4], events[5]], night: night, site: site) == nil)
+}

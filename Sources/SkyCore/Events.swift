@@ -68,6 +68,8 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     public var radiantConstellation: String? = nil
     /// An ISS pass's track across the sky, for the compass drawing: where it appears, peaks and goes.
     public var path: [SkyPathPoint] = []
+    /// What "Add to Calendar" adds when it differs from tonight: a shower's peak night, weeks ahead (1 October 2026).
+    public var calendarSpan: CalendarSpan? = nil
     /// The time to show: `best`, else `time`.
     public var when: Date { best ?? time }
 }
@@ -89,7 +91,17 @@ extension SkyEvent {
         atPeak = try c.decodeIfPresent(Bool.self, forKey: .atPeak) ?? false
         radiantConstellation = try c.decodeIfPresent(String.self, forKey: .radiantConstellation)
         path = try c.decodeIfPresent([SkyPathPoint].self, forKey: .path) ?? []
+        calendarSpan = try c.decodeIfPresent(CalendarSpan.self, forKey: .calendarSpan)
     }
+}
+
+/// A calendar entry's own times and notes, for an event whose page is about tonight but whose moment is another night.
+public struct CalendarSpan: Codable, Equatable, Sendable {
+    public let title: String
+    public let start: Date
+    public let end: Date
+    public let notes: String
+    public init(title: String, start: Date, end: Date, notes: String) { self.title = title; self.start = start; self.end = end; self.notes = notes }
 }
 
 /// One point of a path across the sky: azimuth from north, altitude above the horizon.
@@ -206,6 +218,14 @@ public enum Events {
             e.best = up ? top.time : nil
             e.atPeak = days == 0 || days == 1
             e.radiantConstellation = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).symbol
+            // Peak still to come: the calendar gets the peak night's darkness and its own best hour, not tonight's.
+            if days >= 2, let pn = try? Ephemeris.night(localDate: eve.addingTimeInterval(12 * 3600), site: site) {
+                let pd = darkness(pn)
+                let ptop = highest(raHours: s.raHours, decDeg: s.decDeg, from: pd.start, to: pd.end, site: site)
+                e.calendarSpan = CalendarSpan(title: "\(s.name) peak", start: pd.start, end: pd.end,
+                                              notes: ptop.alt > 0 ? "Radiant in \(where_), highest at \(Copy.hhmm(ptop.time, site: site)), \(Int(ptop.alt.rounded()))° up. ZHR \(s.zhr)."
+                                                                  : "Radiant in \(where_), below the horizon. ZHR \(s.zhr).")
+            }
             let speed = s.velocityKms >= 55 ? "fast" : s.velocityKms <= 30 ? "slow" : "medium"
             e.facts = [
                 EventFact("Peak", days >= 0 && days <= 1 ? "Tonight, ZHR \(s.zhr)" : "Night of \(peakNight), ZHR \(s.zhr)"),
