@@ -14,9 +14,9 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
 Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover, widgets and the week ahead) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the rest of the Targets window).
 
-**Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
+**Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames, and one altitude chart showing where each is through the night. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
-<img src="docs/images/screenshot-plan.png" width="728" alt="Tomorrow night's plan, clear 22:00 to 03:00: the Iris Nebula at 22:00, the Little Sombrero Galaxy at 00:30 and Saturn at 01:00, both marked as best at the same time, and Capella at 03:00, each with a Not tomorrow button">
+<img src="docs/images/screenshot-plan.png" width="728" alt="Tonight's plan, clear 22:00 to 03:00: an altitude chart with one patterned line per target, named at its best time, above the rows for the Iris Nebula at 22:00, Saturn at 01:00 and Capella at 03:00, and the Little Sombrero Galaxy taken off for the night">
 
 **The week ahead:** up to ten nights in date order, each with its clear window or longest clear run, darkness and the Moon, so the best night of the week is easy to pick. Cloud from three days out is marked "Less certain".
 
@@ -37,6 +37,14 @@ Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky plac
 **Dark sites:** darker places nearby, scored for tonight against home, each with a map and Open in Maps.
 
 <img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km of Malham: Gisburn Forest Hub, Slaidburn visitor car park, Euro Car Parks near Burnsall and Buckden National Park Car Park, each with a map, its score against home, distance, direction and darkness">
+
+**Your horizon:** how high houses, trees or hills block the sky in each direction, with the hills found from terrain data.
+
+<img src="docs/images/screenshot-horizon.png" width="600" alt="The horizon at the Malham National Park car park: a dial of the sky seen from above with the hills as a thin brown band, each direction at open sky with the hills' height noted, and Hills reach 7 degrees to the N, NE and NW, 6 to the W, so nothing changes">
+
+**Events:** meteor showers, eclipses, close pairs, comets and space station passes, each with when and where to look, and Add to Calendar.
+
+<img src="docs/images/screenshot-event.png" width="728" alt="The Southern Taurids page: the bull of Taurus drawn over its stars, the peak night of 4 to 5 November with the radiant's best time, the rate and the Moon, and How to shoot this and Add to Calendar buttons">
 
 **Desktop widgets:** small, medium and large.
 

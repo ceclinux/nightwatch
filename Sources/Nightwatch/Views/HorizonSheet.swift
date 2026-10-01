@@ -26,6 +26,7 @@ struct HorizonSheet: View {
                     HorizonDial(heights: heights, openDeg: openDeg, terrain: terrain).frame(width: 220, height: 220)
                     Text("Seen from above, north at the top. Grey is blocked\(terrain == nil ? "" : "; brown at the edge is the hills"); the dashed ring is \(Int(openDeg))°.")
                         .font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center).frame(width: 220)
+                        .fixedSize(horizontal: false, vertical: true)   // wraps in full rather than ending "Grey is…"
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Copy.horizonSummary(edited, openDeg: openDeg))
