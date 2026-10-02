@@ -332,6 +332,7 @@ struct TargetsView: View {
                                 }
                             }.padding(20)
                         }
+                        comingUp
                     } else {
                     LazyVGrid(columns: gridColumns, spacing: 12) {
                         ForEach(visible(at: clock.date)) { f in
@@ -365,6 +366,38 @@ struct TargetsView: View {
             }
         }
         .onGeometryChange(for: Bool.self) { $0.size.width < 640 } action: { if ui.narrow != $0 { ui.narrow = $0 } }
+    }
+
+    /// The next occultations seen from here after tonight (#115), so one weeks away can go in the calendar.
+    @ViewBuilder private var comingUp: some View {
+        let tonight = Set(store.events.map(\.id))
+        let next = store.occultationsAhead.filter { !tonight.contains($0.id) && $0.time > Date() }.prefix(4)
+        if let s = store.site, !next.isEmpty, ui.search.trimmingCharacters(in: .whitespaces).isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Coming up from \(s.name)").font(.headline)
+                Text("The Moon covering a planet, a bright star or the Pleiades, seen from here in darkness.")
+                    .font(.caption).foregroundStyle(Tokens.textSecondary)
+                ForEach(Array(next)) { e in
+                    HStack(spacing: 12) {
+                        Text(e.time.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + ", " + Copy.hhmm(e.time, site: s))
+                            .font(.system(size: 13, weight: .semibold)).frame(width: 150, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(e.title).font(.system(size: 13))
+                            Text(e.detail).font(.caption).foregroundStyle(Tokens.textSecondary)
+                        }
+                        Spacer()
+                        Button("Add to Calendar") { CalendarExport.open(e, site: s) }.buttonStyle(SecondaryButtonStyle())
+                            .accessibilityLabel("Add \(e.title) on \(e.time.formatted(date: .abbreviated, time: .omitted)) to Calendar")
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { ui.selectedEvent = e }
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 9))
+                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
+                }
+            }
+            .padding(.horizontal, 20).padding(.bottom, 20)
+        }
     }
 
     /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
@@ -490,13 +523,18 @@ struct TargetsView: View {
     }
 
     private static let eventKinds: [SkyEventKind: String] = [.meteorShower: "Meteor shower", .comet: "Comet", .conjunction: "Conjunction",
-                                                              .issPass: "Space station", .lunarEclipse: "Lunar eclipse", .solarEclipse: "Solar eclipse"]
+                                                              .issPass: "Space station", .lunarEclipse: "Lunar eclipse", .solarEclipse: "Solar eclipse",
+                                                              .occultation: "Occultation"]
 
     /// An event on the same card as a target: artwork, chips, title row, and the altitude timeline where it has a place in the sky.
     private func eventCard(_ e: SkyEvent) -> some View {
         let eclipse = e.kind == .lunarEclipse || e.kind == .solarEclipse
         // "best" only when there is a best time: a shower whose radiant never rises has none.
-        let when = store.site.map { s in eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? "" } ?? ""
+        let when = store.site.map { s in
+            eclipse ? e.when.formatted(date: .abbreviated, time: .shortened)
+                : e.kind == .occultation ? Copy.hhmm(e.time, site: s)
+                : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? ""
+        } ?? ""
         // No kind label: the artwork already says what it is, and the room goes to the title (owner, 27 September 2026).
         return TargetCardFrame(title: e.title, subtitle: "", trailing: when.isEmpty ? nil : when) {
             EventPicture(kind: e.kind)
