@@ -193,6 +193,28 @@ the external services it uses, regional differences, and any regulation or prote
 6. **Save**, **Add for Review** and **Submit** (step 12), and confirm the status reads Waiting for Review. Review usually
    takes a day or two.
 
+## Checking the review status
+
+App Store Connect emails when a status changes, but not while a version sits Rejected or Ready for Review waiting on us:
+1.0.0 lost a day that way (1–2 October 2026). `swift scripts/review-status.swift` asks the App Store Connect API for each
+version's state, says it in plain words and exits 1 when something is waiting on us (Rejected, Ready for Review,
+Pending Developer Release and the like), 0 when the next move is Apple's. Run it after replying to App Review, and
+whenever a review has gone quiet.
+
+One-off setup: a Team API key named "Nightwatch review status" with the **Sales and Reports** role only (read-only for
+apps; roles add together, so add no other), made in Users and Access › Integrations › App Store Connect API. Its parts go
+in the login keychain, from Terminal (`$USER` is typed as it is):
+
+```
+security add-generic-password -a "$USER" -s nightwatch-asc-key-id -U -w KEY_ID
+security add-generic-password -a "$USER" -s nightwatch-asc-issuer-id -U -w ISSUER_ID
+security add-generic-password -a "$USER" -s nightwatch-asc-key -U -w "$(base64 -i ~/Downloads/AuthKey_KEY_ID.p8)"
+```
+
+Then delete the downloaded `.p8`. That role cannot list review submissions (403), so the script reads version states
+only, which show both states that went unnoticed. If the key is lost or leaked, revoke it on the same page and make
+another.
+
 ## Listing text
 
 Nothing here names Terry Pratchett, Discworld or the City Watch (rule 5.2.1). The description gives no web address: GitHub also offers the app as a download, which rule 2.3.10 (no alternative app marketplaces in metadata) could be read against, so the repository is reached through the Support URL instead. Telescope makers are described, not named,
