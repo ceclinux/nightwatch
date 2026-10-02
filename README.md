@@ -14,6 +14,10 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
 Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover, widgets and the week ahead) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the rest of the Targets window).
 
+**Alerts:** a heads-up an hour before sunset when tonight looks clear, with your plan and what the second forecast thinks, and a nudge as the clear window opens.
+
+<img src="docs/images/screenshot-notifications.png" width="369" alt="Three Nightwatch notifications: Clear skies tonight from 22:00, 6.0 hours, with the plan of the Iris Nebula then Saturn and a note that a second forecast sees cloud from 03:00; Clear from 20:41 with the Moon setting and the targets well placed; and Clear skies tonight from 21:00, 4.0 hours, with the Iris Nebula then the Little Sombrero Galaxy">
+
 **Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames, and one altitude chart showing where each is through the night. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
 <img src="docs/images/screenshot-plan.png" width="728" alt="Tonight's plan, clear 22:00 to 03:00: an altitude chart with one patterned line per target, named at its best time, above the rows for the Iris Nebula at 22:00, Saturn at 01:00 and Capella at 03:00, and the Little Sombrero Galaxy taken off for the night">
