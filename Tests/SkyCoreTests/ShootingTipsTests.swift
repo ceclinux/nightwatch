@@ -38,9 +38,16 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 180, site: site)
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
     #expect(!planet.rows.contains { $0.label == "Nights" })   // Mega Stack joins deep-sky nights only
+    #expect(!planet.rows.contains { $0.label == "EQ mode" })
     let noWindow = ShootingTips.tip(for: target("NGC0281", .nebulae, "Emission nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: nil, site: site)
     #expect(noWindow.rows.first { $0.label == "Frames" }?.text == "200–400 recommended.")
     let custom = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: nil, presetName: nil, stackMinutes: 120, site: site)
+    // The EQ line is the same for every telescope and names none (owner, 2 October 2026).
+    for preset in [nil, "dwarf-mini", "dwarf-3", "draco", "seestar-s50", "dslr-apsc-200"] {
+        let eq = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: preset, presetName: nil, stackMinutes: 120, site: site)
+            .rows.first { $0.label == "EQ mode" }?.text
+        #expect(eq?.hasPrefix("Long frames and stacks over several nights") == true && eq?.contains("DWARF") == false)
+    }
     #expect(custom.title == "How to shoot this with your telescope" && custom.source == nil)
     #expect(custom.rows.first { $0.label == "Filter" }?.text.contains("if it glows red") == true)
     let dwarfUnknown = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 60, site: site)
