@@ -62,6 +62,7 @@ public enum ShootingTips {
     /// `night`: "tonight", or "tomorrow night" while the Targets window shows tomorrow (owner's UAT, 30 September 2026).
     public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site,
                            night: String = "tonight") -> ShootingTip {
+        if MilkyWay.isMilkyWay(t.id) { return milkyWayTip(t, site: site) }
         let k = kind(t)
         var rows: [ShootingTip.Row] = []
         var source: String?
@@ -175,6 +176,27 @@ public enum ShootingTips {
             return "\(what.isEmpty ? t.name : what) · \(presetName ?? name): \(numbers)"
         }
         return tip
+    }
+
+    /// The Milky Way (#114, owner-approved mock-up): a camera and wide lens whatever the telescope, since even the widest
+    /// smart telescope sees a few degrees of a band that spans the sky.
+    static func milkyWayTip(_ t: RankedTarget, site: Site) -> ShootingTip {
+        let north = site.latitude >= 0, core = t.id == "milky-way-core"
+        let season = core ? (north ? "late spring to late summer" : "autumn to early spring") : (north ? "summer and autumn" : "winter")
+        var rows: [ShootingTip.Row] = [
+            .init("Kit", "A camera with a wide lens on a tripod: a telescope sees only a few degrees of it."),
+            .init("Lens", "14–24 mm, as wide open as it goes."),
+            .init("Exposure", "Untracked, up to about 20 s at 24 mm and 35 s at 14 mm on a full-frame camera before stars trail (the 500 rule); "
+                  + "two-thirds of that on APS-C, and about half for stars sharp at full size (the NPF rule)."),
+            .init("ISO", "1600–6400."),
+        ]
+        let best = "Best in \(season), on a moonless night."
+        if let v = t.viewable {
+            rows.append(.init("When", "Up from \(Copy.hhmm(v.start, site: site)); highest at \(Copy.hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded()))° up. \(best)"))
+        } else {
+            rows.append(.init("When", best))
+        }
+        return ShootingTip(title: "How to shoot this with a camera and wide lens", rows: rows, source: "Exposure limits from the 500 and NPF rules.")
     }
 
     /// The numbers the card gives, without the explanations; nil where it gives none.

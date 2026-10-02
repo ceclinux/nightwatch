@@ -57,7 +57,17 @@ struct TargetsView: View {
 
     /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
     private func eyeView(_ t: RankedTarget) -> EyeView? { store.site.flatMap { EyeViews.view(t, bortle: $0.bortle) } }
-    private var eyeTargets: [RankedTarget] { targets.filter { eyeView($0) != nil } }
+    private var eyeTargets: [RankedTarget] { (targets + milkyWay.shown).filter { eyeView($0) != nil } }
+    /// The Milky Way (#114, owner-approved mock-up): the core and the Cygnus band when they clear 10° in tonight's window,
+    /// and the core dimmed with the reason in its season where it never can.
+    private var milkyWay: (shown: [RankedTarget], dimmed: FavouriteTarget?) {
+        guard let p = plan, let s = store.site else { return ([], nil) }
+        let washed = (Planner.moonTonight(p).map { $0 != .down } ?? false) && p.moonIllumination >= 0.25
+        let window = p.primary ?? p.darkSpan
+        let all = MilkyWay.targets(window: window ?? ClearWindow(start: p.night.sunset, end: p.night.sunrise), site: s, moonWashed: washed)
+        return (window == nil ? [] : all.filter { $0.viewable != nil },
+                MilkyWay.coreNeverClears(site: s, on: p.night.sunset).map { FavouriteTarget(target: all[0], notTonight: $0) })
+    }
     /// Tonight's only: the events are worked out for tonight, so none show while Tomorrow night is chosen. Searched as the
     /// Events group searches, by title, detail and kind.
     private var eyeEvents: [SkyEvent] {
@@ -86,7 +96,8 @@ struct TargetsView: View {
                                       sort: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
         case .eyes:
             let found = eyeTargets.filter { $0.matches(ui.search) }
-            return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+            let dimmed = milkyWay.dimmed.flatMap { $0.target.matches(ui.search) ? [$0] : nil } ?? []
+            return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) } + dimmed
         case .darkSites, .plan, .week:
             return []
         }
@@ -457,7 +468,7 @@ struct TargetsView: View {
         } corner: {
             chips(t, eye: eye)
         } badge: {
-            heart(t)
+            if !MilkyWay.isMilkyWay(t.id) { heart(t) }   // not a catalogue target, so it has no place in Favourites or the plan
         } footer: {
             if let reason = notTonight {
                 Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)

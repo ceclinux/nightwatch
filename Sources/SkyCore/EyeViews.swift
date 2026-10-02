@@ -36,6 +36,7 @@ public enum EyeViews {
     public static func view(_ t: RankedTarget, bortle: Int) -> EyeView? {
         let b = min(9, max(1, bortle)), limit = nakedEyeLimit[b]!, sky = skyBrightness[b]!
         if t.id == "moon" { return .nakedEye }
+        if MilkyWay.isMilkyWay(t.id) { return t.moonWashed ? nil : .nakedEye }   // #114
         guard let m = t.magnitude else { return nil }
         switch t.group {
         case .planets:
@@ -69,6 +70,8 @@ extension Copy {
     public static func eyeLook(_ t: RankedTarget, _ v: EyeView) -> String {
         let eye = v == .nakedEye
         if t.id == "moon" { return "Its seas to the eye; craters along the shadow line in binoculars" }
+        if t.id == "milky-way-core" { return "A bright glow of stars, the band at its widest, split by dark lanes of dust" }
+        if t.id == "milky-way-cygnus" { return "A misty band of light, split in two by a dark rift" }
         switch t.group {
         case .planets: return eye ? "A bright star that does not twinkle" : "A small steady point in binoculars"
         case .galaxies: return eye ? "A faint smudge to the eye" : "A small oval glow in binoculars"

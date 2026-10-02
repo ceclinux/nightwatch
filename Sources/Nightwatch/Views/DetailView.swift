@@ -104,22 +104,30 @@ struct DetailView: View {
         .frame(width: free.width, height: free.height)   // centred on the clear space; the photo overflows it
     }
 
+    /// The core or the Cygnus band (#114): not a catalogue target, so no favourite, plan button or size; floor 10°.
+    private var milkyWay: Bool { MilkyWay.isMilkyWay(target.id) }
+    private var floor: Double { milkyWay ? MilkyWay.floorDeg : store.config.goRule.minAltitudeDeg }
+
+    private var heart: some View {
+        let on = store.config.favourites.contains(target.id)
+        return Button { store.config.toggleFavourite(target.id); store.saveConfig() } label: {
+            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 16, weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
+        }
+        .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
+        .accessibilityLabel(on ? "Remove from favourites" : "Add to favourites")
+    }
+
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(target.name).font(.system(size: 24, weight: .semibold)).lineLimit(2)
-                let on = store.config.favourites.contains(target.id)
-                Button { store.config.toggleFavourite(target.id); store.saveConfig() } label: {
-                    Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 16, weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
-                }
-                .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
-                .accessibilityLabel(on ? "Remove from favourites" : "Add to favourites")
+                if !milkyWay { heart }
             }
-            Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
+            Text(target.subtitle + (milkyWay ? "" : target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
             HStack(spacing: 8) {
-                if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help("Filter, exposure and frames for your telescope and this target") }
+                if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help(milkyWay ? "Lens, exposure and ISO for a camera" : "Filter, exposure and frames for your telescope and this target") }
                 planButton.padding(.top, 4)
             }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
@@ -130,7 +138,7 @@ struct DetailView: View {
     /// Tonight's plan from a target's page (#57, redesigned at the owner's UAT): a favourite can be taken off for the night
     /// or put back; any other target up in the clear window can be added for that night only.
     @ViewBuilder private var planButton: some View {
-        if let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
+        if !milkyWay, let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
             let inPlan = session.items.contains { $0.id == target.id }
             let favourite = store.config.favourites.contains(target.id)
             let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"   // its own `plan`, not `night`
@@ -147,13 +155,13 @@ struct DetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 TileRow(spacing: 6) {
                     StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
-                    StatTile(label: s.horizon == nil ? "Above \(Int(store.config.goRule.minAltitudeDeg))°" : "Clear of your horizon", value: "\(Int(target.visibleFraction * 100))% of window")
+                    StatTile(label: s.horizon == nil ? "Above \(Int(floor))°" : "Clear of your horizon", value: "\(Int(target.visibleFraction * 100))% of window")
                     // The Moon's own page has no separation to give: it says how much of it is lit instead.
                     if target.id == "moon" { StatTile(label: "Illuminated", value: target.typeName.components(separatedBy: " ").first) }
                     else { StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°") }
-                    StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60))
+                    if !milkyWay { StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60)) }
                 }
-                AltitudeChart(target: target, night: plan.night, window: w, minAltitude: store.config.goRule.minAltitudeDeg, site: s, nightWords: nightWords)
+                AltitudeChart(target: target, night: plan.night, window: w, minAltitude: floor, site: s, nightWords: nightWords)
             }
         }
     }
