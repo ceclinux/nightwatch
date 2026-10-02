@@ -172,6 +172,11 @@ public enum ShootingTips {
             }
         }
 
+        // Owner, 2 October 2026: one line for every telescope, naming none and quoting no maker's numbers.
+        if [.emission, .broadband, .nebulaUnknown].contains(k) {
+            rows.append(.init("EQ mode", "Long frames and stacks over several nights come out best in your telescope's EQ mode, "
+                              + "if it has one: in alt-az mode the sky slowly turns in the frame."))
+        }
         if let v = t.viewable, k != .constellation {
             rows.append(.init("When", "Start at \(Copy.hhmm(v.start, site: site)), when it is clear and high enough; it is best at \(Copy.hhmm(t.peakTime, site: site))."))
         }
