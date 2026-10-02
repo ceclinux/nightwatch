@@ -55,7 +55,7 @@ struct DetailView: View {
         .task(id: target.id) {
             hero.image = nil; hero.art = nil; hero.imageFovDeg = nil
             if target.group == .constellations { hero.art = ConstellationArt(id: target.id); return }
-            if milkyWay { hero.image = EventArt(name: "milky-way").image; return }
+            if milkyWay { hero.image = EventArt(name: target.id).image; return }
             // The card's cached image first, so the page is never blank, then a sharp one sized for the window, with more sky
             // around an object bigger than the field of view so the dashed box has room.
             let fovDeg = Thumbnails.fovDeg(for: target, fov: fov)
