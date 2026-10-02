@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 2 October 2026, version 1.2.1 "Great A'Tuin, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 2 October 2026, version 1.2.2 "Great A'Tuin, patch 2". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -203,6 +203,7 @@ Tags follow the City Watch novels.
 | 1.1.1 | Pseudopolis Yard, patch 1 | 1 October 2026 | The caption under the horizon dial shows in full, rather than ending "Grey is…" |
 | 1.2.0 | Great A'Tuin | 2 October 2026 | The Moon covering a planet, a bright star or the Pleiades, worked out a year ahead for your site: when each star goes behind the Moon and comes back, at which edge, with a drawing of each star's path; the Events page lists the next four from your site under Coming up, each with Add to Calendar, and tonight's appear among the night's events; the Milky Way in Eyes and binoculars: its core in Sagittarius when it clears 10° in darkness, and the band through Cygnus; where the core never clears that height, as from most of Britain, it shows dimmed from May to August with the reason; their pages say how to photograph them with a camera and wide lens; new artwork for occultations and the Milky Way |
 | 1.2.1 | Great A'Tuin, patch 1 | 2 October 2026 | An occultation's page draws the Moon from a real photograph of the full Moon, shaded to its phase that night, so the drawing shows which edge is lit |
+| 1.2.2 | Great A'Tuin, patch 2 | 2 October 2026 | How to shoot this on the DWARF mini and DWARF 3 says how to join several nights in Mega Stack: the same filter every night, one exposure and gain to be safe, and that trailed stars in any night can stop the stack |
 
 ## Install
 
