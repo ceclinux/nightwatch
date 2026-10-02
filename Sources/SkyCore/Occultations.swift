@@ -163,6 +163,14 @@ public enum Occultations {
 }
 
 extension Occultations {
+    /// Which way the Moon's sunlit edge faces at the first contact, in degrees from north through east: the direction of the
+    /// Sun from the Moon's centre. With `moonIllumination` it shades the drawing to the night's phase.
+    public static func brightLimbDeg(_ o: Occultation, site: Site) -> Double {
+        let obs = Astronomy_MakeObserver(site.latitude, site.longitude, site.elevationM)
+        let m = equatorial(BODY_MOON, o.start, obs), s = equatorial(BODY_SUN, o.start, obs)
+        return (positionAngle(m.ra, m.dec, s.ra, s.dec) + 360).truncatingRemainder(dividingBy: 360)
+    }
+
     /// Each covered star's path across the Moon for the event's drawing, in Moon radii from its centre: x east, y north,
     /// every two minutes from 20 minutes before it goes to 20 minutes after it comes back.
     public static func tracks(_ o: Occultation, site: Site, stars: [BrightStar]) -> [(name: String, points: [(x: Double, y: Double)])] {

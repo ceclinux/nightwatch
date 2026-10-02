@@ -43,3 +43,14 @@ private let malham = Site(name: "Malham", latitude: 54.06, longitude: -2.154, el
     #expect(tracks.count == o.contacts.count)
     #expect(tracks.allSatisfy { $0.points.contains { ($0.x * $0.x + $0.y * $0.y).squareRoot() < 1 } && ($0.points.first.map { ($0.x * $0.x + $0.y * $0.y).squareRoot() > 1 } ?? false) })
 }
+
+/// 28 October 2026 is two days after full, so the Moon is waning and its sunlit edge faces east, the edge it is moving
+/// towards: the stars go behind at the lit edge, as the facts say, and the drawing shades the west side.
+@Test func theSunlitEdgeFacesEastAfterFullMoon() throws {
+    let found = Occultations.find(from: utc(2026, 10, 27, 12, 0), days: 1, site: malham, stars: [])
+    let o = try #require(found.first { $0.id == "pleiades" })
+    let limb = Occultations.brightLimbDeg(o, site: malham)
+    #expect(limb > 45 && limb < 135)
+    let allLit = o.contacts.allSatisfy { $0.disappearsAtLitEdge }
+    #expect(allLit)
+}
