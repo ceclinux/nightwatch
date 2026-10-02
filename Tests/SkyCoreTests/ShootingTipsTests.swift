@@ -18,7 +18,8 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(tip.rows.first { $0.label == "Exposure" }?.text == "15–60 s per frame at gain 60–80.")
     #expect(tip.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 360 frames fill the 3 h it is up tonight.")
     #expect(tip.rows.last?.text == "Start at 23:00, when it is clear and high enough; it is best at 01:30.")
-    #expect(tip.source == "Settings from DWARFLAB's user manual.")
+    #expect(tip.source == "Settings from DWARFLAB's user manual; Mega Stack from DWARFLAB's help pages.")
+    #expect(tip.rows.first { $0.label == "Nights" }?.text.hasPrefix("To join several nights in Mega Stack, shoot every night with the same filter") == true)
     let galaxy = ShootingTips.tip(for: target("NGC0224", .galaxies, "Galaxy"), presetID: "dwarf-3", presetName: "DwarfLab DWARF 3", stackMinutes: 90, site: site)
     #expect(galaxy.rows.first { $0.label == "Filter" }?.text.hasPrefix("Astro") == true)
     #expect(galaxy.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 180 frames fill the 1.5 h it is up tonight.")
@@ -36,6 +37,7 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
 @Test func noNumbersWithoutAVerifiedSource() {
     let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 180, site: site)
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
+    #expect(!planet.rows.contains { $0.label == "Nights" })   // Mega Stack joins deep-sky nights only
     let noWindow = ShootingTips.tip(for: target("NGC0281", .nebulae, "Emission nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: nil, site: site)
     #expect(noWindow.rows.first { $0.label == "Frames" }?.text == "200–400 recommended.")
     let custom = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: nil, presetName: nil, stackMinutes: 120, site: site)
