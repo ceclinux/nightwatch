@@ -245,13 +245,33 @@ struct OccultationView: View {
     let occultation: Occultation
     let site: Site
     private static let stars = (try? BrightStars.bundled()) ?? []
+    /// The owner's full Moon of 26 September 2026 (DWARF Mini), turned north-up to match NASA's view of the same night.
+    // ponytail: one photo for every night, so the Moon's own tilt (up to about 25° either way) is not followed; the phase is.
+    private static let photo = EventArt(name: "moon-photo").image
+
+    /// The Moon's unlit part, as a shape of radius `r` about the origin with the sunlit edge towards +x: the far half of the
+    /// disc, closed by the terminator, a half-ellipse x = (1 − 2k)·√(r² − y²) for an illuminated fraction k.
+    static func shadow(lit k: Double, r: CGFloat) -> Path {
+        let e = CGFloat(1 - 2 * min(1, max(0, k)))
+        var p = Path()
+        for i in 0...48 { let a = Double.pi / 2 + Double.pi * Double(i) / 48; p.addLine(to: CGPoint(x: r * cos(a), y: r * sin(a))) }
+        for i in 0...48 { let y = -r + 2 * r * CGFloat(i) / 48; p.addLine(to: CGPoint(x: e * (r * r - y * y).squareRoot(), y: y)) }
+        p.closeSubpath()
+        return p
+    }
 
     var body: some View {
         let tracks = Occultations.tracks(occultation, site: site, stars: Self.stars)
+        let limb = Occultations.brightLimbDeg(occultation, site: site) * .pi / 180
         Canvas { ctx, size in
             let r = min(size.width, size.height) * 0.3, c = CGPoint(x: size.width / 2, y: size.height / 2)
             func pt(_ p: (x: Double, y: Double)) -> CGPoint { CGPoint(x: c.x - CGFloat(p.x) * r, y: c.y - CGFloat(p.y) * r) }
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(Color(red: 0.85, green: 0.83, blue: 0.78)))
+            let disc = CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)
+            if let photo = Self.photo { ctx.draw(Image(nsImage: photo), in: disc) }
+            else { ctx.fill(Path(ellipseIn: disc), with: .color(Color(red: 0.85, green: 0.83, blue: 0.78))) }
+            // North up and east left, so the Sun's direction (position angle θ) points to (−sin θ, −cos θ) on screen.
+            let turn = CGAffineTransform(rotationAngle: atan2(-cos(limb), -sin(limb))).concatenating(CGAffineTransform(translationX: c.x, y: c.y))
+            ctx.fill(Self.shadow(lit: occultation.moonIllumination, r: r).applying(turn), with: .color(.black.opacity(0.82)))
             for t in tracks where t.points.count > 1 {
                 var p = Path(); p.move(to: pt(t.points[0])); t.points.dropFirst().forEach { p.addLine(to: pt($0)) }
                 ctx.stroke(p, with: .color(Color(red: 0.62, green: 0.82, blue: 1)), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
