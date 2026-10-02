@@ -36,7 +36,7 @@ public enum MeteorShowers {
     }
 }
 
-public enum SkyEventKind: String, Codable, Sendable { case meteorShower, lunarEclipse, solarEclipse, conjunction, comet, issPass }
+public enum SkyEventKind: String, Codable, Sendable { case meteorShower, lunarEclipse, solarEclipse, conjunction, comet, issPass, occultation }
 
 public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     public let id: String
@@ -71,6 +71,8 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     /// Behind the site's horizon at its best (v1.1): a pass under the roofline, a comet or pair that never clears the trees,
     /// a shower whose radiant stays hidden. Kept off the heads-up's "Also tonight".
     public var behindHorizon = false
+    /// An occultation's contacts, for its page's drawing and facts (#115).
+    public var occultation: Occultation? = nil
     /// What "Add to Calendar" adds when it differs from tonight: a shower's peak night, weeks ahead (1 October 2026).
     public var calendarSpan: CalendarSpan? = nil
     /// The time to show: `best`, else `time`.
@@ -96,6 +98,7 @@ extension SkyEvent {
         path = try c.decodeIfPresent([SkyPathPoint].self, forKey: .path) ?? []
         calendarSpan = try c.decodeIfPresent(CalendarSpan.self, forKey: .calendarSpan)
         behindHorizon = try c.decodeIfPresent(Bool.self, forKey: .behindHorizon) ?? false
+        occultation = try c.decodeIfPresent(Occultation.self, forKey: .occultation)
     }
 }
 
@@ -351,6 +354,27 @@ public enum Events {
                    EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"),
                    EventFact("Distance", String(format: "%.2f AU from Earth, %.2f AU from the Sun", pos.deltaAU, pos.rAU)),
                    EventFact("Moon", moonNote(at: top.time, site: site, hides: "wash out its faint tail"))]
+        return e
+    }
+
+    /// The Moon covering a planet, a bright star or the Pleiades (#115): "The Moon covers the Pleiades", with each star's
+    /// disappearance and reappearance and the edge it meets. Its time is the first star's disappearance.
+    public static func occultation(_ o: Occultation, site: Site) -> SkyEvent {
+        let first = o.contacts.min { $0.disappears < $1.disappears }!
+        let names = o.contacts.map(\.name)
+        let who = o.id == "pleiades" ? ListFormatter.localizedString(byJoining: names) + (names.count == 1 ? " goes" : " go") : "\(o.object) goes"
+        var e = SkyEvent(id: "occ-\(o.id)-\(Int(o.start.timeIntervalSince1970))", kind: .occultation, title: "The Moon covers \(o.object)",
+                         detail: "\(who) behind the Moon · \(Int(first.altDeg.rounded()))° up", time: o.start, endTime: o.end, raHours: nil, decDeg: nil)
+        e.best = o.start
+        e.occultation = o
+        func edge(_ lit: Bool) -> String { lit ? "lit edge" : "dark edge" }
+        e.facts = o.contacts.sorted { $0.disappears < $1.disappears }.map { c in
+            EventFact(c.name, "gone \(Copy.hhmm(c.disappears, site: site)) at the \(edge(c.disappearsAtLitEdge)) · back \(Copy.hhmm(c.reappears, site: site)) at the \(edge(c.reappearsAtLitEdge))")
+        }
+        let lit = Int((o.moonIllumination * 100).rounded())
+        e.facts.append(EventFact("Moon", "\(lit)% lit, \(Int(o.moonAltDeg.rounded()))° up in the \(Geo.compass(o.moonAzDeg))"))
+        e.facts.append(EventFact("Watch with", o.id.hasPrefix("planet-") || o.object == "the Pleiades" && lit < 50
+                                 ? "Your eyes or binoculars" : "Binoculars: a star is faint beside the Moon"))
         return e
     }
 
