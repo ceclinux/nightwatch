@@ -18,7 +18,7 @@ struct DetailView: View {
     @StateObject private var tipsUI = TipsState()
 
     /// Photographs and artwork that must be seen whole; everything else is a survey image to fill the page.
-    private var fitted: Bool { target.group == .constellations || target.group == .planets }
+    private var fitted: Bool { target.group == .constellations || target.group == .planets || milkyWay }
     /// A hand-edited config can hold 0.
     /// The night this page describes, in words.
     private var nightWords: String { plan == nil || plan?.night.key == store.plan?.night.key ? "tonight" : "tomorrow night" }
@@ -55,6 +55,7 @@ struct DetailView: View {
         .task(id: target.id) {
             hero.image = nil; hero.art = nil; hero.imageFovDeg = nil
             if target.group == .constellations { hero.art = ConstellationArt(id: target.id); return }
+            if milkyWay { hero.image = EventArt(name: "milky-way").image; return }
             // The card's cached image first, so the page is never blank, then a sharp one sized for the window, with more sky
             // around an object bigger than the field of view so the dashed box has room.
             let fovDeg = Thumbnails.fovDeg(for: target, fov: fov)

@@ -94,7 +94,9 @@ struct ThumbnailView: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
-            if let image = loader.image {
+            if MilkyWay.isMilkyWay(target.id) {
+                EventArt(name: "milky-way").padding(4)   // the owner's artwork (#114), whole rather than cropped
+            } else if let image = loader.image {
                 // The image lives in an overlay so its natural size never widens the layout; the card decides the size.
                 Color.clear
                     .overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
@@ -107,6 +109,7 @@ struct ThumbnailView: View {
         }
         .task(id: target.id) {
             if target.group == .constellations { loader.art = ConstellationArt(id: target.id); return }
+            if MilkyWay.isMilkyWay(target.id) { return }
             loader.image = await Thumbnails.image(for: target, fov: store.config.fov)
         }
     }
