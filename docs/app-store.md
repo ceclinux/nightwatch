@@ -172,7 +172,9 @@ the external services it uses, regional differences, and any regulation or prote
    *Replying alone leaves Resubmit to App Review grey (nothing was edited); Apple's message asks only for the reply.*
 4. *Saving moves the version to "Ready for Review", which means added to a submission but not yet submitted.* Press
    **Resubmit to App Review** (or **Update Review** on the version page), and it becomes "Waiting for Review". The build
-   stays the same.
+   stays the same. *On 2 October 2026, a day after replying to the 2.4.5(i) location question, the version was still
+   Rejected with no answer from Apple: the reply alone had not put it back in the queue. Do steps 3 and 4 the same day as
+   the reply.*
 
 ## Each release
 
@@ -293,8 +295,13 @@ The table behind it, for checking against the build (`codesign -d --entitlements
 
 Deliberately **not** in the store build (`scripts/appstore.sh` strips them and fails if they return): the temporary
 sandbox exceptions, which exist only to import 0.6 settings that an App Store user never had, so a reviewer could never
-see them used. The download keeps them. User-selected file access was stripped too until 1.1 gave it a visible use
-(Measure from a photo).
+see them used. The download keeps them.
+
+User-selected file access was **not** stripped from 1.0.0, whatever this page said before: the submitted package
+(`build/appstore/Nightwatch-1.0.0.pkg`, build 24) carries `com.apple.security.files.user-selected.read-only`, checked on
+2 October 2026 with `pkgutil --expand-full` and `codesign -d --entitlements`. In 1.0.0 it serves only the Welcome
+window's "Import settings..." step, which appears only when 0.6 settings are found, so a reviewer cannot see it; the 1.0.0
+Notes say so. From 1.1 it also has a visible use (Measure from a photo). Check the real package, never this page.
 
 ### Before pressing Submit
 
