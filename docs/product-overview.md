@@ -152,6 +152,22 @@ The wording is plain English throughout. The light City Watch touches of earlier
 - It is not commercial: its data sources' terms rule out a paid or ad-supported product without replacing them.
 - It is not on the Mac App Store yet. The store version, "Nightwatch: Clear Sky Alerts", is built from the same code with no update check (`scripts/appstore.sh`, `docs/app-store.md`); 1.0.0 was submitted on 26 September 2026 and is in App Review. Until it is approved, Nightwatch is a signed, notarised download from GitHub and delphi-dolphin.com/nightwatch.
 
+## Keeping it simple
+
+Owner's rule, 2 October 2026: "It's okay to do a good niche well, and not overwhelm the user with additional baggage."
+Nightwatch's niche is when to go out and what to point at. Before a feature is designed:
+
+1. **Is it already covered?** Favourites, Tonight's plan, the week ahead and How to shoot this answer more than they
+   seem to. Show how they already do the job before adding anything.
+2. **The smallest version first.** A line or a row on a page that exists comes before a new page, sheet, setting or
+   saved state.
+3. **Count the decisions.** A proposal that needs more than one choice from the owner before it can be built is too
+   complicated: offer the smaller version instead.
+
+The example that set the rule: multi-night projects for faint targets (#128) grew into a sidebar page, a sheet, goals and
+rules for sharing a night. A favourite already returns each clear night, and the DWARF's Mega Stack joins the nights, so
+all it became was one row in How to shoot this.
+
 ## Releases
 
 Tags follow the City Watch novels.

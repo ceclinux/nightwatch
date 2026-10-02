@@ -82,7 +82,7 @@ public enum ShootingTips {
 
         switch presetID {
         case "dwarf-mini", "dwarf-3":
-            source = "Settings from DWARFLAB's user manual."
+            source = "Settings from DWARFLAB's user manual; Mega Stack from DWARFLAB's help pages."
             switch k {
             case .moon:
                 rows.append(.init("Mode", "Use the Moon mode: it sets focus, exposure and gain for you (about 1/250 s, gain 0, Astro filter)."))
@@ -101,6 +101,11 @@ public enum ShootingTips {
                 } else {
                     rows.append(.init("Frames", "200–400 recommended."))
                 }
+                // Owner, 2 October 2026: a favourite already brings a target back each clear night, so the one help needed
+                // across nights is this. DWARFLAB's help names the same target and filter; a matching exposure and gain is
+                // the safe choice (a third-party guide says Mega Stack needs it too).
+                rows.append(.init("Nights", "To join several nights in Mega Stack, shoot every night with the same filter, "
+                                  + "and keep one exposure and gain, to be safe. Trailed stars in any night can stop the stack."))
             }
         case "draco":
             // #69: DWARFLAB publishes the Draco's filters but, as of 29 September 2026, no manual with exposure, gain or
