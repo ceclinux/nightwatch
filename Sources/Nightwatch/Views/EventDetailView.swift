@@ -28,7 +28,9 @@ struct EventDetailView: View {
     }
 
     @ViewBuilder private var hero: some View {
-        if event.kind == .issPass, !event.path.isEmpty, let s = store.site {
+        if event.kind == .occultation, let o = event.occultation, let s = store.site {
+            OccultationView(occultation: o, site: s).frame(maxWidth: 520, maxHeight: 420)
+        } else if event.kind == .issPass, !event.path.isEmpty, let s = store.site {
             SkyPathView(path: event.path, site: s).frame(maxWidth: 420, maxHeight: 420)
         } else if event.kind == .meteorShower, let id = event.radiantConstellation, let art = ConstellationArt(id: id) {
             art
@@ -62,12 +64,7 @@ struct EventDetailView: View {
         }
     }
 
-    /// Writes the event as an iCalendar file and hands it to Calendar, which asks which calendar to add it to.
-    private func addToCalendar(site: Site) {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(event.title.replacingOccurrences(of: "/", with: "-")).ics")
-        guard (try? CalendarFile.ics(for: event, site: site).write(to: url, atomically: true, encoding: .utf8)) != nil else { return }
-        NSWorkspace.shared.open(url)
-    }
+    private func addToCalendar(site: Site) { CalendarExport.open(event, site: site) }
 
     private var facts: some View {
         Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
@@ -78,5 +75,15 @@ struct EventDetailView: View {
                 }
             }
         }
+    }
+}
+
+/// "Add to Calendar" (v1.1): the event as an iCalendar file, handed to the Mac's calendar app, which asks which calendar.
+/// Shared by an event's page and the Events page's "Coming up".
+enum CalendarExport {
+    @MainActor static func open(_ e: SkyEvent, site: Site) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(e.title.replacingOccurrences(of: "/", with: "-")).ics")
+        guard (try? CalendarFile.ics(for: e, site: site).write(to: url, atomically: true, encoding: .utf8)) != nil else { return }
+        NSWorkspace.shared.open(url)
     }
 }

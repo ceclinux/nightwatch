@@ -71,6 +71,7 @@ struct EventArt: View {
         case .issPass: "iss"
         case .solarEclipse: "solar-eclipse"
         case .lunarEclipse: "lunar-eclipse"
+        case .occultation: "occultation"   // no artwork yet: EventPicture draws one
         }
     }
 
@@ -86,8 +87,22 @@ struct EventPicture: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
-            EventArt(kind: kind).padding(4)
+            if kind == .occultation { OccultationGlyph().padding(10) } else { EventArt(kind: kind).padding(4) }
         }
+    }
+}
+
+/// An occultation card's picture (#115): the Moon with stars at its edge, one about to go behind it.
+struct OccultationGlyph: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let r = min(size.width, size.height) * 0.36, c = CGPoint(x: size.width * 0.55, y: size.height / 2)
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(Color(red: 0.85, green: 0.83, blue: 0.78)))
+            for (dx, dy, s) in [(-1.25, -0.45, 3.0), (-1.55, 0.2, 2.6), (-1.0, 0.75, 2.4), (1.35, 0.15, 2.4)] as [(CGFloat, CGFloat, CGFloat)] {
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x + dx * r - s, y: c.y + dy * r - s, width: 2 * s, height: 2 * s)), with: .color(.white))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
@@ -157,6 +172,10 @@ struct EventChips: View {
             if let c = event.clear { Chip(text: onPage ? (c ? "Clear then" : "Cloudy then") : (c ? "Clear" : "Cloudy"), icon: c ? "checkmark" : "cloud.fill", warning: !c) }
             if event.behindHorizon {
                 Chip(text: event.kind == .meteorShower ? "Radiant behind your horizon" : "Behind your horizon", icon: "eye.slash", warning: true)
+            }
+            // #115 mock-up: a bright Moon drowns the fainter stars it covers.
+            if onPage, let o = event.occultation, o.moonIllumination >= 0.7 {
+                Chip(text: "Bright Moon, \(Int((o.moonIllumination * 100).rounded()))% lit", icon: "moon.fill", warning: true)
             }
         }
         if onPage { HStack(spacing: 6) { chips } } else { VStack(alignment: .trailing, spacing: 4) { chips } }
@@ -231,5 +250,31 @@ struct HowToShootButton: View {
             }
         }
         .captionButton().padding(.top, 4)
+    }
+}
+
+/// An occultation's page picture (#115): the Moon, and each covered star's path behind it, drawn as the sky looks
+/// facing it, north up and east to the left. A dot marks where the star starts its path; its name sits beside it.
+struct OccultationView: View {
+    let occultation: Occultation
+    let site: Site
+    private static let stars = (try? BrightStars.bundled()) ?? []
+
+    var body: some View {
+        let tracks = Occultations.tracks(occultation, site: site, stars: Self.stars)
+        Canvas { ctx, size in
+            let r = min(size.width, size.height) * 0.3, c = CGPoint(x: size.width / 2, y: size.height / 2)
+            func pt(_ p: (x: Double, y: Double)) -> CGPoint { CGPoint(x: c.x - CGFloat(p.x) * r, y: c.y - CGFloat(p.y) * r) }
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(Color(red: 0.85, green: 0.83, blue: 0.78)))
+            for t in tracks where t.points.count > 1 {
+                var p = Path(); p.move(to: pt(t.points[0])); t.points.dropFirst().forEach { p.addLine(to: pt($0)) }
+                ctx.stroke(p, with: .color(Color(red: 0.62, green: 0.82, blue: 1)), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                let s = pt(t.points[0])
+                ctx.fill(Path(ellipseIn: CGRect(x: s.x - 3.5, y: s.y - 3.5, width: 7, height: 7)), with: .color(.white))
+                ctx.draw(Text(t.name).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white), at: CGPoint(x: s.x, y: s.y - 12))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("The Moon and the path of \(ListFormatter.localizedString(byJoining: occultation.contacts.map(\.name))) behind it")
     }
 }

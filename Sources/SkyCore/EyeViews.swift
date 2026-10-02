@@ -56,12 +56,12 @@ public enum EyeViews {
         }
     }
 
-    /// Events anyone can watch without a telescope: meteors, the space station, conjunctions, a lunar eclipse. Comets are
+    /// Events anyone can watch without a telescope: meteors, the space station, conjunctions, a lunar eclipse, the Moon covering a star. Comets are
     /// left out (their brightness is not known here) and a solar eclipse is never suggested for the eye.
     /// A conjunction with Uranus or Neptune is left out: neither is a naked-eye planet.
     public static func includes(_ e: SkyEvent) -> Bool {
         if e.kind == .conjunction { return !["Uranus", "Neptune"].contains { e.title.contains($0) } }
-        return [.meteorShower, .issPass, .lunarEclipse].contains(e.kind)
+        return [.meteorShower, .issPass, .lunarEclipse, .occultation].contains(e.kind)
     }
 }
 

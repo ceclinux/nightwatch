@@ -705,7 +705,34 @@ final class Store: ObservableObject {
         if let tle, let passes = try? Satellites.visiblePasses(tle: tle, site: site, from: night.sunset, to: night.sunrise, minPeakElevation: 30) {
             ev += passes.map { Events.issPass($0, site: site) }
         }
+        updateOccultations(site: site, now: now)
+        ev += occultationsAhead.filter { $0.time >= night.sunset && $0.time < night.sunrise }
         return ev.sorted { $0.when < $1.when }
+    }
+
+    // MARK: occultations (#115)
+
+    /// The Moon covering a planet, a bright star or the Pleiades, seen from the site in darkness over the coming year,
+    /// soonest first: tonight's join the events, the rest are the Events page's "Coming up".
+    @Published var occultationsAhead: [SkyEvent] = []
+    private var occultationsKey: String?
+
+    /// Works the year ahead out once a day per site, off the main thread (a second or so), then recomputes so tonight's
+    /// join the events. Ends in darkness are kept; the site's horizon raises the 10° floor.
+    private func updateOccultations(site: Site, now: Date) {
+        let day = site.calendar.startOfDay(for: now)
+        let key = "\(site.latitude),\(site.longitude),\(site.horizon ?? []),\(day.timeIntervalSince1970)"
+        guard key != occultationsKey else { return }
+        occultationsKey = key
+        let stars = self.stars
+        Task.detached(priority: .utility) { [weak self] in
+            let found = Occultations.find(from: day, days: 365, site: site, stars: stars).map { Events.occultation($0, site: site) }
+            await MainActor.run {
+                guard let self, self.occultationsKey == key else { return }
+                self.occultationsAhead = found
+                Task { await self.recompute(now: Date()) }
+            }
+        }
     }
 
     // MARK: cache helpers

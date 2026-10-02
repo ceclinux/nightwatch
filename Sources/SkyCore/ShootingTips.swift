@@ -283,9 +283,13 @@ public enum ShootingTips {
             rows.append(.init("Mode", "Start in your telescope's Moon mode. The eclipsed Moon is far dimmer, so lengthen the exposure as it darkens."))
         case .solarEclipse:
             rows.append(.init("Safety", "Never point a telescope or camera at the Sun without a certified solar filter over the front."))
+        case .occultation:
+            rows.append(.init("Watch", "Be watching a few minutes early: at the Moon's dark edge a star goes out in an instant, and comes back as suddenly."))
+            rows.append(.init("Record", "Your telescope's Moon mode, as video or a run of short exposures, catches the moment; the Moon fills much of a small frame."))
         }
-        if let b = e.best, e.kind != .issPass { rows.append(.init("When", "Best at \(Copy.hhmm(b, site: site)).")) }
+        if let b = e.best, e.kind != .issPass, e.kind != .occultation { rows.append(.init("When", "Best at \(Copy.hhmm(b, site: site)).")) }
         // Meteors and the ISS are camera work, so their title does not name the telescope.
+        if e.kind == .occultation { return ShootingTip(title: "How to see this", rows: rows, source: nil) }
         let title = e.kind == .meteorShower || e.kind == .issPass ? "How to shoot this"
                   : "How to shoot this with \(presetName.map { "your \($0)" } ?? "your telescope")"
         return ShootingTip(title: title, rows: rows, source: nil)
