@@ -71,7 +71,7 @@ struct EventArt: View {
         case .issPass: "iss"
         case .solarEclipse: "solar-eclipse"
         case .lunarEclipse: "lunar-eclipse"
-        case .occultation: "occultation"   // no artwork yet: EventPicture draws one
+        case .occultation: "occultation"
         }
     }
 
@@ -87,22 +87,8 @@ struct EventPicture: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
-            if kind == .occultation { OccultationGlyph().padding(10) } else { EventArt(kind: kind).padding(4) }
+            EventArt(kind: kind).padding(4)
         }
-    }
-}
-
-/// An occultation card's picture (#115): the Moon with stars at its edge, one about to go behind it.
-struct OccultationGlyph: View {
-    var body: some View {
-        Canvas { ctx, size in
-            let r = min(size.width, size.height) * 0.36, c = CGPoint(x: size.width * 0.55, y: size.height / 2)
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(Color(red: 0.85, green: 0.83, blue: 0.78)))
-            for (dx, dy, s) in [(-1.25, -0.45, 3.0), (-1.55, 0.2, 2.6), (-1.0, 0.75, 2.4), (1.35, 0.15, 2.4)] as [(CGFloat, CGFloat, CGFloat)] {
-                ctx.fill(Path(ellipseIn: CGRect(x: c.x + dx * r - s, y: c.y + dy * r - s, width: 2 * s, height: 2 * s)), with: .color(.white))
-            }
-        }
-        .accessibilityHidden(true)
     }
 }
 
