@@ -11,7 +11,7 @@ mkdir -p "$OUT"
 for pair in meteor-showers:nightwatch-meteor-showers comets:nightwatch-comets conjunctions:nightwatch-conjunctions \
             solar-eclipse:nightwatch-eclipses lunar-eclipse:nightwatch-lunar-eclipse iss:nightwatch-international-space-station \
             clear-sky:nightwatch-clear-sky-tonight occultation:nightwatch-occultation \
-            milky-way:nightwatch-milky-way; do
+            milky-way-core:nightwatch-milky-way milky-way-cygnus:nightwatch-milky-way-cygnus; do
   name=${pair%%:*}; file=${pair#*:}
   sips -Z 512 "$SRC/$file.png" --out "$TMP/$name.png" >/dev/null
   sips -s format heic -s formatOptions 80 "$TMP/$name.png" --out "$OUT/$name.heic" >/dev/null

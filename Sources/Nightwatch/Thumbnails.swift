@@ -95,7 +95,7 @@ struct ThumbnailView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
             if MilkyWay.isMilkyWay(target.id) {
-                EventArt(name: "milky-way").padding(4)   // the owner's artwork (#114), whole rather than cropped
+                EventArt(name: target.id).padding(4)   // the owner's artwork (#114), named after the target, whole rather than cropped
             } else if let image = loader.image {
                 // The image lives in an overlay so its natural size never widens the layout; the card decides the size.
                 Color.clear
