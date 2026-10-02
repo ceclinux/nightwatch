@@ -173,6 +173,10 @@ struct EventChips: View {
             if event.behindHorizon {
                 Chip(text: event.kind == .meteorShower ? "Radiant behind your horizon" : "Behind your horizon", icon: "eye.slash", warning: true)
             }
+            // #115 mock-up: a bright Moon drowns the fainter stars it covers.
+            if onPage, let o = event.occultation, o.moonIllumination >= 0.7 {
+                Chip(text: "Bright Moon, \(Int((o.moonIllumination * 100).rounded()))% lit", icon: "moon.fill", warning: true)
+            }
         }
         if onPage { HStack(spacing: 6) { chips } } else { VStack(alignment: .trailing, spacing: 4) { chips } }
     }
