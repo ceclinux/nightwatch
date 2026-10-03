@@ -59,7 +59,7 @@ struct EventArt: View {
     let image: NSImage?
 
     init(name: String) {
-        image = Bundle.main.url(forResource: name, withExtension: "heic", subdirectory: "Events").flatMap(NSImage.init(contentsOf:))
+        image = Bundle.main.url(forResource: name, withExtension: "heic", subdirectory: "Events").flatMap(ImageMemory.image(at:))
     }
     init(kind: SkyEventKind) { self.init(name: EventArt.name(kind)) }
 

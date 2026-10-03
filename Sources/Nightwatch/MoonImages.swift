@@ -7,9 +7,14 @@ import SkyCore
 enum MoonImages {
     static let dir = Store.cacheDir.appendingPathComponent("moon", isDirectory: true)
 
+    private static func file(at date: Date) -> URL { dir.appendingPathComponent("\(MoonImage.hourKey(for: date)).jpg") }
+
+    /// This hour's Moon if it is already on this Mac, without waiting: for a view's first frame.
+    static func ready(at date: Date) -> NSImage? { ImageMemory.image(at: file(at: date)) }
+
     static func image(at date: Date) async -> NSImage? {
-        let file = dir.appendingPathComponent("\(MoonImage.hourKey(for: date)).jpg")
-        if let img = NSImage(contentsOf: file) { return img }
+        let file = file(at: date)
+        if let img = ImageMemory.image(at: file) { return img }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let fetcher = URLSessionFetcher()
         guard let meta = try? await fetcher.get(MoonImage.apiURL(for: date)),
@@ -17,6 +22,7 @@ enum MoonImages {
               let data = try? await fetcher.get(info.imageURL),
               let img = NSImage(data: data) else { return nil }
         try? data.write(to: file, options: .atomic)
+        ImageMemory.store(img, for: file)
         return img
     }
 }
@@ -34,7 +40,7 @@ struct MoonTile: View {
         HStack(spacing: 8) {
             ZStack {
                 Circle().fill(Color(red: 0.055, green: 0.063, blue: 0.094))
-                if let img = loader.image {
+                if let img = loader.image ?? MoonImages.ready(at: at) {
                     Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).clipShape(Circle())
                 } else {
                     Image(systemName: "moon").font(.caption).foregroundStyle(Tokens.textSecondary)
