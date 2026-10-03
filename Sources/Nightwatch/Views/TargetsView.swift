@@ -325,7 +325,7 @@ struct TargetsView: View {
                     if isEvents {
                         if shownEvents.isEmpty {
                             VStack(spacing: 10) {
-                                EventArt(name: "clear-sky").frame(width: 180, height: 180)
+                                EventArt(name: "no-events").frame(width: 360, height: 79)   // a wide strip: a quiet horizon
                                 Text(store.events.isEmpty ? "No events tonight" : "No event matches “\(ui.search.trimmingCharacters(in: .whitespaces))”")
                                     .font(.callout).foregroundStyle(Tokens.textSecondary)
                             }
