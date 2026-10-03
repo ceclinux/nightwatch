@@ -36,8 +36,8 @@ struct DetailView: View {
                 // The clear space between the top bar and the caption. The photo is centred on it and overflows it to
                 // cover the page; the dashed box stays inside it.
                 GeometryReader { f in
-                    if let img = heroImage {
-                        survey(img, free: f.frame(in: .named("pane")), pane: pane)
+                    if let p = heroPicture {
+                        survey(p.image, imageFovDeg: p.fovDeg, free: f.frame(in: .named("pane")), pane: pane)
                     } else {
                         // Offline with nothing cached: the group's glyph, as the cards show.
                         Image(systemName: Theme.glyph(for: target.group)).font(.system(size: 40)).foregroundStyle(Theme.dim)
@@ -56,29 +56,40 @@ struct DetailView: View {
             hero.image = nil; hero.art = nil; hero.imageFovDeg = nil
             if target.group == .constellations { hero.art = ConstellationArt(id: target.id); return }
             if milkyWay { hero.image = EventArt(name: target.id).image; return }
-            // The card's cached image first, so the page is never blank, then a sharp one sized for the window, with more sky
-            // around an object bigger than the field of view so the dashed box has room.
             let fovDeg = Thumbnails.fovDeg(for: target, fov: fov)
+            if fitted { hero.image = await Thumbnails.image(for: target, fov: store.config.fov); hero.imageFovDeg = fovDeg; return }
+            // The sharp photo sized for the window, with more sky around an object bigger than the field of view so the
+            // dashed box has room. Already on this Mac: shown at once, with no soft card photo first (owner, 3 October
+            // 2026). Not yet: the card's photo meanwhile, so the page is never blank, then the sharp one when it arrives.
+            let context = Thumbnails.detailContext(for: target, fov: fov)
+            if let big = Thumbnails.cached(Thumbnails.file(for: target, fov: store.config.fov, width: Thumbnails.detailWidth, context: context)) {
+                hero.image = big; hero.imageFovDeg = fovDeg * context; return
+            }
             hero.image = await Thumbnails.image(for: target, fov: store.config.fov); hero.imageFovDeg = fovDeg
-            guard !fitted else { return }
-            let context = showsWholeFieldOfView ? 1 : Self.boxContext
             if let big = await Thumbnails.image(for: target, fov: store.config.fov, width: Thumbnails.detailWidth, context: context) {
                 hero.image = big; hero.imageFovDeg = fovDeg * context
             }
         }
     }
 
-    /// How much more sky the detail photo shows around an object bigger than the field of view: the box is then at most
-    /// 1/1.6 (62.5%) of the photo's width, and 1/(1.6 × 1.5) for an object much bigger than the field.
-    static let boxContext = 1.6
-
     // MARK: Parts
 
-    /// The page's picture for its first frame too: what the task loaded, else the card's picture if it is already on this
-    /// Mac (ImageMemory), so the page does not open on an empty pane.
-    private var heroImage: NSImage? {
-        hero.image ?? (milkyWay ? EventArt(name: target.id).image : Thumbnails.ready(for: target, fov: store.config.fov))
+    /// The page's picture for its first frame too, with how many degrees it spans: what the task loaded; else, already on
+    /// this Mac (ImageMemory), the sharp page photo, or failing that the card's. So the page never opens on an empty pane,
+    /// and a page seen before opens sharp.
+    private var heroPicture: (image: NSImage, fovDeg: Double?)? {
+        if let img = hero.image { return (img, hero.imageFovDeg) }
+        if milkyWay { return EventArt(name: target.id).image.map { ($0, nil) } }
+        let fovDeg = Thumbnails.fovDeg(for: target, fov: fov)
+        if !fitted {
+            let context = Thumbnails.detailContext(for: target, fov: fov)
+            if let big = Thumbnails.ready(for: target, fov: store.config.fov, width: Thumbnails.detailWidth, context: context) {
+                return (big, fovDeg * context)
+            }
+        }
+        return Thumbnails.ready(for: target, fov: store.config.fov).map { ($0, fovDeg) }
     }
+    private var heroImage: NSImage? { heroPicture?.image }
 
     @ViewBuilder private var fittedHero: some View {
         if let art = hero.art ?? (target.group == .constellations ? ConstellationArt(id: target.id) : nil) { art }
@@ -87,19 +98,19 @@ struct DetailView: View {
 
     /// The survey image is fetched at the field of view, or at 1.5 × the object when it is bigger: only then is there a
     /// smaller dashed box to draw.
-    private var showsWholeFieldOfView: Bool { Thumbnails.fovDeg(for: target, fov: fov) <= fov.widthDeg + 1e-9 }
+    private var showsWholeFieldOfView: Bool { Thumbnails.detailContext(for: target, fov: fov) == 1 }
 
     /// The survey photo, centred on the clear space (`free`, in the pane's coordinates) so the target is never under the
     /// caption, drawn large enough to cover the page but never so large that the dashed box leaves the clear space (the box
     /// wins in a very small window).
-    @ViewBuilder private func survey(_ img: NSImage, free: CGRect, pane: CGSize) -> some View {
+    @ViewBuilder private func survey(_ img: NSImage, imageFovDeg: Double?, free: CGRect, pane: CGSize) -> some View {
         let aspect = fov.widthDeg / fov.heightDeg
         let dx = abs(free.midX - pane.width / 2), dy = abs(free.midY - pane.height / 2)
         let cover = max(pane.width + 2 * dx, (pane.height + 2 * dy) * aspect)
         // The box's share of the photo's width. None until the wider photo arrives (about 12 s the first time): the card image
         // has no sky to spare, so the box would force it smaller than the page.
         let cardFovDeg = Thumbnails.fovDeg(for: target, fov: fov)
-        let k = showsWholeFieldOfView || (hero.imageFovDeg ?? cardFovDeg) <= cardFovDeg + 1e-9 ? 0 : fov.widthDeg / hero.imageFovDeg!
+        let k = showsWholeFieldOfView || (imageFovDeg ?? cardFovDeg) <= cardFovDeg + 1e-9 ? 0 : fov.widthDeg / imageFovDeg!
         let drawnW = k > 0 ? min(cover, free.width * 0.94 / k, free.height * 0.94 * aspect / k) : cover
         ZStack {
             Image(nsImage: img).resizable().frame(width: drawnW, height: drawnW / aspect)

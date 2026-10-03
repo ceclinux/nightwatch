@@ -13,7 +13,23 @@ enum Thumbnails {
     }
 
     /// Cards use 480 px; the detail page fills the window, so it fetches 1600 px (hips2fits serves it, checked 25 Sep 2026).
+    /// 1600 px stays (owner, 3 October 2026): the page's picture area is about 2,000 px wide on a Retina screen, and the
+    /// survey's server takes 4 to 5 s for any size and about 3 s more for this one, once per target.
     static let cardWidth = ThumbnailFiles.cardWidth, detailWidth = 1600
+
+    /// How much more sky a target's page photo shows than its card. None when the card already shows the whole field of
+    /// view; for an object bigger than the field, 1.6, so the dashed box is at most 1/1.6 (62.5%) of the photo's width,
+    /// and 1/(1.6 × 1.5) for an object much bigger than the field.
+    static let boxContext = 1.6
+    static func detailContext(for t: RankedTarget, fov: FieldOfView) -> Double {
+        fovDeg(for: t, fov: fov) <= max(0.05, fov.widthDeg) + 1e-9 ? 1 : boxContext
+    }
+
+    /// True for a target pictured by a sky-survey photo: not the Moon, a planet, a constellation or the Milky Way.
+    static func usesSurvey(_ t: RankedTarget) -> Bool {
+        t.id != "moon" && PlanetImages.planet(forTargetID: t.id) == nil && t.group != .constellations && t.group != .planets
+            && !MilkyWay.isMilkyWay(t.id)
+    }
 
     /// `context` widens the view around the target (the detail page's dashed-box case).
     static func url(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) -> URL {
@@ -68,23 +84,31 @@ enum Thumbnails {
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov, width: width, context: context)
         if let img = cached(f) { return img }
+        guard await download(for: t, fov: fov, width: width, context: context) else { return nil }
+        return cached(f)
+    }
+
+    /// Fetches a survey photo to disk when it is not there yet; true when it is there afterwards. Kept apart from `image`
+    /// so photos fetched ahead (Store.fetchPagePhotosAhead) go to disk without filling the memory cache.
+    static func download(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> Bool {
+        let f = file(for: t, fov: fov, width: width, context: context)
+        if FileManager.default.fileExists(atPath: f.path) { return true }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         // hips2fits took 12.5 s for a 1600 px image with extra sky (25 Sep 2026), so the large fetch gets more than the usual 20 s.
         let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)
-        guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), let img = NSImage(data: data) else { return nil }
-        try? data.write(to: f, options: .atomic)
-        ImageMemory.store(img, for: f)
+        guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), NSImage(data: data) != nil,
+              (try? data.write(to: f, options: .atomic)) != nil else { return false }
         pruneStaleImages()
-        return img
+        return true
     }
 
     /// A card's picture if it is already on this Mac, without waiting: for a view's first frame. Nil for a photo not yet
     /// downloaded (the task that follows fetches it) and for constellations, whose artwork is drawn separately.
-    static func ready(for t: RankedTarget, fov: FieldOfView) -> NSImage? {
+    static func ready(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) -> NSImage? {
         if t.id == "moon" { return MoonImages.ready(at: t.peakTime) }
         if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap(ImageMemory.image(at:)) }
         guard t.group != .constellations, t.group != .planets else { return nil }
-        return ImageMemory.image(at: file(for: t, fov: fov))
+        return ImageMemory.image(at: file(for: t, fov: fov, width: width, context: context))
     }
 }
 
