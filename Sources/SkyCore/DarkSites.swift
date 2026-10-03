@@ -59,8 +59,7 @@ public enum DarkSites {
                                 bearingDeg: Geo.bearingDeg(from: home, to: c.coordinate), band: band, bortle: c.bortle, source: c.source, isComputed: false))
         }
         if maxSpots > 0 {
-            let spots = grids.flatMap { $0.darkestSpots(center: home, radiusKm: radiusKm, count: maxSpots, minSpacingKm: 10) }
-                .sorted { ($0.radiance, Geo.distanceKm(home, $0.coordinate)) < ($1.radiance, Geo.distanceKm(home, $1.coordinate)) }.prefix(maxSpots)
+            let spots = LPGrids.darkestSpots(center: home, radiusKm: radiusKm, count: maxSpots, minSpacingKm: 10, in: grids)
             for s in spots {
                 let d = Geo.distanceKm(home, s.coordinate), b = Geo.bearingDeg(from: home, to: s.coordinate)
                 let name = String(format: "Dark spot %.3f, %.3f", s.coordinate.latitude, s.coordinate.longitude)
@@ -95,8 +94,9 @@ public enum DarkSites {
     }
     public static let genericCarPark = "Car park"
 
-    /// The sky's darkness at a place being added, from the bundled light-pollution grid; nil outside its coverage (Great
-    /// Britain and Ireland), where the person chooses (place search, owner-approved mock-up, 30 September 2026).
+    /// The sky's darkness at a place being added, from the light-pollution grids: Britain's finer one, the world's
+    /// elsewhere (#138). Nil at sea and beyond 75° N or 65° S, where the person chooses (place search, owner-approved
+    /// mock-up, 30 September 2026).
     public static func suggestedBortle(at c: Coordinate, grids: [LPGrid]) -> Int? {
         LPGrids.radiance(at: c, in: grids).map { DarknessBand.from(radiance: $0).bortle }
     }
