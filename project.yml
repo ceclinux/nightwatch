@@ -29,6 +29,9 @@ targets:
       - path: Resources/Events           # the owner's event artwork (v1.0.1)
         type: folder
         buildPhase: resources
+      - path: Resources/LightPollution   # the world light-pollution grid (#138); the widget does not need it
+        type: folder
+        buildPhase: resources
       - path: Resources/AppIcon/Nightwatch.icon   # Icon Composer: the Liquid Glass icon plus a classic .icns
         buildPhase: resources
       - path: NOTICE

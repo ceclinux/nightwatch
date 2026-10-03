@@ -47,6 +47,42 @@ class BuildLPGrid(unittest.TestCase):
             vals = np.frombuffer(b[20:], dtype='<f4').reshape(rows, cols)
             self.assertAlmostEqual(float(vals[rows - 1, 0]), 10.0, 5)   # 40 + 0 + 0 + 0 over 4 cells
 
+    def test_world_mode_writes_one_byte_per_cell(self):
+        with tempfile.TemporaryDirectory() as d:
+            tif = os.path.join(d, 'viirs.tif'); out = os.path.join(d, 'w.lpgrid')
+            make_tiff(tif)
+            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--world', '--cell', '1.0', '--smooth', '1', '--out', out])
+            b = open(out, 'rb').read()
+            self.assertEqual(b[:4], b'LPG2')
+            south, west, cell = struct.unpack('<fff', b[4:16]); rows, cols = struct.unpack('<HH', b[16:20])
+            self.assertAlmostEqual(south, 50.0, 5); self.assertAlmostEqual(west, -10.0, 5); self.assertAlmostEqual(cell, 1.0, 5)
+            self.assertEqual((rows, cols), (10, 15)); self.assertEqual(len(b), 20 + 10 * 15)
+            q = np.frombuffer(b[20:], dtype=np.uint8).reshape(rows, cols)
+            radiance = (2.0 ** (q.astype(np.float64) / 32) - 1) / 8
+            self.assertAlmostEqual(float(radiance[rows - 1, 0]), 10.0, delta=0.3)   # NW block: 40 over 4 cells, within the scale's step
+            self.assertEqual(int(q[0, 0]), 0)                                        # an unlit block is exactly 0
+
+    def test_world_mode_keeps_a_coastal_cell_and_counts_only_its_land(self):
+        with tempfile.TemporaryDirectory() as d:
+            tif = os.path.join(d, 'viirs.tif'); out = os.path.join(d, 'w.lpgrid'); land = os.path.join(d, 'land.geojson')
+            make_tiff(tif)
+            # Land is the western half of the NW 1-degree block (lon -10 .. -9.5) and nothing else: its centre is on the
+            # coast, half of it is land, and the 40 in its NW pixel is all on land.
+            poly = {'type': 'Polygon', 'coordinates': [[[-10, 59], [-9.5, 59], [-9.5, 60], [-10, 60], [-10, 59]]]}
+            json.dump({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': poly}]}, open(land, 'w'))
+            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--world', '--cell', '1.0', '--smooth', '1',
+                                   '--land', land, '--out', out])
+            b = open(out, 'rb').read(); rows, cols = struct.unpack('<HH', b[16:20])
+            q = np.frombuffer(b[20:], dtype=np.uint8).reshape(rows, cols)
+            radiance = (2.0 ** (q.astype(np.float64) / 32) - 1) / 8
+            self.assertAlmostEqual(float(radiance[rows - 1, 0]), 20.0, delta=0.5)   # 40 / 4 pixels = 10 over the block, 20 over its land half
+            self.assertEqual(int(q[rows - 1, 1]), 255)                               # the next block east is all sea: no data
+            self.assertEqual(int((q != 255).sum()), 1)
+
+    def test_quantise_scale_and_no_data(self):
+        q = build_lp_grid.quantise(np.array([0, 0.25, 1, 5, 20, 500, np.nan], dtype=np.float32))
+        self.assertEqual(q.tolist(), [0, 51, 101, 171, 235, 254, 255])
+
     def test_rejects_grids_over_uint16(self):
         with self.assertRaises(SystemExit):
             build_lp_grid.check_limits(1, 1, 70000, 10)           # grid dimension over the uint16 header field

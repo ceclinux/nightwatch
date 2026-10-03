@@ -18,7 +18,7 @@ Meteor shower dates compiled from the International Meteor Organization calendar
 Planet photographs are public-domain NASA mission images (MESSENGER, Mariner 10, Hubble, Cassini, Voyager 2) obtained via Wikimedia Commons; file names and credits in Sources/SkyCore/Resources/planets/CREDITS.txt.
 Moon phase images from NASA's Scientific Visualization Studio "Moon Phase and Libration" (Dial-a-Moon), public domain. https://svs.gsfc.nasa.gov/5587
 Dark-sky places: certification by DarkSky International (darksky.org) and the UK Dark Sky Discovery Sites programme; list compiled by the Nightwatch project with coordinates from Wikidata (CC0) and, for Discovery Sites, from the programme's own map. https://www.darkskydiscovery.org.uk/dark-sky-discovery-sites/
-Light-pollution grid derived from the NOAA/NASA Earth Observation Group VIIRS Nighttime Lights annual composite, CC BY 4.0. https://eogdata.mines.edu/products/vnl/
+The light-pollution grids were made utilizing VIIRS Nighttime Lights data produced by the Earth Observation Group, Payne Institute for Public Policy, Colorado School of Mines. CC BY 4.0. Changes: cropped or averaged to coarser cells, sea masked, and for the world grid stored on a log scale. https://eogdata.mines.edu/products/vnl/
 Land mask for the light-pollution grid made with Natural Earth, public domain. https://www.naturalearthdata.com
 
 Licence texts, as their licences require in every copy of Nightwatch:

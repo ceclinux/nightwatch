@@ -71,7 +71,10 @@ final class Store: ObservableObject {
         stars = (try? BrightStars.bundled()) ?? []
         showers = (try? MeteorShowers.bundled()) ?? []
         certified = (try? DarkSites.bundledCertified()) ?? []
-        grids = LPGrids.bundled()
+        // Britain's grid from SkyCore, and the world's from the app's own resources (#138): the widget carries SkyCore's
+        // bundle too and has no use for 20 MB of it.
+        let world = Bundle.main.url(forResource: "world", withExtension: "lpgrid", subdirectory: "LightPollution").flatMap(LPGrids.load)
+        grids = LPGrids.finestFirst(LPGrids.bundled() + (world.map { [$0] } ?? []))
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
         switch LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) {
