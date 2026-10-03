@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 3 October 2026, version 1.2.5 "Great A'Tuin, patch 5". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 3 October 2026, version 1.3.0 "Twoflower". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -207,6 +207,7 @@ Tags follow the City Watch novels.
 | 1.2.3 | Great A'Tuin, patch 3 | 2 October 2026 | How to shoot this suggests EQ mode for long frames and stacks over several nights of deep-sky targets, for any telescope that has one, because in alt-az mode the sky slowly turns in the frame |
 | 1.2.4 | Great A'Tuin, patch 4 | 3 October 2026 | Pictures already on your Mac appear at once in the popover and the Targets window, instead of a moment after each card; a target's page you have opened before opens sharp, with no soft version first; the sharp photos for tonight's suggested targets and your plan are fetched ahead in the background, so their pages open sharp the first time too |
 | 1.2.5 | Great A'Tuin, patch 5 | 3 October 2026 | The Events page shows a quiet horizon when there are no events tonight, or none match your search |
+| 1.3.0 | Twoflower | 3 October 2026 | Light-pollution data for the whole world, between 75° N and 65° S, where it used to cover only Great Britain and most of Ireland; Add a site suggests how dark the sky is for a place anywhere in that range; the Dark sites page finds dark car parks near a site anywhere in it; Britain keeps its finer data |
 
 ## Install
 
