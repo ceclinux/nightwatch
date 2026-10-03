@@ -53,7 +53,7 @@ enum Thumbnails {
 
     /// A saved image, its date refreshed as it is shown again, so pruning keeps it; nil when not saved.
     static func cached(_ f: URL) -> NSImage? {
-        guard let img = NSImage(contentsOf: f) else { return nil }
+        guard let img = ImageMemory.image(at: f) else { return nil }
         let fm = FileManager.default, now = Date()
         if ThumbnailFiles.needsTouch(modified: (try? fm.attributesOfItem(atPath: f.path))?[.modificationDate] as? Date, now: now) {
             try? fm.setAttributes([.modificationDate: now], ofItemAtPath: f.path)
@@ -64,7 +64,7 @@ enum Thumbnails {
     static func image(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> NSImage? {
         // Planets and the Moon get real photographs, not a survey cutout.
         if t.id == "moon" { return await MoonImages.image(at: t.peakTime) }
-        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap { NSImage(contentsOf: $0) } }
+        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap(ImageMemory.image(at:)) }
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov, width: width, context: context)
         if let img = cached(f) { return img }
@@ -73,8 +73,18 @@ enum Thumbnails {
         let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)
         guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), let img = NSImage(data: data) else { return nil }
         try? data.write(to: f, options: .atomic)
+        ImageMemory.store(img, for: f)
         pruneStaleImages()
         return img
+    }
+
+    /// A card's picture if it is already on this Mac, without waiting: for a view's first frame. Nil for a photo not yet
+    /// downloaded (the task that follows fetches it) and for constellations, whose artwork is drawn separately.
+    static func ready(for t: RankedTarget, fov: FieldOfView) -> NSImage? {
+        if t.id == "moon" { return MoonImages.ready(at: t.peakTime) }
+        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap(ImageMemory.image(at:)) }
+        guard t.group != .constellations, t.group != .planets else { return nil }
+        return ImageMemory.image(at: file(for: t, fov: fov))
     }
 }
 
@@ -96,12 +106,12 @@ struct ThumbnailView: View {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
             if MilkyWay.isMilkyWay(target.id) {
                 EventArt(name: target.id).padding(4)   // the owner's artwork (#114), named after the target, whole rather than cropped
-            } else if let image = loader.image {
+            } else if let image = loader.image ?? Thumbnails.ready(for: target, fov: store.config.fov) {
                 // The image lives in an overlay so its natural size never widens the layout; the card decides the size.
                 Color.clear
                     .overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else if let art = loader.art {
+            } else if let art = loader.art ?? (target.group == .constellations ? ConstellationArt(id: target.id) : nil) {
                 art.padding(4)
             } else {
                 Image(systemName: Theme.glyph(for: target.group)).font(.title2).foregroundStyle(Theme.dim)
@@ -123,7 +133,7 @@ struct ConstellationArt: View {
 
     init?(id: String) {
         func layer(_ name: String) -> NSImage? {
-            Bundle.main.url(forResource: "\(id)-\(name)", withExtension: "heic", subdirectory: "Constellations").flatMap(NSImage.init(contentsOf:))
+            Bundle.main.url(forResource: "\(id)-\(name)", withExtension: "heic", subdirectory: "Constellations").flatMap(ImageMemory.image(at:))
         }
         guard let f = layer("figure"), let p = layer("plot") else { return nil }
         figure = f; plot = p

@@ -36,7 +36,7 @@ struct DetailView: View {
                 // The clear space between the top bar and the caption. The photo is centred on it and overflows it to
                 // cover the page; the dashed box stays inside it.
                 GeometryReader { f in
-                    if let img = hero.image {
+                    if let img = heroImage {
                         survey(img, free: f.frame(in: .named("pane")), pane: pane)
                     } else {
                         // Offline with nothing cached: the group's glyph, as the cards show.
@@ -74,9 +74,15 @@ struct DetailView: View {
 
     // MARK: Parts
 
+    /// The page's picture for its first frame too: what the task loaded, else the card's picture if it is already on this
+    /// Mac (ImageMemory), so the page does not open on an empty pane.
+    private var heroImage: NSImage? {
+        hero.image ?? (milkyWay ? EventArt(name: target.id).image : Thumbnails.ready(for: target, fov: store.config.fov))
+    }
+
     @ViewBuilder private var fittedHero: some View {
-        if let art = hero.art { art }
-        else if let img = hero.image { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 8)) }
+        if let art = hero.art ?? (target.group == .constellations ? ConstellationArt(id: target.id) : nil) { art }
+        else if let img = heroImage { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 8)) }
     }
 
     /// The survey image is fetched at the field of view, or at 1.5 × the object when it is bigger: only then is there a
