@@ -51,7 +51,7 @@ Other requests carry nothing about you or your location:
 
 - **[AuroraWatch UK](https://aurorawatch.lancs.ac.uk)**, for the aurora status, if aurora alerts are on.
 - **The Minor Planet Center and CelesTrak**, for comet and ISS data.
-- **CDS (Strasbourg)**, for sky-survey images. It receives the sky position of the target being shown, not yours.
+- **CDS (Strasbourg)**, for sky-survey images. It receives the sky position of a target being shown, and of tonight's suggested targets and those in your plan so their pictures are ready, not yours.
 - **NASA's Scientific Visualization Studio**, for the Moon image. It receives the date and hour, nothing about you.
 - **GitHub**, once a day, to check for a newer version. This is in the download from GitHub or delphi-dolphin.com
   only, and Settings › Updates turns it off. The Mac App Store version has no update check: the App Store updates it.

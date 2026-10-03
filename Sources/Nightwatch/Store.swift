@@ -368,6 +368,7 @@ final class Store: ObservableObject {
         let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site, fov: fov, rule: rule,
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
+        fetchPagePhotosAhead(for: p)
         week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights)
         scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
@@ -731,6 +732,32 @@ final class Store: ObservableObject {
                 guard let self, self.occultationsKey == key else { return }
                 self.occultationsAhead = found
                 Task { await self.recompute(now: Date()) }
+            }
+        }
+    }
+
+    // MARK: page photos ahead
+
+    private var pagePhotosKey: String?
+    private var pagePhotosTask: Task<Void, Never>?
+
+    /// Fetches the sharp page photo for the targets most likely to be opened tonight, the popover's picks and Tonight's
+    /// plan, so their pages open sharp the first time too (owner, 3 October 2026). The sky survey takes about 8 s for each,
+    /// so they go one at a time, in the background, to disk only, at most eight, and only when the list changes.
+    private func fetchPagePhotosAhead(for p: NightPlan) {
+        let fov = config.fov
+        var seen = Set<String>()
+        let likely = ((p.mode == .bright ? p.brightTargets : p.best) + (session(for: p)?.items.map(\.target) ?? []))
+            .filter { Thumbnails.usesSurvey($0) && seen.insert($0.id).inserted }.prefix(8)
+        let key = likely.map(\.id).joined(separator: ",") + "|\(fov.widthDeg)x\(fov.heightDeg)"
+        guard key != pagePhotosKey else { return }
+        pagePhotosKey = key
+        pagePhotosTask?.cancel()
+        pagePhotosTask = Task.detached(priority: .utility) {
+            for t in likely {
+                guard !Task.isCancelled else { return }
+                _ = await Thumbnails.download(for: t, fov: fov)
+                _ = await Thumbnails.download(for: t, fov: fov, width: Thumbnails.detailWidth, context: Thumbnails.detailContext(for: t, fov: fov))
             }
         }
     }
