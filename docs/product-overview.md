@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 3 October 2026, version 1.3.0 "Twoflower". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 4 October 2026, version 1.3.1 "Twoflower, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -208,6 +208,7 @@ Tags follow the City Watch novels.
 | 1.2.4 | Great A'Tuin, patch 4 | 3 October 2026 | Pictures already on your Mac appear at once in the popover and the Targets window, instead of a moment after each card; a target's page you have opened before opens sharp, with no soft version first; the sharp photos for tonight's suggested targets and your plan are fetched ahead in the background, so their pages open sharp the first time too |
 | 1.2.5 | Great A'Tuin, patch 5 | 3 October 2026 | The Events page shows a quiet horizon when there are no events tonight, or none match your search |
 | 1.3.0 | Twoflower | 3 October 2026 | Light-pollution data for the whole world, between 75° N and 65° S, where it used to cover only Great Britain and most of Ireland; Add a site suggests how dark the sky is for a place anywhere in that range; the Dark sites page finds dark car parks near a site anywhere in it; Britain keeps its finer data |
+| 1.3.1 | Twoflower, patch 1 | 4 October 2026 | The reason under the sky score now agrees with the rest of the page: "Held back by" no longer says "poor transparency" beside a tile reading "Good" (it names transparency only when the tile reads "Average", and quotes seeing with the tile's figure); on a night with no clear window, the longest clear run is measured inside darkness, so it never reads "3 h" against a rule that needs 3 h; the week-ahead row uses the same measure |
 
 ## Install
 
