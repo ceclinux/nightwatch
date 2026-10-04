@@ -117,6 +117,27 @@ private func reasonHours(_ clouds: [Int], from t0: Date) -> [HourlyConditions] {
     #expect(r == "Longest clear run is 2 h from 23:00; the rule needs 3 h.")
 }
 
+/// 4 October 2026: darkness began at 21:07 and the hours from 21:00 were clear, so the reason read
+/// "Longest clear run is 3 h from 21:00; the rule needs 3 h." under "No clear window tonight."
+@Test func noWindowReasonMeasuresTheRunInsideDarkness() {
+    let site = Site(name: "S", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let t0 = utc(2026, 10, 4, 20, 0)   // 21:00 BST
+    let hrs = reasonHours([10, 10, 10, 90, 90, 90, 90, 90], from: t0)
+    let ds = t0.addingTimeInterval(7 * 60), de = t0.addingTimeInterval(8 * 3600)
+    #expect(Planner.windows(hours: hrs, darkStart: ds, darkEnd: de, rule: GoRule()).isEmpty)
+    #expect(Planner.noWindowReason(darkHours: hrs, darkStart: ds, darkEnd: de, rule: GoRule(), site: site)
+            == "Longest clear run is 2.9 h from 21:07; the rule needs 3 h.")
+}
+
+@Test func noWindowReasonNeverRoundsARunUpToTheRule() {
+    let site = Site(name: "S", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let t0 = utc(2026, 10, 4, 20, 0)
+    let hrs = reasonHours([10, 10, 10, 90, 90, 90, 90, 90], from: t0)
+    // 2 h 58 min is 2.97 h, which one decimal place would print as the rule's own 3 h.
+    let r = Planner.noWindowReason(darkHours: hrs, darkStart: t0.addingTimeInterval(2 * 60), darkEnd: t0.addingTimeInterval(8 * 3600), rule: GoRule(), site: site)
+    #expect(r == "Longest clear run is 2.9 h from 21:02; the rule needs 3 h.")
+}
+
 // MARK: - v0.3 bright nights (the test site; nights chosen from a probe of summer 2026)
 
 private let brightTestSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
@@ -204,6 +225,26 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
     let r = Planner.noWindowReason(darkHours: hrs, darkStart: ns, darkEnd: ne, rule: GoRule(minHours: 1), site: brightTestSite, mode: .bright)
     #expect(r != nil && !(r!.contains("is 1.0 h") || r!.contains("is 1 h")))
     #expect(r!.contains("needs 1.0 h") || r!.hasPrefix("No Moon or planet"))
+}
+
+@Test func brightReasonNeverRoundsARunUpToTheRule() throws {
+    // 30 July at the test site: the Moon stands above the floor in the middle of nautical darkness.
+    let night = try Ephemeris.night(localDate: utc(2026, 7, 30, 12, 0), site: brightTestSite)
+    let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
+    let mid = ns.addingTimeInterval(ne.timeIntervalSince(ns) / 2)
+    let t0 = Date(timeIntervalSince1970: floor(mid.timeIntervalSince1970 / 3600) * 3600)
+    try #require(!Planner.brightTargets(at: t0.addingTimeInterval(1800), site: brightTestSite).isEmpty)
+    // One clear hour, with the span starting two minutes into it: a 0.97 h run against a 1 h rule.
+    let r = Planner.noWindowReason(darkHours: reasonHours([5, 90, 90], from: t0), darkStart: t0.addingTimeInterval(120), darkEnd: t0.addingTimeInterval(3 * 3600),
+                                   rule: GoRule(minHours: 1), site: brightTestSite, mode: .bright)
+    #expect(r == "Longest clear run with a target up is 0.9 h from \(Copy.hhmm(t0.addingTimeInterval(120), site: brightTestSite)); the bright rule needs 1.0 h.")
+}
+
+@Test func weekRowOnABrightNightCountsOnlyHoursWithATargetUp() throws {
+    let (night, fc) = try brightNight(6, 15, cloud: 5)   // clear all night, but nothing at 15 degrees in the nautical window
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    #expect(p.mode == .bright && !p.qualifies)
+    #expect(Copy.weekVerdict(p, rule: GoRule(), bright: brightOn, site: brightTestSite) == "No clear window")
 }
 
 @Test func brightFallbackKeepsTheMoon() throws {

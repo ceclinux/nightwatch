@@ -606,6 +606,11 @@ extension Planner {
         }.sorted { ($0.id == "moon" ? 0 : 1, -$0.peakAltDeg) < ($1.id == "moon" ? 0 : 1, -$1.peakAltDeg) }
     }
 
+    /// True when a bright target stands at the floor at the centre of the hour from `t`, the centre kept inside `from` to `to`.
+    static func brightTargetUp(inHourFrom t: Date, from: Date, to: Date, site: Site) -> Bool {
+        !brightTargets(at: min(max(t.addingTimeInterval(1800), from), to), site: site).isEmpty
+    }
+
     /// The bright-night plan: clear hours between nautical dusk and dawn that have a bright target at the floor.
     static func brightPlan(night: Night, forecast: Forecast, site: Site, fov: FieldOfView, rule: GoRule, bright: BrightSettings) -> NightPlan {
         guard let ns = night.nauticalStart, let ne = night.nauticalEnd else {
@@ -616,8 +621,7 @@ extension Planner {
         let span = forecast.hours.filter { $0.time.addingTimeInterval(3600) > ns && $0.time < ne }.sorted { $0.time < $1.time }
         // ponytail: an hour with nothing at the floor is masked as cloudy so the existing window finder needs no second rule.
         let usable = forecast.hours.map { h -> HourlyConditions in
-            let centre = min(max(h.time.addingTimeInterval(1800), ns), ne)
-            guard h.time.addingTimeInterval(3600) > ns, h.time < ne, brightTargets(at: centre, site: site).isEmpty else { return h }
+            guard h.time.addingTimeInterval(3600) > ns, h.time < ne, !brightTargetUp(inHourFrom: h.time, from: ns, to: ne, site: site) else { return h }
             var masked = h; masked.cloudTotal = Int.max; masked.cloudLow = nil; masked.cloudMid = nil; masked.cloudHigh = nil; return masked
         }
         let brightRule = GoRule(minHours: bright.minHours, maxCloudPct: rule.maxCloudPct, minAltitudeDeg: rule.minAltitudeDeg)
@@ -642,20 +646,11 @@ extension Planner {
     /// The bright no-window reason, measured the way the bright rule measures: hours clipped to nautical darkness, and an
     /// hour counts only when it is clear and a target stands at the floor at its centre.
     static func brightRunReason(_ hours: [HourlyConditions], from start: Date, to end: Date, rule: GoRule, site: Site) -> String {
-        var best: (start: Date, hours: Double) = (start, 0), run: (start: Date, hours: Double)? = nil, prev: Date? = nil
-        for h in hours {
-            let from = max(h.time, start), to = min(h.time.addingTimeInterval(3600), end)
-            let centre = min(max(h.time.addingTimeInterval(1800), start), end)   // sampled exactly as brightPlan samples
-            let usable = h.effectiveCloud <= rule.maxCloudPct && !brightTargets(at: centre, site: site).isEmpty
-            let len = max(0, to.timeIntervalSince(from)) / 3600
-            let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
-            if usable { run = (contiguous && run != nil) ? (run!.start, run!.hours + len) : (from, len) } else { run = nil }
-            if let r = run, r.hours > best.hours { best = r }
-            prev = h.time
-        }
-        if best.hours == 0 { return "No Moon or planet \(Int(brightTargetFloorDeg))° up in the clear hours of nautical darkness." }
+        guard let best = longestClearRun(hours, from: start, to: end, rule: rule, usable: {
+            brightTargetUp(inHourFrom: $0.time, from: start, to: end, site: site)
+        }) else { return "No Moon or planet \(Int(brightTargetFloorDeg))° up in the clear hours of nautical darkness." }
         return String(format: "Longest clear run with a target up is %.1f h from %@; the bright rule needs %.1f h.",
-                      best.hours, Copy.hhmm(best.start, site: site), rule.minHours)
+                      Copy.shortRun(best.hours, rule: rule), Copy.hhmm(best.start, site: site), rule.minHours)
     }
 
     public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site,
@@ -679,8 +674,9 @@ extension Planner {
             return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
         }
         if mode == .bright { return brightRunReason(dark, from: darkStart, to: darkEnd, rule: rule, site: site) }
-        let best = longestClearRun(dark, rule: rule) ?? (dark[0].time, 0)
-        return String(format: "Longest clear run is %d h from %@; %@ needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
+        guard let best = longestClearRun(dark, from: darkStart, to: darkEnd, rule: rule) else { return nil }
+        return String(format: "Longest clear run is %@ from %@; %@ needs %.0f h.",
+                      Copy.hoursText(Copy.shortRun(best.hours, rule: rule)), Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
     }
 }
 
