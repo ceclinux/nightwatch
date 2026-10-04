@@ -40,18 +40,34 @@ private func plans(_ f: Forecast) throws -> (NightPlan, NightPlan) {
     }
 }
 
+/// The week row measures a short run as the window finder does: inside darkness, never as whole forecast hours.
+@Test func weekRowMeasuresTheRunInsideDarkness() throws {
+    let start = utc(2026, 9, 30, 6, 0)
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 30, 12, 0), site: site)
+    let ds = try #require(night.darkStart)
+    let slot = Int(floor(ds.timeIntervalSince(start) / 3600))   // the forecast hour darkness begins in
+    try #require(start.addingTimeInterval(Double(slot) * 3600) != ds)
+    let f = forecast(from: start, hours: 72, cloud: { i in (slot..<slot + 3).contains(i) ? 0 : 90 })   // exactly three clear hours
+    let p = Planner.plan(night: night, forecast: f, catalog: Catalog(objects: []), constellations: [], site: site,
+                         fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule())
+    #expect(p.primary == nil)
+    let v = Copy.weekVerdict(p, rule: GoRule(), bright: BrightSettings(), site: site)
+    #expect(!v.contains("run 3 h"))
+    #expect(v.hasPrefix("No clear window · longest clear run 2.") && v.hasSuffix(" h from \(Copy.hhmm(ds, site: site))"))
+}
+
 @Test func weekRowsReadPlainly() throws {
     let start = utc(2026, 9, 30, 6, 0)
     // Clear from 22:00 to 01:00 UTC on the first night only: a 3 h run, then cloud.
     let f = forecast(from: start, hours: 72, cloud: { i in (16...18).contains(i) ? 0 : 90 })
     let (t0, t1) = try plans(f)
     let w = try #require(t0.primary)
-    #expect(Copy.weekVerdict(t0, rule: GoRule(), site: site) == "Clear \(Copy.span(w.start, w.end, site: site)) · \(Copy.hoursText(w.hours))")
-    #expect(Copy.weekVerdict(t1, rule: GoRule(), site: site) == "No clear window")
+    #expect(Copy.weekVerdict(t0, rule: GoRule(), bright: BrightSettings(), site: site) == "Clear \(Copy.span(w.start, w.end, site: site)) · \(Copy.hoursText(w.hours))")
+    #expect(Copy.weekVerdict(t1, rule: GoRule(), bright: BrightSettings(), site: site) == "No clear window")
     var loose = GoRule(); loose.minHours = 4
     let (l0, _) = (Planner.plan(night: t0.night, forecast: f, catalog: Catalog(objects: []), constellations: [], site: site,
                                 fov: FieldOfView(widthDeg: 2, heightDeg: 1), rule: loose), 0)
-    #expect(Copy.weekVerdict(l0, rule: loose, site: site).hasPrefix("No clear window · longest clear run 3 h from "))
+    #expect(Copy.weekVerdict(l0, rule: loose, bright: BrightSettings(), site: site).hasPrefix("No clear window · longest clear run 3 h from "))
     #expect(Copy.weekDetail(t0, site: site).hasPrefix("Dark ") && Copy.weekDetail(t0, site: site).contains(" · Moon "))
     #expect(!Copy.weekDetail(t0, site: site).contains("seeing"))   // no seeing data, no seeing
     #expect(Copy.weekLead(daysAhead: 2) == nil && Copy.weekLead(daysAhead: 3) == "Less certain · 3 days ahead")

@@ -44,7 +44,7 @@ struct WeekView: View {
                          trackHeight: 28, labels: false, caption: false)
                 .frame(width: 190)
             VStack(alignment: .leading, spacing: 3) {
-                Text(Copy.weekVerdict(p, rule: store.config.goRule, site: site))
+                Text(Copy.weekVerdict(p, rule: store.config.goRule, bright: store.config.brightNights, site: site))
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(p.primary == nil ? Tokens.textSecondary : Tokens.textPrimary)
                 Text(Copy.weekDetail(p, site: site)).font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

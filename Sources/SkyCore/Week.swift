@@ -38,12 +38,15 @@ extension Planner {
         return out
     }
 
-    /// The longest unbroken run of clear hours in darkness under the go rule; nil when no hour is clear.
-    public static func longestClearRun(_ darkHours: [HourlyConditions], rule: GoRule) -> (start: Date, hours: Int)? {
-        var best: (start: Date, hours: Int)? = nil, run: (start: Date, hours: Int)? = nil, prev: Date? = nil
-        for h in darkHours.sorted(by: { $0.time < $1.time }) {
+    /// The longest unbroken run of clear hours under the go rule, measured as the window finder measures it: clipped to
+    /// `start` and `end`. `usable` narrows which clear hours count. nil when no hour counts.
+    public static func longestClearRun(_ hours: [HourlyConditions], from start: Date, to end: Date, rule: GoRule,
+                                       usable: (HourlyConditions) -> Bool = { _ in true }) -> (start: Date, hours: Double)? {
+        var best: (start: Date, hours: Double)? = nil, run: (start: Date, hours: Double)? = nil, prev: Date? = nil
+        for h in hours.sorted(by: { $0.time < $1.time }) {
+            let from = max(h.time, start), len = max(0, min(h.time.addingTimeInterval(3600), end).timeIntervalSince(from)) / 3600
             let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
-            if h.effectiveCloud <= rule.maxCloudPct { run = (contiguous && run != nil) ? (run!.start, run!.hours + 1) : (h.time, 1) } else { run = nil }
+            if h.effectiveCloud <= rule.maxCloudPct, usable(h) { run = (contiguous && run != nil) ? (run!.start, run!.hours + len) : (from, len) } else { run = nil }
             if let r = run, r.hours > (best?.hours ?? 0) { best = r }
             prev = h.time
         }
@@ -61,6 +64,11 @@ extension Copy {
 
     static func hoursText(_ h: Double) -> String { String(format: "%.1f h", h).replacingOccurrences(of: ".0 h", with: " h") }
 
+    /// A clear run that missed the rule, to one decimal place: never rounded up to the rule's own figure, nor down to nothing.
+    static func shortRun(_ hours: Double, rule: GoRule) -> Double {
+        max(1, min((hours * 10).rounded(), (rule.minHours * 10).rounded(.up) - 1)) / 10
+    }
+
     /// "Tonight", "Tomorrow", then the weekday.
     public static func weekDay(_ n: WeekNight, site: Site) -> String {
         switch n.daysAhead {
@@ -73,13 +81,17 @@ extension Copy {
     }
 
     /// "Clear 22:00–03:00 · 5 h", or the longest clear run when the night misses the rule.
-    public static func weekVerdict(_ p: NightPlan, rule: GoRule, site: Site) -> String {
+    public static func weekVerdict(_ p: NightPlan, rule: GoRule, bright: BrightSettings, site: Site) -> String {
         if let w = p.primary {
             return (p.mode == .bright ? "Bright night · clear " : "Clear ") + "\(span(w.start, w.end, site: site)) · \(hoursText(w.hours))"
         }
-        if p.darkSpan == nil { return "No astronomical darkness" }
-        guard let run = Planner.longestClearRun(p.darkHours, rule: rule) else { return "No clear window" }
-        return "No clear window · longest clear run \(run.hours) h from \(hhmm(run.start, site: site))"
+        guard let d = p.darkSpan else { return "No astronomical darkness" }
+        let isBright = p.mode == .bright
+        var r = rule; if isBright { r.minHours = bright.minHours }
+        guard let run = Planner.longestClearRun(p.darkHours, from: d.start, to: d.end, rule: r, usable: {
+            !isBright || Planner.brightTargetUp(inHourFrom: $0.time, from: d.start, to: d.end, site: site)
+        }) else { return "No clear window" }
+        return "No clear window · longest clear run \(hoursText(shortRun(run.hours, rule: r))) from \(hhmm(run.start, site: site))"
     }
 
     /// "Dark 20:46–05:11 · Moon 80%, up all night · seeing 1.25–1.5″"
