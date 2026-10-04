@@ -59,6 +59,13 @@ extension Copy {
         return ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][max(0, min(8, seeing.reduce(0, +) / seeing.count))]
     }
 
+    /// The Transparency tile's word, from 7Timer's bands averaged over darkness: "Good" up to band 3, else "Average"; nil
+    /// when there is none. The reason line words transparency from this too, so the two cannot disagree.
+    public static func transparencyText(_ darkHours: [HourlyConditions]) -> String? {
+        let transp = darkHours.compactMap(\.transparency)
+        return transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
+    }
+
     static func hoursText(_ h: Double) -> String { String(format: "%.1f h", h).replacingOccurrences(of: ".0 h", with: " h") }
 
     /// "Tonight", "Tomorrow", then the weekday.
