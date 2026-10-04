@@ -169,8 +169,7 @@ struct TonightView: View {
         let windText = wind.isEmpty ? nil : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
         let dew = Planner.dewRisk(plan.darkHours)
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
-        let transp = plan.darkHours.compactMap(\.transparency)
-        let transpText = transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
+        let transpText = Copy.transparencyText(plan.darkHours)
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
         return VStack(spacing: 8.5) {
             TileRow {

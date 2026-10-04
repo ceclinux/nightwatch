@@ -134,8 +134,11 @@ public enum Planner {
         }
         add(.cloud, "patchy cloud", lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
         add(.moon, "a \(Int((s.moonIllumination * 100).rounded()))% moon", lost: 15 - t.moon, of: 15)
-        if let v = t.seeing { add(.seeing, "poor seeing", lost: 7.5 - v, of: 7.5) }
-        if let v = t.transparency { add(.transparency, "poor transparency", lost: 7.5 - v, of: 7.5) }
+        // Worded from what the tiles show, so the line never contradicts them: transparency only when its tile is not "Good".
+        if let v = t.seeing, let figure = Copy.seeingText(s.darkHours) { add(.seeing, "seeing at \(figure)", lost: 7.5 - v, of: 7.5) }
+        if let v = t.transparency, let band = Copy.transparencyText(s.darkHours), band != "Good" {
+            add(.transparency, "\(band.lowercased()) transparency", lost: 7.5 - v, of: 7.5)
+        }
         if let w = t.avgWind { add(.wind, String(format: "wind at %.0f km/h", w), lost: t.windPenalty, of: 5) }
         if let d = t.dew { add(.dew, "\(d == .high ? "high" : "medium") dew risk", lost: t.dewPenalty, of: 5) }
         return out.sorted { $0.pointsLost > $1.pointsLost }

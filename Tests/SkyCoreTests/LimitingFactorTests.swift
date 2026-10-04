@@ -45,6 +45,32 @@ private func inputs(_ hours: [HourlyConditions], moon: Double = 0, above: Double
     #expect(Copy.heldBack(f) == nil)
 }
 
+// The reason line and the tiles are read side by side, so a factor is worded from what its tile shows (owner, 4 October 2026:
+// "Held back by poor transparency" beside a Transparency tile reading "Good").
+@Test func transparencyTheTileCallsGoodIsNotBlamed() {
+    let hours = (0..<6).map { hour($0, transp: $0 % 2 == 0 ? 3 : 4) }   // averages 3.5: over a third of its points lost
+    let f = Planner.limitingFactors(inputs(hours))
+    #expect(Copy.transparencyText(hours) == "Good")
+    #expect(!f.contains { $0.kind == .transparency })
+    #expect(Copy.heldBack(f) == nil)
+}
+
+@Test func transparencyIsNamedInTheTilesWord() {
+    let hours = (0..<6).map { hour($0, transp: 5) }
+    let f = Planner.limitingFactors(inputs(hours))
+    #expect(Copy.transparencyText(hours) == "Average")
+    #expect(Copy.transparencyText([hour(0, transp: nil)]) == nil)
+    #expect(f.map(\.text) == ["average transparency"])
+    #expect(Copy.heldBack(f) == "Held back by average transparency")
+}
+
+@Test func seeingIsNamedWithTheTilesFigure() {
+    let hours = (0..<6).map { hour($0, seeing: 6) }
+    let f = Planner.limitingFactors(inputs(hours))
+    #expect(f.map(\.text) == ["seeing at 1.5–2″"])
+    #expect(f[0].text.hasSuffix(Copy.seeingText(hours)!))
+}
+
 @Test func limitingFactorsIgnoreMissingData() {
     let f = Planner.limitingFactors(inputs((0..<6).map { hour($0, wind: nil, temp: nil, dew: nil, seeing: nil, transp: nil) }))
     #expect(!f.contains { [.dew, .seeing, .transparency, .wind].contains($0.kind) })
