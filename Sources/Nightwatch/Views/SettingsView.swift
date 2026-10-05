@@ -168,7 +168,7 @@ struct SettingsView: View {
                 if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(.caption).foregroundStyle(Theme.warn) }
                 // #49: iCloud key-value storage replaces the file path and the symlink advice, which the sandbox cannot follow.
                 Text(store.syncsSettings
-                     ? "Settings sync through iCloud to your other Macs. Start at login, where this Mac is observing from and its own location stay on this Mac."
+                     ? "Settings sync through iCloud to your other Macs, home included: with This Mac's location as home, each Mac uses its own. Start at login and where this Mac is observing from stay on this Mac."
                      : "Not signed in to iCloud: settings stay on this Mac.")
                     .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 if store.configLoadFailed {

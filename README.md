@@ -192,7 +192,7 @@ The download and the Mac App Store version use Apple Weather. A build of your ow
 
 ## Settings sync
 
-Settings sync between Macs signed in to the same iCloud account, through iCloud key-value storage: sites and home, telescope, go rule, alerts and quiet hours, dark sites, bright nights, aurora, favourites and Tonight's plan. Start at login, where each Mac is observing from, whether home is that Mac's own location, and the first-run welcome stay on each Mac. At launch the newer copy wins; while Nightwatch runs, a change on one Mac reaches the others. Not signed in to iCloud, settings stay on the Mac, and Settings › App says so. Reset config in Settings resets every Mac, and its confirmation says so.
+Settings sync between Macs signed in to the same iCloud account, through iCloud key-value storage: sites and home, telescope, go rule, alerts and quiet hours, dark sites, bright nights, aurora, favourites and Tonight's plan. Home is shared whole: star a saved site and it is home on every Mac; star This Mac's location and each Mac uses its own. Start at login, where each Mac is observing from and the first-run welcome stay on each Mac. At launch the newer copy wins; while Nightwatch runs, a change on one Mac reaches the others. Not signed in to iCloud, settings stay on the Mac, and Settings › App says so. Reset config in Settings resets every Mac, and its confirmation says so.
 
 Settings are kept in the app's sandbox folder, `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library/Application Support/Nightwatch/config.json`; settings from 0.6.x are copied there on first launch.
 

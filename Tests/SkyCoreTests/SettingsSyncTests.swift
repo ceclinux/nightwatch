@@ -19,15 +19,16 @@ private func site(_ name: String) -> Site {
     a.homeIsThisMac = true
     a.welcomed = true
 
-    let sent = SettingsSync.outgoing(a, at: Date(timeIntervalSince1970: 1_000)).config
-    #expect(!sent.loginItem && sent.activeSiteName == nil && sent.visiting == nil && !sent.homeIsThisMac && !sent.welcomed)
+    let payload = SettingsSync.outgoing(a, at: Date(timeIntervalSince1970: 1_000)), sent = payload.config
+    #expect(!sent.loginItem && sent.activeSiteName == nil && sent.visiting == nil && !sent.welcomed)
     #expect(sent.sites == a.sites && sent.homeSiteName == "Kielder" && sent.fovPresetID == "draco" && sent.favourites == ["NGC6888"])
+    #expect(sent.homeIsThisMac)                                        // all of home travels (owner, 5 October 2026)
 
     var b = Config()
     b.loginItem = false
     b.activeSiteName = "Kielder"
     b.welcomed = true
-    let merged = SettingsSync.merge(remote: sent, local: b)
+    let merged = SettingsSync.merge(remote: payload, local: b)
     #expect(merged.sites == a.sites && merged.goRule.maxCloudPct == 30 && merged.fovPresetID == "draco")
     #expect(!merged.loginItem && merged.activeSiteName == "Kielder" && merged.visiting == nil && merged.welcomed)
 }
@@ -42,3 +43,37 @@ private func site(_ name: String) -> Site {
     #expect(SettingsSync.remoteWins(remoteSavedAt: t, localSavedAt: t.addingTimeInterval(-1)))
     #expect(!SettingsSync.remoteWins(remoteSavedAt: t, localSavedAt: t))
 }
+
+/// Home is one setting for every Mac (owner, 5 October 2026). It was half shared: the starred saved site travelled, but
+/// "This Mac's location" as home did not, so a Mac at home could be told it was away from a site starred on another.
+@Test func homeIsSharedByEveryMac() {
+    var a = Config()
+    a.sites = [site("Kielder"), site("Dartmoor")]
+    a.homeSiteName = "Kielder"
+    var b = a
+    b.activeSiteName = "Dartmoor"                                      // where this Mac observes from stays its own
+
+    // Starring "This Mac's location" on one Mac makes it home on the other too: each then uses its own location.
+    a.homeIsThisMac = true
+    b = SettingsSync.merge(remote: SettingsSync.outgoing(a, at: Date()), local: b)
+    #expect(b.homeIsThisMac && b.activeSiteName == "Dartmoor")
+
+    // Starring a saved site on one Mac makes it home on the other, in place of that Mac's own location.
+    a.homeSiteName = "Dartmoor"; a.homeIsThisMac = false
+    b = SettingsSync.merge(remote: SettingsSync.outgoing(a, at: Date()), local: b)
+    #expect(!b.homeIsThisMac && b.homeSiteName == "Dartmoor" && b.activeSiteName == "Dartmoor")
+}
+
+/// A Mac still on 1.3.1 or earlier always sends "home is not this Mac's location", whatever its own choice. Its copy
+/// must not knock that choice off a Mac that has it, so only a sender that shares home is believed about it.
+@Test func anOlderMacsCopyLeavesThisMacAsHomeAlone() throws {
+    var here = Config()
+    here.sites = [site("Kielder")]
+    here.homeIsThisMac = true
+    let old = try #require(SettingsSync.decode(Data(#"{"savedAt":"2026-10-05T12:00:00Z","config":{"sites":[],"homeSiteName":"Kielder","homeIsThisMac":false}}"#.utf8)))
+    #expect(old.sharesHome != true)
+    let merged = SettingsSync.merge(remote: old, local: here)
+    #expect(merged.homeIsThisMac && merged.homeSiteName == "Kielder")
+    #expect(SettingsSync.outgoing(here, at: Date()).sharesHome == true)
+}
+

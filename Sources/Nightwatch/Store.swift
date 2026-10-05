@@ -160,7 +160,7 @@ final class Store: ObservableObject {
 
     /// Another Mac's settings, with this Mac's own choices kept; saved here without sending them back.
     private func apply(_ p: SettingsSync.Payload) {
-        let merged = SettingsSync.merge(remote: p.config, local: config)
+        let merged = SettingsSync.merge(remote: p, local: config)
         guard merged != config else { return }
         config = merged
         saveConfig(send: false)
