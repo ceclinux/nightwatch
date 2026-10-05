@@ -71,6 +71,19 @@ private func inputs(_ hours: [HourlyConditions], moon: Double = 0, above: Double
     #expect(f[0].text.hasSuffix(Copy.seeingText(hours)!))
 }
 
+/// The guide calls about 1″ excellent, so a night whose Seeing tile reads 1″ or better is not "held back" by it, even
+/// though the score, which falls in a straight line across 7Timer's eight bands, has taken a third of its points.
+@Test func seeingTheGuideCallsExcellentIsNotBlamed() {
+    let hours = (0..<6).map { hour($0, seeing: $0 % 2 == 0 ? 3 : 4) }   // averages 3.5: the tile reads 0.75–1″
+    let f = Planner.limitingFactors(inputs(hours))
+    #expect(Copy.seeingText(hours) == "0.75–1″")
+    #expect(!f.contains { $0.kind == .seeing })
+    #expect(Copy.heldBack(f) == nil)
+    // One band worse, and it is named with the tile's figure as before.
+    let softer = (0..<6).map { hour($0, seeing: 4) }
+    #expect(Planner.limitingFactors(inputs(softer)).map(\.text) == ["seeing at 1–1.25″"])
+}
+
 @Test func limitingFactorsIgnoreMissingData() {
     let f = Planner.limitingFactors(inputs((0..<6).map { hour($0, wind: nil, temp: nil, dew: nil, seeing: nil, transp: nil) }))
     #expect(!f.contains { [.dew, .seeing, .transparency, .wind].contains($0.kind) })

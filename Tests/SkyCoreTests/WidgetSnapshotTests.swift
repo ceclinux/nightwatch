@@ -24,8 +24,8 @@ private func plans(_ day: Date, _ cloud: [Int], bright: Bool = false) throws -> 
     }
     return (p(night), p(next))
 }
-private func snap(_ p: NightPlan, _ t: NightPlan?, fetchedAt: Date = Date()) -> WidgetSnapshot {
-    WidgetSnapshot.make(plan: p, tomorrow: t, fetchedAt: fetchedAt, site: testSite, rule: GoRule(), bright: BrightSettings(), alerts: AlertSettings(), copy: copy)
+private func snap(_ p: NightPlan, _ t: NightPlan?, fetchedAt: Date = Date(), clock: TimeZone = TimeZone(identifier: "Europe/London")!) -> WidgetSnapshot {
+    WidgetSnapshot.make(plan: p, tomorrow: t, fetchedAt: fetchedAt, site: testSite, rule: GoRule(), bright: BrightSettings(), alerts: AlertSettings(), copy: copy, clock: clock)
 }
 private let november = utc(2026, 11, 20, 12, 0)
 private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90]
@@ -113,8 +113,13 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
 @Test func snapshotRoundTrips() throws {
     let (p, t) = try plans(november, clearMiddle)
     let s = snap(p, t, fetchedAt: november)
-    // The popover's clock: the site's time zone, 24-hour (12:00 UTC is 12:00 in London in November).
+    // "Updated" is on this Mac's clock, 24-hour (12:00 UTC is 12:00 in London in November): it says when this Mac last
+    // asked, so it is read against the menu-bar clock. Every other time is the site's own.
     #expect(s.updated == "Updated 12:00")
+    let abroad = snap(p, t, fetchedAt: november, clock: TimeZone(identifier: "America/Anchorage")!)   // a Mac in Alaska, the site in Britain
+    #expect(abroad.updated == "Updated 03:00")
+    #expect(abroad.window == s.window && abroad.targets.map(\.best) == s.targets.map(\.best))            // the night's own times do not move
+    #expect(Copy.clockTime(november, timeZone: TimeZone(identifier: "Asia/Tokyo")!) == "21:00")
     let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
     let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
     #expect(try d.decode(WidgetSnapshot.self, from: e.encode(s)) == s)

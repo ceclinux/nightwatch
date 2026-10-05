@@ -112,7 +112,7 @@ struct RefreshIntent: AppIntent {
         let snap = store.snapshot()
         // A refresh already running, no site yet or a failed fetch leave the forecast as it was: say so, never "Refreshed".
         let lead = store.forecast?.fetchedAt != before && store.forecast != nil ? "Refreshed. "
-            : "Could not refresh just now\(store.forecast.map { f in store.site.map { ", so this is the forecast from \(Copy.hhmm(f.fetchedAt, site: $0))" } ?? "" } ?? ""). "
+            : "Could not refresh just now\(store.forecast.map { ", so this is the forecast from \(Copy.clockTime($0.fetchedAt))" } ?? ""). "
         return .result(dialog: "\(lead + Copy.siriTonight(snap))", view: TonightCard(snapshot: snap, mark: store.weatherMark))
     }
 }

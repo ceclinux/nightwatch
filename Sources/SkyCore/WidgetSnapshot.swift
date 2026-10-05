@@ -36,7 +36,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var brightList: String?
     /// Which service supplied the cloud hours ("Apple Weather" or "Open-Meteo"), for the large widget's footer.
     public var source: String?
-    /// "Updated 21:10" in the site's time zone and 24-hour form, as the popover shows it.
+    /// "Updated 21:10" on this Mac's clock, 24-hour, as the popover shows it: when the Mac last asked for the forecast.
     public var updated: String?
     /// Apple Weather's attribution (v1.0.1): the Weather mark, saved by the app into the App Group as this file (a widget
     /// cannot fetch it), and the legal page of other data sources. Nil unless Apple Weather supplied the forecast.
@@ -48,7 +48,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, fetchedAt: Date, site: Site, rule: GoRule,
                             bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil,
-                            aurora: AuroraStatus? = nil, auroraSettings: AuroraSettings? = nil) -> WidgetSnapshot {
+                            aurora: AuroraStatus? = nil, auroraSettings: AuroraSettings? = nil, clock: TimeZone = .current) -> WidgetSnapshot {
         func hm(_ d: Date) -> String { Copy.hhmm(d, site: site) }
         let w = plan.primary
         let noDarkness = w == nil && !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness)
@@ -74,7 +74,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { "Tomorrow \(hm($0.start))–\(hm($0.end))" } : nil,
             notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
-            source: source, updated: "Updated \(hm(fetchedAt))",
+            source: source, updated: "Updated \(Copy.clockTime(fetchedAt, timeZone: clock))",
             aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil })
     }
 

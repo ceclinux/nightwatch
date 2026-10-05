@@ -57,10 +57,17 @@ extension Planner {
 extension Copy {
     /// Seeing in arcseconds from 7Timer's bands, averaged over darkness; nil when there is none, as beyond its 72 hours.
     public static func seeingText(_ darkHours: [HourlyConditions]) -> String? {
-        let seeing = darkHours.compactMap(\.seeing)
-        guard !seeing.isEmpty else { return nil }
-        return ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][max(0, min(8, seeing.reduce(0, +) / seeing.count))]
+        seeingBand(darkHours).map { ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][$0] }
     }
+
+    /// 7Timer's seeing band averaged over darkness, 1 (under 0.5″) to 8 (over 2.5″), as the Seeing tile rounds it; nil
+    /// when there is none.
+    public static func seeingBand(_ darkHours: [HourlyConditions]) -> Int? {
+        let seeing = darkHours.compactMap(\.seeing)
+        return seeing.isEmpty ? nil : max(0, min(8, seeing.reduce(0, +) / seeing.count))
+    }
+    /// The worst band the guide still calls excellent ("about 1″"): at this or better, seeing is not what holds a night back.
+    public static let excellentSeeingBand = 3
 
     /// The Transparency tile's word, from 7Timer's bands averaged over darkness: "Good" up to band 3, else "Average"; nil
     /// when there is none. The reason line words transparency from this too, so the two cannot disagree.

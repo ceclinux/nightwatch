@@ -255,7 +255,7 @@ struct TonightView: View {
                     Spacer(minLength: 8)
                     HStack(spacing: 6) {
                         if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
-                        Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
+                        Text(store.isStale ? store.copy.offlineSince(Copy.clockTime(f.fetchedAt)) : "Updated \(Copy.clockTime(f.fetchedAt))")   // this Mac's clock
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                 }

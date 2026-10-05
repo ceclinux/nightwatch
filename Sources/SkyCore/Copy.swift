@@ -194,6 +194,13 @@ public struct Copy: Sendable {
         return f.string(from: date)
     }
 
+    /// A time on this Mac's own clock, for when the Mac did something ("Updated 13:15"): it is read against the menu-bar
+    /// clock, which differs from the site's when observing from another time zone. The night's times use `hhmm(_:site:)`.
+    public static func clockTime(_ date: Date, timeZone: TimeZone = .current) -> String {
+        let f = DateFormatter(); f.timeZone = timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
+        return f.string(from: date)
+    }
+
     // Tonight's plan (#57, redesigned at the owner's UAT, 29 September 2026).
 
     /// "5 h", "1 h 40 min", "40 min".
