@@ -139,15 +139,16 @@ struct TonightView: View {
     }
 
     /// At most one line under the bars: aurora first, then the Clearer sky line (spec §5.1).
-    /// The aurora line needs AuroraWatch UK to have published within the hour: its `updated` time moves on every
-    /// publication (live: 20:33:32Z then 20:39:31Z, both green), so an older status is stale.
+    /// The aurora line needs its source to have published within the hour: AuroraWatch UK's `updated` time moves on
+    /// every publication (live: 20:33:32Z then 20:39:31Z, both green), so an older status is stale. It is the status for
+    /// this site: AuroraWatch UK's in the UK and Ireland, NOAA's figure for the site elsewhere.
     @ViewBuilder private func notice(_ site: Site) -> some View {
-        if let a = store.aurora, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
+        if let a = store.auroraHere, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
             // AuroraWatch UK's terms ask for the source to be named, "ideally with a link or button" to their site.
-            Link(destination: URL(string: "https://aurorawatch.lancs.ac.uk/")!) {
-                Text("Aurora: \(a.level.rawValue) (AuroraWatch UK) ↗").font(.system(size: 10)).foregroundStyle(Color(hex: a.level.hex))
+            Link(destination: a.source.link) {
+                Text(a.line).font(.system(size: 10)).foregroundStyle(Color(hex: a.level.hex))
             }
-            .buttonStyle(.plain).help("Open AuroraWatch UK")
+            .buttonStyle(.plain).help(a.source == .noaa ? "Open NOAA's aurora forecast" : "Open AuroraWatch UK")
         } else if let a = store.bestAway, let w = a.primary {
             Button {
                 // The menu-bar label also opens the window on any request; opening a single Window twice is harmless.

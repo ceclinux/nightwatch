@@ -1,6 +1,6 @@
 # Nightwatch privacy policy
 
-*Last updated 29 September 2026 (iCloud settings sync). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 5 October 2026 (aurora forecast from NOAA outside the UK and Ireland). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
 
 Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
@@ -49,7 +49,8 @@ nearby dark-sky sites if that feature is on). They go to:
 
 Other requests carry nothing about you or your location:
 
-- **[AuroraWatch UK](https://aurorawatch.lancs.ac.uk)**, for the aurora status, if aurora alerts are on.
+- **[AuroraWatch UK](https://aurorawatch.lancs.ac.uk)**, for the aurora status at sites in the UK and Ireland, if aurora alerts are on.
+- **[NOAA's Space Weather Prediction Center](https://www.spaceweather.gov/products/aurora-30-minute-forecast)**, for the aurora forecast everywhere else, if aurora alerts are on. Nightwatch downloads the forecast for the whole world and reads your site's point on this Mac, so your location is not sent.
 - **The Minor Planet Center and CelesTrak**, for comet and ISS data.
 - **CDS (Strasbourg)**, for sky-survey images. It receives the sky position of a target being shown, and of tonight's suggested targets and those in your plan so their pictures are ready, not yours.
 - **NASA's Scientific Visualization Studio**, for the Moon image. It receives the date and hour, nothing about you.

@@ -158,7 +158,8 @@ public struct Config: Codable, Equatable, Sendable {
     }
 }
 
-/// Aurora alerts (v0.3) from AuroraWatch UK, gated on the local cloud forecast. Off by default.
+/// Aurora alerts (v0.3): AuroraWatch UK in the UK and Ireland, NOAA's forecast elsewhere (1.4), gated on the local
+/// cloud forecast. Off by default.
 public struct AuroraSettings: Codable, Equatable, Sendable {
     public var enabled = false
     public var threshold: AuroraLevel = .amber

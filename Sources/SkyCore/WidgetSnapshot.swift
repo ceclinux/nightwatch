@@ -42,7 +42,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// cannot fetch it), and the legal page of other data sources. Nil unless Apple Weather supplied the forecast.
     public var weatherMarkFile: String? = nil
     public var weatherLegalURL: String? = nil
-    /// AuroraWatch UK's level when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
+    /// The aurora level for this site when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
     public var aurora: AuroraStatus?
 
@@ -78,7 +78,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil })
     }
 
-    /// "Aurora amber" in AuroraWatch UK's colour, or nil when there is none or it is over an hour old at `now`.
+    /// "Aurora amber" in the level's colour (AuroraWatch UK's), or nil when there is none or it is over an hour old at `now`.
     public func auroraLine(now: Date) -> (text: String, hex: UInt32)? {
         guard let a = aurora, let end = auroraExpires, now < end else { return nil }
         return ("Aurora \(a.level.rawValue)", a.level.hex)

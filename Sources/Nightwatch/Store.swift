@@ -42,10 +42,15 @@ final class Store: ObservableObject {
     var awaitingFix = false            // boot is waiting for this Mac's location: no refresh for a saved site meanwhile
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
     var auroraScheduler: Scheduler?
-    /// Last AuroraWatch UK status fetched (only while aurora alerts are on and the Sun is down).
+    /// Last aurora status fetched (only while aurora alerts are on and the Sun is down): AuroraWatch UK's, or NOAA's
+    /// figure for the site it was read at. Views and alerts read `auroraHere`.
     @Published var aurora: AuroraStatus?
+    /// The status for the site being observed from: never the UK's abroad, nor NOAA's figure for another place.
+    var auroraHere: AuroraStatus? { aurora.flatMap { a in site.map(a.applies(to:)) == true ? a : nil } }
     private var auroraState: AuroraAlertState?
-    private var lastAuroraFetch: Date?
+    /// When each thing was last asked for: AuroraWatch UK, or one of NOAA's grid points. A site at another grid point is
+    /// asked for at once, while AuroraWatch UK keeps its 3-minute floor however often the site changes.
+    private var auroraFetched: [String: Date] = [:]
 
     nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
@@ -256,7 +261,9 @@ final class Store: ObservableObject {
             if send { sendSettings() }
         }
         let siteChanged = site.map { !forecastMatches($0) } ?? false
-        Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }
+        // Turning aurora alerts on, or lowering the level, takes effect now and not at the next 5-minute tick: the poll
+        // keeps its own gaps, so this asks the source only when there is no status for this site yet (refresh polls too).
+        Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()); await pollAurora() } }
         checkTerrain()
     }
 
@@ -325,6 +332,8 @@ final class Store: ObservableObject {
         await refreshAuxiliary(now: now)
         await recompute(now: now)
         refreshing = false
+        // A new site has its own aurora status (1.4): ask now, not at the next 5-minute tick. The poll keeps its own gaps.
+        await pollAurora(now: now)
         // The site changed while this ran (location fix, Settings, config reload) and its own refresh hit the guard above.
         if self.site != site { await refresh(force: false) }
     }
@@ -396,9 +405,9 @@ final class Store: ObservableObject {
     /// The aurora status the widget was last given, when it shows one.
     private var widgetAurora: AuroraStatus?
     private func shownAurora(_ a: AuroraStatus?) -> AuroraStatus? {
-        a.flatMap { config.aurora.shows($0) ? $0 : nil }
+        a.flatMap { a in config.aurora.shows(a) && site.map(a.applies(to:)) == true ? a : nil }
     }
-    /// AuroraWatch UK publishes every few minutes and WidgetKit rations reloads, so the widget is rewritten only when its
+    /// The sources publish every few minutes and WidgetKit rations reloads, so the widget is rewritten only when its
     /// aurora line appears, changes level or clears, and every 30 minutes while shown so its one-hour freshness never lapses.
     private func widgetAuroraNeedsRewrite(_ status: AuroraStatus) -> Bool {
         let new = shownAurora(status), old = widgetAurora
@@ -417,7 +426,7 @@ final class Store: ObservableObject {
         guard let plan, let tomorrow, let fc = forecast, let site, forecastMatches(site) else { return nil }
         var s = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
                                     bright: config.brightNights, alerts: config.alerts, copy: copy,
-                                    source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+                                    source: fc.cloudSource ?? "Open-Meteo", aurora: auroraHere, auroraSettings: config.aurora)
         s.weatherLegalURL = fc.attributionLegalURL   // with the mark, on the widget and Siri's cards
         return s
     }
@@ -474,14 +483,22 @@ final class Store: ObservableObject {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Polls AuroraWatch UK while aurora alerts are on and the Sun is at least 12 degrees down (every 5 minutes: their
-    /// terms ask for 3 or more), then notifies through the aurora rule. On a failed fetch the last status is kept.
+    /// Polls the site's aurora source while aurora alerts are on and the Sun is at least 12 degrees down, then notifies
+    /// through the aurora rule: AuroraWatch UK in the UK and Ireland (every 5 minutes: their terms ask for 3 or more),
+    /// NOAA's forecast elsewhere (every 15). On a failed fetch the last status is kept.
     func pollAurora(now: Date = Date()) async {
         guard config.aurora.enabled, let site, Ephemeris.sunAltitude(at: now, site: site) <= AuroraAlert.sunBelowDeg else { return }
-        // Boot, the 5-minute timer and every wake can all land here: never ask AuroraWatch UK twice within 3 minutes.
-        if now.timeIntervalSince(lastAuroraFetch ?? .distantPast) >= 180 {
-            lastAuroraFetch = now
-            if let data = try? await fetcher.get(AuroraWatch.url), let status = try? AuroraWatch.parse(data) {
+        // Boot, the 5-minute timer and every wake can all land here: never ask a source for the same thing twice within
+        // 3 minutes, nor sooner than its own gap unless no status for this site is held yet. A site at another of NOAA's
+        // grid points is asked for at once.
+        let source = AuroraSource.for(site), key = source == .noaa ? "\(Ovation.cell(site))" : source.rawValue
+        let gap = now.timeIntervalSince(auroraFetched[key] ?? .distantPast)
+        if gap >= source.minFetchGap || (aurora?.applies(to: site) != true && gap >= 180) {
+            auroraFetched[key] = now
+            let fetched: AuroraStatus? = source == .noaa
+                ? (try? await fetcher.get(Ovation.url)).flatMap { try? Ovation.parse($0, site: site) }
+                : (try? await fetcher.get(AuroraWatch.url)).flatMap { try? AuroraWatch.parse($0) }
+            if let status = fetched {
                 aurora = status
                 Store.write(status, "aurora.json")
                 if widgetAuroraNeedsRewrite(status) { writeWidgetSnapshot() }

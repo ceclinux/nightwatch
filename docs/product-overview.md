@@ -22,7 +22,7 @@ A night qualifies under the default go rule when there is a contiguous run of at
 
 On summer nights without proper darkness, an opt-in bright-night mode keeps the heads-up coming: a one-hour clear run in nautical darkness (Sun 12° down) with the Moon or a naked-eye planet at least 15° up. The Moon no longer counts against the score on a bright night, because it is the target.
 
-Nothing leaves the Mac except the forecast requests (for the active site, home while observing elsewhere, and the nearest dark sites), sky-survey image fetches, the comet and ISS element downloads, and, when aurora alerts are on, AuroraWatch UK's status after dark, plus one request a day to GitHub for the latest version (switchable off), and Apple Maps for the nearest town to each computed dark spot. Every request except Apple Weather and Apple Maps names the app and its version.
+Nothing leaves the Mac except the forecast requests (for the active site, home while observing elsewhere, and the nearest dark sites), sky-survey image fetches, the comet and ISS element downloads, and, when aurora alerts are on, the aurora status after dark (AuroraWatch UK's, or NOAA's worldwide forecast outside the UK and Ireland), plus one request a day to GitHub for the latest version (switchable off), and Apple Maps for the nearest town to each computed dark spot. Every request except Apple Weather and Apple Maps names the app and its version.
 
 ## What it shows
 
@@ -34,7 +34,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 - **Score:** the sky score inside a 60-tick 12-hour clock bezel. Ticks glow in the accent colour across the clear window, dim where it is dark but cloudy, and faint in daylight.
 - **Verdict:** the clear window, or "No clear window tonight" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points, and, on a signed build, Open-Meteo's second opinion. When it agrees, a small line ("Open-Meteo agrees"). When it differs, one plain line that says what it means: "Check again at 20:30: a second forecast sees 21:00–01:00 clear." when there is no window, or "Less certain: a second forecast sees cloud from 00:00." when there is one. The verdict still comes from Apple Weather alone: a clear night is a notification, not a guarantee.
 - **Clear-sky bars:** one per hour of darkness, each filled to its share of clear sky (100 minus cloud cover), with the window hours in the accent colour; the clearest hour is labelled ("80% clear").
-- **Notice line:** at most one: aurora, in AuroraWatch UK's own colours (yellow, amber or red) and linking to their site, or a clearer dark site nearby.
+- **Notice line:** at most one: aurora, in AuroraWatch UK's own colours (yellow, amber or red), naming its source and linking to it (AuroraWatch UK, or NOAA's forecast with its percentage outside the UK and Ireland), or a clearer dark site nearby.
 - **Six tiles:** dark hours, the Moon with a real NASA phase image and its set or rise time, seeing, wind, dew or frost risk (with "Dew heater advised" when high; no tile is coloured or outlined), and transparency.
 - **Best targets:** the best three, with thumbnails, catalogue ID, name and best time. A favourite well placed tonight, and not Moon-washed, takes one slot: in place of its own group's pick, else of the last.
 - **Footer:** one line, evenly spread: the cloud source (the Apple Weather mark, which links to its legal attribution, or Open-Meteo), the update time (with a yellow dot and "{n} h ago" when the forecast is over six hours old), and the Refresh button. The "Notify at HH:MM" switch is in Settings › Alerts.
@@ -94,7 +94,7 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - After a heads-up or nudge, if the forecast turns:
   - **Cancelled** ("Cancelled. Clouds moving in") when Apple Weather and Open-Meteo both lose the window, or when there is no second opinion.
   - **Less certain** ("Less certain. Forecasts disagree") when they split, saying what each sees. For example, "Apple Weather still sees clear from 21:00. Open-Meteo sees no clear window." Where only Open-Meteo doubts, it is sent only with the opt-in "Alert only when Open-Meteo agrees" on. It is sent at most once a night. If both clear again before the nudge, the nudge still fires; if the nudge has already gone, nothing more is sent. Nothing is sent after the window has closed.
-- Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear. It plays the alert sound, because an aurora does not wait.
+- Aurora alert (opt-in): the aurora status at or above the chosen level after dark, with this hour clear. In the UK and Ireland that is AuroraWatch UK's status; elsewhere it is NOAA's 30-minute forecast at the site (yellow from 10%, amber from 30%, red from 60%). It plays the alert sound, because an aurora does not wait.
 - When tonight qualifies, the heads-up ends "Also tonight: …" with up to two events from the Events page in clear sky tonight: ISS passes, eclipses, conjunctions, and showers only on their peak night; never a comet (on the list for weeks) or an event behind the site's horizon (owner, 1 October 2026, from the competitor review).
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
@@ -119,7 +119,8 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 | Cloud, dew point, wind, visibility (primary, signed builds) | Apple Weather via WeatherKit | Apple WeatherKit terms, attribution shown in the popover |
 | Cloud, dew point, wind, visibility (fallback, all builds); cloud as the second opinion on signed builds | Open-Meteo | CC BY 4.0 |
 | Seeing, transparency | 7Timer (Shanghai Astronomical Observatory) | Non-commercial use |
-| Aurora status (opt-in) | AuroraWatch UK, Lancaster University | Free, non-commercial use, attribution |
+| Aurora status (opt-in), UK and Ireland | AuroraWatch UK, Lancaster University | Free, non-commercial use, attribution |
+| Aurora forecast (opt-in), elsewhere | NOAA Space Weather Prediction Center, 30-minute aurora forecast | Public domain |
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
 | Constellation artwork | Original to Nightwatch, created with ChatGPT image generation; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |

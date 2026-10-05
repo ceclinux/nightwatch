@@ -1,4 +1,5 @@
 import SwiftUI
+import SkyCore
 
 struct AboutView: View {
     @EnvironmentObject var store: Store
@@ -24,7 +25,8 @@ struct AboutView: View {
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
             Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
-            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: URL(string: "https://aurorawatch.lancs.ac.uk/")!).font(.caption2)
+            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).font(.caption2)
+            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).font(.caption2)
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").font(.caption2).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }

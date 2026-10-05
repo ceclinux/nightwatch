@@ -156,7 +156,7 @@ struct SettingsView: View {
                 Picker("Alert from", selection: bind(\.aurora.threshold)) {
                     ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).tag($0) }
                 }
-                Text("Status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(.caption).foregroundStyle(Theme.dim)
+                Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(.caption).foregroundStyle(Theme.dim)
             }
             Section("App") {
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.

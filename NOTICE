@@ -7,6 +7,7 @@ Terrain heights for a site's horizon via the Open-Meteo Elevation API: produced 
 Apple Weather via WeatherKit when the build is signed for it; attribution and legal notice per Apple's WeatherKit terms. https://weatherkit.apple.com/legal-attribution.html
 Seeing and transparency from 7Timer (Shanghai Astronomical Observatory), non-commercial use. http://www.7timer.info
 Aurora alert status from AuroraWatch UK, Lancaster University, used under its non-commercial terms. https://aurorawatch.lancs.ac.uk
+Aurora forecast outside the UK and Ireland from the 30-minute aurora forecast of NOAA's Space Weather Prediction Center, which is in the public domain. Nightwatch is not endorsed by or affiliated with NOAA; the yellow, amber and red bands are Nightwatch's own. https://www.spaceweather.gov/products/aurora-30-minute-forecast
 OpenNGC, Mattia Verga, CC BY-SA 4.0. https://github.com/mattiaverga/OpenNGC
 Constellation names, positions and star-line data, and the bright stars' names and positions, from d3-celestial, Olaf Frohn, BSD-3-Clause. https://github.com/ofrohn/d3-celestial
 Constellation artwork is original to Nightwatch: all 88 figures and star plots were created for the project by Richard Sutcliffe with ChatGPT image generation, not taken from any other source, and are under the project's MIT licence. The star plots are drawn from d3-celestial's star-line data.
