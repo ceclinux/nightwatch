@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 4 October 2026, version 1.3.1 "Twoflower, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 5 October 2026, version 1.4.0 "Shepherd's Crown". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -210,6 +210,7 @@ Tags follow the City Watch novels.
 | 1.2.5 | Great A'Tuin, patch 5 | 3 October 2026 | The Events page shows a quiet horizon when there are no events tonight, or none match your search |
 | 1.3.0 | Twoflower | 3 October 2026 | Light-pollution data for the whole world, between 75° N and 65° S, where it used to cover only Great Britain and most of Ireland; Add a site suggests how dark the sky is for a place anywhere in that range; the Dark sites page finds dark car parks near a site anywhere in it; Britain keeps its finer data |
 | 1.3.1 | Twoflower, patch 1 | 4 October 2026 | The reason under the sky score now agrees with the rest of the page: "Held back by" no longer says "poor transparency" beside a tile reading "Good" (it names transparency only when the tile reads "Average", and quotes seeing with the tile's figure); on a night with no clear window, the longest clear run is measured inside darkness, so it never reads "3 h" against a rule that needs 3 h; the week-ahead row uses the same measure |
+| 1.4.0 | Shepherd's Crown | 5 October 2026 | Aurora alerts outside the UK and Ireland, from the 30-minute aurora forecast of NOAA's Space Weather Prediction Center read at your site and shown as yellow from 10%, amber from 30% and red from 60%; sites in the UK and Ireland keep AuroraWatch UK, whose status is no longer used abroad; a change of site or of the aurora settings is checked at once, not at the next five-minute tick; home is shared whole between your Macs: star a saved site and it is home on each, star This Mac's location and each Mac uses its own; the "Held back by" line no longer names seeing when its tile reads 1″ or better; "Updated" in the popover and on the widgets is on your Mac's own clock when you observe from another time zone |
 
 ## Install
 
