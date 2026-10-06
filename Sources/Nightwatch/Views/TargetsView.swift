@@ -21,6 +21,7 @@ final class TargetsViewState: ObservableObject {
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
     @Published var eventSort: EventSort = .time
+    @Published var siteSort: SiteSort = .score
     /// Tonight | Tomorrow night: planning for tomorrow night (owner, 28 September 2026).
     @Published var tomorrow = false
 }
@@ -224,14 +225,40 @@ struct TargetsView: View {
     }
 
     private var darkSitesList: some View {
-        ScrollView {
+        // The shortest drive to a clear window (owner, 6 October 2026): named in a line, first in its own sort order, and
+        // marked on its card, because by score a farther site can sit above a nearer one that is nearly as good.
+        let nearest = SiteComparison.nearestClear(store.sitePlans)
+        let radius = Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)
+        // With nothing clear tonight, "Nearest clear" has nothing to put first: the choice is not offered, and the page
+        // keeps its usual order (owner's UAT, 6 October 2026). The choice itself is remembered for a night that has one.
+        let sort = nearest == nil ? SiteSort.score : ui.siteSort
+        return ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Dark sites").font(Font.scaled(.title2).weight(.semibold))
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Dark sites").font(Font.scaled(.title2).weight(.semibold))
+                    Spacer(minLength: 12)
+                    if nearest != nil {
+                        Picker("Sort", selection: $ui.siteSort) {
+                            ForEach(SiteSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented).fixedSize()
+                    }
+                }
                 HStack(spacing: 6) {
-                    Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").foregroundStyle(Theme.dim)
+                    Text("Within \(radius) of \(store.site?.name ?? "home") · \(sort == .score ? "sorted by tonight's score" : "nearest clear sky first")").foregroundStyle(Theme.dim)
                     if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(.link) }
                 }
                 .font(Font.scaled(.caption))
+                if let n = nearest, let w = n.primary, let here = store.site {
+                    Button { ui.pendingScrollID = n.id } label: {
+                        Text("Nearest clear sky: \(n.site.name), \(Geo.format(km: n.site.distanceKm, unit: store.distanceUnit)) \(n.site.compass), clear \(Copy.hhmm(w.start, site: here))–\(Copy.hhmm(w.end, site: here)) →")
+                            .font(Font.scaled(.callout)).foregroundStyle(Tokens.textPrimary).multilineTextAlignment(.leading)
+                    }
+                    .buttonStyle(.plain).padding(.top, 6)   // a link, so text.primary, as the popover's Clearer sky line is
+                } else if store.sitePlans.contains(where: { !$0.forecastMissing }) {
+                    Text("No site within \(radius) has a clear window tonight.")
+                        .font(Font.scaled(.callout)).foregroundStyle(Theme.dim).padding(.top, 6)
+                }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             if !store.config.darkSites.enabled {
                 Text("Dark sites are off. Turn them on in Settings › Dark sites.").foregroundStyle(Theme.dim).padding(20)
@@ -242,7 +269,7 @@ struct TargetsView: View {
             ScrollViewReader { proxy in
                 GlassGroup(spacing: 12) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2), spacing: 12) {
-                        ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
+                        ForEach(SiteComparison.sorted(store.sitePlans, by: sort)) { DarkSiteCard(plan: $0, nearestClear: $0.id == nearest?.id).id($0.id) }
                         ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
                     }.padding(20)
                 }
@@ -566,10 +593,15 @@ struct TargetsView: View {
 struct DarkSiteCard: View {
     @EnvironmentObject var store: Store
     let plan: SitePlan
+    /// The shortest drive to a clear window tonight: marked on its map.
+    var nearestClear = false
     var body: some View {
         let s = plan.site
         VStack(alignment: .leading, spacing: 8) {
             SiteMapView(site: s)
+                .overlay(alignment: .topTrailing) {
+                    if nearestClear { Chip(text: "Nearest clear sky", icon: "mappin.and.ellipse").padding(6) }
+                }
             HStack(alignment: .firstTextBaseline) {
                 Text(s.name).font(Font.scaled(.callout).weight(.semibold)).lineLimit(2)
                 Spacer()
