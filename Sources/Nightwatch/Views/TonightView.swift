@@ -244,7 +244,7 @@ struct TonightView: View {
                 HStack(spacing: 5) {
                     Circle().fill(Tokens.controlOn).frame(width: 6, height: 6).accessibilityHidden(true)
                     Text("Nightwatch \(u.version) is available").foregroundStyle(Tokens.textPrimary)
-                    Link("Download ↗", destination: u.url)
+                    Link("Download ↗", destination: ReleaseCheck.latestPage)
                 }
                 .font(.system(size: TextScale.pt(10.5)))
             }

@@ -70,6 +70,10 @@ OUT=build/release; mkdir -p "$OUT"
 APP="$WORK/Nightwatch.app"
 ditto "$SRC" "$APP"
 APPEX="$APP/Contents/PlugIns/NightwatchWidget.appex"
+# The helper that ends the old version's widget process after an update (Helper/Sources/main.swift). No entitlements:
+# it has to be outside the sandbox to do that.
+HELPER="$APP/Contents/XPCServices/NightwatchWidgetReset.xpc"
+[[ -d "$HELPER" ]] || fail "the build has no widget helper: see build/xcode.log"
 
 cat > "$WORK/widget.entitlements" <<ENT
 <?xml version="1.0" encoding="UTF-8"?>
@@ -115,6 +119,7 @@ fi
 # Inside out: the widget first, so the app's seal records the widget's new signature. Hardened runtime and a secure
 # timestamp are both required for notarisation; the development build's get-task-allow is dropped by re-signing.
 codesign --force --options runtime --timestamp --entitlements "$WORK/widget.entitlements" --sign "$IDENTITY" "$APPEX"
+codesign --force --options runtime --timestamp --sign "$IDENTITY" "$HELPER"
 codesign --force --options runtime --timestamp --entitlements "$WORK/app.entitlements" --sign "$IDENTITY" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 

@@ -46,6 +46,9 @@ SRC=build/Nightwatch.app
 OUT=build/appstore; mkdir -p "$OUT"
 APP="$WORK/Nightwatch.app"; ditto "$SRC" "$APP"
 APPEX="$APP/Contents/PlugIns/NightwatchWidget.appex"
+# The widget helper works outside the sandbox, which the Mac App Store does not allow: the store build goes without it,
+# and the app does not look for it (Distribution.hasWidgetHelper).
+rm -rf "$APP/Contents/XPCServices"
 cp "$APP_PROFILE" "$APP/Contents/embedded.provisionprofile"
 cp "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
 # A downloaded profile is quarantined, and its copy is too (even with cp -X, on macOS 27). App Store Connect rejects a

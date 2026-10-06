@@ -73,7 +73,7 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
     scripts/fetch-data.sh         # optional: only to refresh the bundled catalogue; the data is committed
     scripts/build-app.sh          # builds with Xcode, signs ad hoc, installs to /Applications, launches
 
-Every build runs in Apple's app sandbox, including one signed ad hoc. An ad hoc build gets a new signature each time it is rebuilt; if macOS then asks whether Nightwatch may access its data, choose Allow.
+Every build runs in Apple's app sandbox, including one signed ad hoc; from 1.5.4 the download also carries one small helper outside it, which ends the old widget after an update (see *Desktop widget*). An ad hoc build gets a new signature each time it is rebuilt; if macOS then asks whether Nightwatch may access its data, choose Allow.
 
 The app and its widget are one Xcode project, generated from `project.yml` by xcodegen (the generated `Nightwatch.xcodeproj` is not committed). SkyCore and NightwatchUI are Swift packages, so the tests run with `scripts/test.sh` alone. The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer document that Xcode compiles into a Liquid Glass icon plus a classic one.
 
@@ -85,10 +85,13 @@ The widget comes with a signed build only, since it shares its snapshot with the
 
 To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widgets won't stay on the desktop, turn on System Settings › Desktop & Dock › Widgets › Show widgets › On Desktop.
 
-If the widget shows only grey bars after you replace an older copy of Nightwatch with a newer one, macOS is still holding the old version on record and throws away what the new widget draws. Nightwatch can't correct this from inside its sandbox. Run these two commands in Terminal, and the widget fills in within a minute; if it doesn't, remove it and add it again:
+From 1.5.4 the widget follows an update by itself. macOS goes on running the old version's widget after Nightwatch has been replaced by a newer one, and then refuses what that old widget draws, so it kept its last picture, or showed only grey bars if you added it after updating. Two things now deal with that: the first time a new version opens, the download asks a small helper to end the old widget, and macOS starts the new one within seconds; and the widget steps aside by itself when it finds it has been replaced.
+
+The helper is the one part of the download that works outside the app sandbox, because the sandbox does not let an app end another process, its own widget included. It does that one thing and nothing else: it ends processes that are this app's widget, and it runs once per new version. Its source is `Helper/Sources/main.swift`. A build of your own signed ad hoc has no widget and no helper.
+
+If a widget ever does stay on grey bars or an old night after an update, this command in Terminal ends the old widget, and the new one fills in within a minute:
 
 ```bash
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R -trusted /Applications/Nightwatch.app
 killall chronod
 ```
 

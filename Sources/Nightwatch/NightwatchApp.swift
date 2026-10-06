@@ -80,10 +80,10 @@ struct NightwatchApp: App {
         // Not rebuilt on a change, so choosing a size in Settings does not throw the page back to its top.
         Window("Settings", id: "settings") { SettingsView().environmentObject(store).scaledText() }
             .defaultSize(width: 520, height: 560).defaultPosition(.center)
-        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).textSized(store.config.textSize) }
+        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).scaledText().id(store.config.textSize) }   // rebuilt on a change, as textSized does
             .windowResizability(.contentSize).defaultPosition(.center)
         Window("About Nightwatch", id: "about") { AboutView().environmentObject(store).textSized(store.config.textSize) }
-            .defaultSize(width: 420, height: 420).defaultPosition(.center)
+            .defaultSize(width: 420, height: 640).defaultPosition(.center)
         Window("What the numbers mean", id: "numbers") { NumbersView().textSized(store.config.textSize) }
             .defaultSize(width: 780, height: 620).defaultPosition(.center)
     }

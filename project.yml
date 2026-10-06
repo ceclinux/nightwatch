@@ -14,8 +14,8 @@ settings:
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
     # build-app.sh passes the app's version from Sources/Nightwatch/Info.plist, so the two never drift; these are fallbacks.
-    MARKETING_VERSION: "1.5.3"
-    CURRENT_PROJECT_VERSION: "40"
+    MARKETING_VERSION: "1.5.4"
+    CURRENT_PROJECT_VERSION: "41"
 targets:
   Nightwatch:
     type: application
@@ -42,6 +42,7 @@ targets:
       - package: Nightwatch
         product: NightwatchUI
       - target: NightwatchWidget
+      - target: NightwatchWidgetReset
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rsutcliffe.nightwatch
@@ -77,3 +78,19 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rsutcliffe.nightwatch.widget
+  # The one piece outside the sandbox (1.5.4): it ends the old version's widget process after an update, which the app is
+  # not allowed to do. No entitlements, so no sandbox. scripts/appstore.sh removes it: the Mac App Store allows none.
+  NightwatchWidgetReset:
+    type: xpc-service
+    platform: macOS
+    sources: [Helper/Sources]
+    info:
+      path: build/NightwatchWidgetReset-Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rsutcliffe.nightwatch.widgetreset

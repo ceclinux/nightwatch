@@ -638,9 +638,9 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(Font.scaled(.caption)) }
                 Spacer()
-                Button("Open in Maps") { SiteMaps.open(s) }.font(Font.scaled(.caption))
+                Button("Open in Maps") { SiteMaps.open(s) }.buttonStyle(ScaledButtonStyle())
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
-                Button("Observe from here") { store.visit(s) }.font(Font.scaled(.caption))
+                Button("Observe from here") { store.visit(s) }.buttonStyle(ScaledButtonStyle())
             }
         }
         .padding(12)

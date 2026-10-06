@@ -102,6 +102,7 @@ final class Store: ObservableObject {
         loadConfig()
         TextScale.factor = config.textSize.factor
         startSettingsSync()
+        WidgetReset.afterAnUpdate()   // once per new version: the old version's widget process has to go
     }
 
     /// Loads config.json. A file that exists but will not decode (or a dangling symlink) is never overwritten:

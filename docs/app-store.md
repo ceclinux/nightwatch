@@ -1,9 +1,10 @@
 # Releasing Nightwatch on the Mac App Store
 
-The App Store version, **"Nightwatch: Clear Sky Alerts"**, is built from the same code as the download. The only
-difference is that it has no update check, because the App Store updates it (rule 2.4.5(vii)). That switch is the one
-`#if APPSTORE` in `Sources/Nightwatch/Distribution.swift`, and a test keeps it the only one. CI builds both on every pull
-request.
+The App Store version, **"Nightwatch: Clear Sky Alerts"**, is built from the same code as the download. It differs in
+two ways: it has no update check, because the App Store updates it (rule 2.4.5(vii)), and it has no widget helper
+(1.5.4), because that works outside the sandbox and every executable in a store build must be sandboxed;
+`scripts/appstore.sh` removes it. Both switches are in the one `#if APPSTORE` in `Sources/Nightwatch/Distribution.swift`,
+and a test keeps it the only one. CI builds both on every pull request.
 
 The store build also carries no temporary sandbox exceptions: those exist in the download only to copy settings from
 0.6, which a new App Store user never had.

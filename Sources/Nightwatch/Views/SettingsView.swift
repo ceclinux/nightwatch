@@ -191,7 +191,12 @@ struct SettingsView: View {
                         Text(store.syncsSettings ? "Resetting affects all your Macs." : "")
                     }
             }
-            Section { Button("What the numbers mean") { openWindow(id: "numbers") } }   // #59, at the foot
+            Section {
+                Button("What the numbers mean") { openWindow(id: "numbers") }   // #59, at the foot
+                // The only way in: a menu-bar app never shows its own menus, so Window › About Nightwatch cannot be
+                // reached, and nothing else opened this window (owner, 6 October 2026).
+                Button("About Nightwatch") { openWindow(id: "about") }
+            }
         }
         .formStyle(.grouped)
         .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store).scaledText() }

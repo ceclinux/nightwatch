@@ -28,9 +28,12 @@ struct StatTile: View {
 extension View {
     /// The window's own text at the chosen size (Settings › App › Text size): text with no font of its own follows it,
     /// and a change of size rebuilds the window so every view inside makes its fonts again.
-    func textSized(_ size: TextSize) -> some View { scaledText().id(size) }
+    func textSized(_ size: TextSize) -> some View { font(Font.scaled(.body)).id(size) }
 
-    /// Text and macOS's own buttons at the chosen size, for a window or sheet that is not rebuilt when the size changes.
+    /// Text and macOS's own buttons at the chosen size, for the windows and sheets made of them: Settings, the Welcome
+    /// and the site and horizon sheets. Not for a window with links in it: a link is a button to the system, and drew as
+    /// a bordered one under this style (1.5.2 and 1.5.3: the popover's Apple Weather mark and Download, About's links).
+    /// A lone native button elsewhere takes `ScaledButtonStyle()` itself.
     func scaledText() -> some View { font(Font.scaled(.body)).buttonStyle(ScaledButtonStyle()) }
 
     /// A card that opens something: a click, Return or Space with keyboard focus on it, or VoiceOver's own action, which

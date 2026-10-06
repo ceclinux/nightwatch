@@ -5,6 +5,10 @@ import Foundation
 public enum ReleaseCheck {
     public static let latestURL = URL(string: "https://api.github.com/repos/rsutcliffe/nightwatch/releases/latest")!
     public static let interval: TimeInterval = 24 * 3600
+    /// Where "Download" goes: GitHub's own redirect to the newest release. Not the page of the version the last check
+    /// found, which is up to a day old: a Mac that had last heard of 1.3.1 sent its owner there when 1.5.3 was out
+    /// (owner, 6 October 2026).
+    public static let latestPage = URL(string: "https://github.com/rsutcliffe/nightwatch/releases/latest")!
 
     public struct Latest: Codable, Equatable, Sendable {
         public let version: String

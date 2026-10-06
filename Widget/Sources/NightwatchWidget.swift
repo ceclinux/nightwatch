@@ -23,15 +23,30 @@ enum SnapshotFile {
     }
 }
 
+/// macOS goes on running the copy of the widget it first started, even after Nightwatch has been replaced by a newer
+/// version in Applications, and then refuses everything that old copy draws ("Bundle version did not match"): the widget
+/// keeps its last picture, or shows grey bars if it was added after the update (owner, 6 October 2026). Measured that
+/// day: ending the old process is all it takes, macOS starts the new copy at once, and the app's sandbox is not allowed
+/// to end it (kill returns EPERM). So the widget ends itself when the copy on disk is no longer the one running.
+enum ReplacedCopy {
+    static func leaveIfReplaced() {
+        let onDisk = NSDictionary(contentsOf: Bundle.main.bundleURL.appendingPathComponent("Contents/Info.plist"))?["CFBundleVersion"] as? String
+        let running = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String   // read once, at launch
+        if let onDisk, let running, onDisk != running { exit(0) }
+    }
+}
+
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> NightEntry { NightEntry(date: .now, snapshot: .sample) }
     /// The gallery shows the sample until the app has written a snapshot.
     func getSnapshot(in context: Context, completion: @escaping (NightEntry) -> Void) {
+        ReplacedCopy.leaveIfReplaced()
         completion(NightEntry(date: .now, snapshot: SnapshotFile.load() ?? (context.isPreview ? .sample : nil)))
     }
     /// The app reloads the widget after every patrol; the 30-minute refresh is only a fallback. A second entry just past the
     /// six-hour mark shows "Forecast N h old" on time rather than at the next refresh.
     func getTimeline(in context: Context, completion: @escaping (Timeline<NightEntry>) -> Void) {
+        ReplacedCopy.leaveIfReplaced()
         let s = SnapshotFile.load()
         var entries = [NightEntry(date: .now, snapshot: s)]
         if let s, case let staleAt = s.fetchedAt.addingTimeInterval(6 * 3600 + 60), staleAt > .now {

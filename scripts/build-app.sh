@@ -15,7 +15,7 @@ xcodegen generate --quiet
 # The generated project gets the root Package.resolved, so Xcode links exactly the dependency versions the tests use.
 PINS=Nightwatch.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
 mkdir -p "$PINS" && cp Package.resolved "$PINS/"
-# NIGHTWATCH_APPSTORE=1 (set by scripts/appstore.sh): the Mac App Store variant, which differs only in having no update
+# NIGHTWATCH_APPSTORE=1 (set by scripts/appstore.sh): the Mac App Store variant, which has no widget helper and no update
 # check (Sources/Nightwatch/Distribution.swift).
 [[ "${NIGHTWATCH_APPSTORE:-}" == 1 ]] && CONDITIONS=APPSTORE || CONDITIONS=""
 XCB=(xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release -derivedDataPath build/xcode
@@ -46,6 +46,7 @@ else
   "${XCB[@]}" CODE_SIGNING_ALLOWED=NO build > build/xcode.log 2>&1 || fail "the Xcode build failed: see build/xcode.log"
   ditto "$PRODUCT" "$APP"
   rm -rf "$APP/Contents/PlugIns"   # the widget needs the App Group a signed build carries
+  rm -rf "$APP/Contents/XPCServices"   # and with no widget there is no old widget process to end
   # Sandboxed like every other build (v0.7.0), so files live in the same place whichever way it was built.
   cat > build/Nightwatch.entitlements <<ENT
 <?xml version="1.0" encoding="UTF-8"?>
