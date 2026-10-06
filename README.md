@@ -2,17 +2,17 @@
 
 # Nightwatch
 
+Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. [delphi-dolphin.com/nightwatch](https://delphi-dolphin.com/nightwatch)
+
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
 
-Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
-
-<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover at the North York Moors: tonight's sky score of 41, a clear window from 22:00 to 02:00 with a second forecast seeing cloud from 01:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
+<img src="docs/images/screenshot-popover-clear-night.png" width="360" alt="The Nightwatch popover at the BocaTauce car park on Tenerife: tonight's sky score of 93, a clear window from 21:07 to 06:43, 9.6 hours, with Open-Meteo agreeing, clear sky by hour at 92% clear, darkness, the Moon 34% lit and rising at 02:39, seeing of 0.5 to 0.75 arcseconds, wind of 2 km/h, low dew risk and good transparency, and the three best targets">
 
 ## Screenshots
 
-Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky places: the North York Moors International Dark Sky Reserve (the popover, widgets and the week ahead) and the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (the rest of the Targets window).
+Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: the North York Moors International Dark Sky Reserve (the widgets and the week ahead), the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (most of the Targets window), the BocaTauce car park on Tenerife (the popover above) and Madrid (dark sites abroad).
 
 **Alerts:** a heads-up an hour before sunset when tonight looks clear, with your plan and what the second forecast thinks, and a nudge as the clear window opens.
 
@@ -42,6 +42,10 @@ Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky plac
 
 <img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km of Malham: Gisburn Forest Hub, Slaidburn visitor car park, Euro Car Parks near Burnsall and Buckden National Park Car Park, each with a map, its score against home, distance, direction and darkness">
 
+**Dark sites anywhere:** the light-pollution data covers the world, so the same page finds dark car parks near a site in any country.
+
+<img src="docs/images/screenshot-dark-sites-madrid.png" width="728" alt="Dark sites within 50 km of Madrid: two car parks near Rascafría, 47 and 50 km to the north-north-west, each with a map, Very dark against home at Bortle 8, and a note that it was found from light-pollution data">
+
 **Your horizon:** how high houses, trees or hills block the sky in each direction, with the hills found from terrain data.
 
 <img src="docs/images/screenshot-horizon.png" width="600" alt="The horizon at the Malham National Park car park: a dial of the sky seen from above with the hills as a thin brown band, each direction at open sky with the hills' height noted, and Hills reach 7 degrees to the N, NE and NW, 6 to the W, so nothing changes">
@@ -49,6 +53,10 @@ Taken with version 1.1 and a DWARF Mini, observing from two public dark-sky plac
 **Events:** meteor showers, eclipses, close pairs, comets and space station passes, each with when and where to look, and Add to Calendar.
 
 <img src="docs/images/screenshot-event.png" width="728" alt="The Southern Taurids page: the bull of Taurus drawn over its stars, the peak night of 4 to 5 November with the radiant's best time, the rate and the Moon, and How to shoot this and Add to Calendar buttons">
+
+**The Moon covering a star or planet:** worked out a year ahead for your site, with each star's path behind the Moon, and when and at which edge it goes and comes back.
+
+<img src="docs/images/screenshot-occultation.png" width="728" alt="The Moon covers the Pleiades: the Moon, 95% lit, with the paths of Taygeta and Maia drawn behind it; Taygeta gone at 00:23 at the lit edge and back at 01:34 at the dark edge, Maia gone at 00:42 and back at 01:42, the Moon 58 degrees up, best watched with binoculars">
 
 **Desktop widgets:** small, medium and large.
 
@@ -135,6 +143,7 @@ killall chronod
 
   The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness; "Best now" reads "Highest" on a night with no clear window). On a night with no clear window the header says so once, cards show when each target is up in darkness in grey, and whenever tomorrow night has a forecast a Tonight | Tomorrow night switch replans the window for it. Search finds a target by name, by kind ("galaxy", "globular") or by its Messier, Caldwell, NGC or IC number ("C43" or "C 43"); a line under the header, in larger yellow text, says how many it found and which other groups have matches. While searching, matches the Moon-washed and field-of-view switches would hide still show, placed last.
 - On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. Clear sky is drawn in the accent colour chosen in System Settings (blue with Multicolour), and nothing else uses it on the popover and the target cards. Warnings are yellow, with a dot and words. With Increase Contrast on, cards turn solid with brighter grey text and outlined tiles; with Larger Text or a small screen the popover scrolls rather than cutting off its footer, and Targets drops to two columns; with Reduce Motion on, scrolling to a card or term jumps instead of gliding.
+- Accessibility: Settings › App › Text size (Standard, Large or Extra large) enlarges the text in the popover and every window; the widgets keep their own size. VoiceOver reads the menu-bar icon as tonight's verdict, sky score and site ("Nightwatch, Clear window tonight 21:07–06:43 · 9.6 h, sky score 93", then the site's name), each card as one sentence, and each chart, dial and diagram as a description in words. Cards and the rows of Tonight's plan open with Return or Space as well as a click, when macOS's keyboard navigation is on. Nothing is told by colour alone.
 
 ## Telescope
 
@@ -202,4 +211,4 @@ See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non
 
 ## Release names
 
-Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff. After the Watch novels come other Discworld names: 1.1 Pseudopolis Yard, the Watch's headquarters.
+Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff. After the Watch novels come other Discworld names: 1.1 Pseudopolis Yard, the Watch's headquarters; 1.2 Great A'Tuin, the star turtle; 1.3 Twoflower, the Disc's first tourist; 1.4 Shepherd's Crown; 1.5 Rincewind.
