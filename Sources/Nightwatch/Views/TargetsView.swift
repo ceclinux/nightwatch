@@ -9,7 +9,9 @@ enum BrowserSection: Hashable { case plan, week, favourites, eyes, group(TargetG
 struct TargetsRequest: Equatable { let section: BrowserSection?; let siteID: String?; var targetID: String? = nil; var search: String? = nil }
 
 final class TargetsViewState: ObservableObject {
-    @Published var section: BrowserSection = .group(.nebulae)
+    /// The window opens on Tonight's plan, the first page in the sidebar (owner, 6 October 2026); it used to open on
+    /// Nebulae. With the plan switched off in Settings, TargetsView moves it to the first page that is shown.
+    @Published var section: BrowserSection = .plan
     @Published var fitsOnly = false
     @Published var includeMoonWashed = false
     @Published var search = ""
@@ -155,7 +157,10 @@ struct TargetsView: View {
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
         .preferredColorScheme(.dark)
         .background(Theme.bg)
-        .onAppear { consumeRequest() }
+        .onAppear {
+            if !sections.contains(ui.section) { ui.section = sections[0] }   // Tonight's plan is off: The week ahead
+            consumeRequest()
+        }
         .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
         // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
         // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
