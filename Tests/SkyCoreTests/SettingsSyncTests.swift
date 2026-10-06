@@ -92,3 +92,75 @@ private func site(_ name: String) -> Site {
     #expect(try d.decode(Config.self, from: Data(#"{"textSize":"enormous"}"#.utf8)).textSize == .standard)
 }
 
+
+// MARK: A Mac joining sync (owner, 6 October 2026: every saved site vanished from every Mac)
+
+/// A Mac that has never taken the shared copy has nothing to say about it. Sent first, its settings used to replace
+/// every other Mac's; now a Mac that has synced keeps its own and only gains what the newcomer has extra.
+@Test func aMacThatHasNeverSyncedCannotEmptyTheOthers() {
+    var mine = Config()
+    mine.sites = [site("Kielder"), site("Dartmoor")]
+    mine.homeSiteName = "Kielder"
+    mine.favourites = ["NGC6888", "M31"]
+    mine.goRule.maxCloudPct = 40
+    mine.aurora.enabled = true
+
+    let fresh = SettingsSync.outgoing(Config(), at: Date(), joined: false)   // a new Mac's defaults, sent before it heard anything
+    #expect(fresh.joined == false)
+    #expect(SettingsSync.merge(remote: fresh, local: mine, joined: true) == mine)
+
+    var newcomer = Config()
+    newcomer.sites = [site("Exmoor")]
+    newcomer.favourites = ["M42"]
+    newcomer.goRule.maxCloudPct = 10
+    let merged = SettingsSync.merge(remote: SettingsSync.outgoing(newcomer, at: Date(), joined: false), local: mine, joined: true)
+    #expect(merged.sites.map(\.name) == ["Kielder", "Dartmoor", "Exmoor"])
+    #expect(merged.favourites == ["NGC6888", "M31", "M42"])
+    #expect(merged.goRule.maxCloudPct == 40 && merged.homeSiteName == "Kielder" && merged.aurora.enabled)
+}
+
+/// The newcomer's side: it takes the shared settings and keeps the sites and favourites it already had, whichever copy
+/// is the newer.
+@Test func aJoiningMacTakesTheSharedSettingsAndKeepsItsOwnSites() {
+    var shared = Config()
+    shared.sites = [site("Kielder")]
+    shared.homeSiteName = "Kielder"
+    shared.favourites = ["NGC6888"]
+    shared.goRule.maxCloudPct = 40
+    var newcomer = Config()
+    newcomer.sites = [site("Exmoor"), site("Kielder")]
+    newcomer.favourites = ["M42", "NGC6888"]
+    newcomer.textSize = .large
+
+    let merged = SettingsSync.merge(remote: SettingsSync.outgoing(shared, at: Date()), local: newcomer, joined: false)
+    #expect(merged.sites.map(\.name) == ["Kielder", "Exmoor"] && merged.favourites == ["NGC6888", "M42"])
+    #expect(merged.goRule.maxCloudPct == 40 && merged.homeSiteName == "Kielder" && merged.textSize == .large)
+
+    let t = Date(timeIntervalSince1970: 2_000)
+    #expect(SettingsSync.remoteWins(remoteSavedAt: t, localSavedAt: t.addingTimeInterval(60), joined: false))   // its new file is not "newer"
+    #expect(!SettingsSync.remoteWins(remoteSavedAt: t, localSavedAt: t.addingTimeInterval(60), joined: true))
+}
+
+/// Between Macs that have both synced nothing changes: removing a site, or Reset config, still reaches the others.
+@Test func aSyncedMacsRemovalStillReachesTheOthers() {
+    var a = Config()
+    a.sites = [site("Kielder")]
+    var b = a
+    b.sites.append(site("Dartmoor"))
+    b.favourites = ["M31"]
+    let merged = SettingsSync.merge(remote: SettingsSync.outgoing(a, at: Date(), joined: true), local: b, joined: true)
+    #expect(merged.sites.map(\.name) == ["Kielder"] && merged.favourites.isEmpty)
+    #expect(SettingsSync.merge(remote: SettingsSync.outgoing(.default, at: Date(), joined: true), local: b, joined: true).sites.isEmpty)
+}
+
+/// A copy from 1.5.2 or earlier does not say whether its Mac had synced, so its settings are taken as before but it
+/// cannot take a site or a favourite away.
+@Test func anOlderVersionsCopyCannotRemoveSites() throws {
+    var here = Config()
+    here.sites = [site("Kielder")]
+    here.favourites = ["M31"]
+    let old = try #require(SettingsSync.decode(Data(#"{"savedAt":"2026-10-06T07:00:00Z","sharesHome":true,"config":{"sites":[],"favourites":[],"goRule":{"minHours":2,"maxCloudPct":25,"minAltitudeDeg":30}}}"#.utf8)))
+    #expect(old.joined == nil)
+    let merged = SettingsSync.merge(remote: old, local: here, joined: true)
+    #expect(merged.sites.map(\.name) == ["Kielder"] && merged.favourites == ["M31"] && merged.goRule.minHours == 2)
+}

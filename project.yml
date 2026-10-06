@@ -14,8 +14,8 @@ settings:
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: YES
     # build-app.sh passes the app's version from Sources/Nightwatch/Info.plist, so the two never drift; these are fallbacks.
-    MARKETING_VERSION: "1.5.2"
-    CURRENT_PROJECT_VERSION: "39"
+    MARKETING_VERSION: "1.5.3"
+    CURRENT_PROJECT_VERSION: "40"
 targets:
   Nightwatch:
     type: application

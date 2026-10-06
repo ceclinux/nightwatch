@@ -139,6 +139,17 @@ final class Store: ObservableObject {
     // MARK: Settings sync (#49)
 
     private let cloud = NSUbiquitousKeyValueStore.default
+    /// Whether this Mac has taken the shared copy at least once. Kept on this Mac, outside the settings that travel. Until
+    /// it has, it may not replace another Mac's settings (see SettingsSync.merge).
+    private var joinedSync: Bool {
+        get { UserDefaults.standard.bool(forKey: "settingsSyncJoined") }
+        set { UserDefaults.standard.set(newValue, forKey: "settingsSyncJoined") }
+    }
+    private let syncStarted = Date()
+    private var waitingToSend = false
+    /// How long a Mac that has not joined holds back what it would send, so iCloud's copy can arrive first. On a new Mac
+    /// that copy is not there at launch: it comes a little later, as a change from outside.
+    private static let joinWait: TimeInterval = 60
 
     /// At launch: the newer of this Mac's file and iCloud's copy wins; then other Macs' changes are merged as they arrive.
     private func startSettingsSync() {
@@ -148,12 +159,14 @@ final class Store: ObservableObject {
         }
         cloud.synchronize()
         guard !configLoadFailed else { return }
-        if let p = cloud.data(forKey: SettingsSync.key).flatMap(SettingsSync.decode),
-           SettingsSync.remoteWins(remoteSavedAt: p.savedAt, localSavedAt: configModDate) {
-            apply(p)
-        } else {
-            sendSettings()
+        let data = cloud.data(forKey: SettingsSync.key)
+        if let p = data.flatMap(SettingsSync.decode) {
+            if SettingsSync.remoteWins(remoteSavedAt: p.savedAt, localSavedAt: configModDate, joined: joinedSync) { apply(p) } else { sendSettings() }
+        } else if data == nil, joinedSync {
+            sendSettings()   // nothing in iCloud, and this Mac has synced before: its settings are the shared copy
         }
+        // Otherwise nothing is sent at launch. Not joined: iCloud's copy may simply not have arrived yet, which is how a
+        // new Mac's defaults replaced every other Mac's settings. A copy that will not decode is a newer version's.
     }
 
     private func receiveSyncedSettings() {
@@ -163,14 +176,34 @@ final class Store: ObservableObject {
 
     /// Another Mac's settings, with this Mac's own choices kept; saved here without sending them back.
     private func apply(_ p: SettingsSync.Payload) {
-        let merged = SettingsSync.merge(remote: p, local: config)
-        guard merged != config else { return }
-        config = merged
-        saveConfig(send: false)
+        let wasNew = !joinedSync
+        let merged = SettingsSync.merge(remote: p, local: config, joined: joinedSync)
+        joinedSync = true
+        if merged != config {
+            config = merged
+            saveConfig(send: false)
+        }
+        // The others are told when this Mac kept something the copy lacks (its own sites, or all of its settings against
+        // a newcomer's), and once when either side is new to sync: a newcomer joins only on hearing from a Mac, and until
+        // it has, its changes are not taken. Between two synced Macs with equal copies nothing is sent, so the same
+        // settings cannot be passed back and forth.
+        if wasNew || p.joined == false || SettingsSync.outgoing(merged, at: p.savedAt).config != p.config { sendSettings() }
     }
 
     private func sendSettings() {
-        guard !configLoadFailed, let d = SettingsSync.encode(SettingsSync.outgoing(config, at: Date())) else { return }
+        guard !configLoadFailed else { return }
+        let wait = Store.joinWait - Date().timeIntervalSince(syncStarted)
+        if !joinedSync, wait > 0 {
+            guard !waitingToSend else { return }
+            waitingToSend = true
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(wait))
+                waitingToSend = false
+                sendSettings()
+            }
+            return
+        }
+        guard let d = SettingsSync.encode(SettingsSync.outgoing(config, at: Date(), joined: joinedSync)) else { return }
         cloud.set(d, forKey: SettingsSync.key)
         cloud.synchronize()
     }
