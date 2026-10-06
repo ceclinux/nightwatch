@@ -305,8 +305,8 @@ struct TargetsView: View {
                     // Side by side when they fit; at a larger Text size the two controls are wider than the page, and
                     // Sort goes under the night (owner-approved mock-up A, 6 October 2026).
                     ViewThatFits(in: .horizontal) {
-                        HStack { nightControl; Spacer(minLength: 12); sortControl }
-                        VStack(alignment: .leading, spacing: 8) { nightControl; sortControl }
+                        HStack { nightControl.padding(.leading, 8); Spacer(minLength: 12); sortControl }
+                        VStack(alignment: .leading, spacing: 8) { nightControl; sortControl }   // both flush with the title
                     }
                 }
                 // A refresh that takes the switch away (no forecast for tomorrow) also puts it back to Tonight, so it
@@ -484,7 +484,7 @@ struct TargetsView: View {
     @ViewBuilder private var nightControl: some View {
         if canPlanTomorrow && !isEvents {
             SegmentedChoice(title: "Night", showsTitle: false, selection: $ui.tomorrow, options: [(false, "Tonight"), (true, "Tomorrow night")])
-                .fixedSize().padding(.leading, 8)
+                .fixedSize()
         }
     }
 

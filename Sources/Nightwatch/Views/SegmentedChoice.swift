@@ -11,6 +11,9 @@ struct SegmentedChoice<Value: Hashable>: View {
     var showsTitle = true
     @Binding var selection: Value
     let options: [(value: Value, label: String)]
+    /// As macOS's own control does, the chosen option is grey, not the accent colour, while its window is not in front
+    /// (owner, 6 October 2026).
+    @Environment(\.controlActiveState) private var windowState
 
     var body: some View {
         if TextScale.factor == 1 {
@@ -23,9 +26,10 @@ struct SegmentedChoice<Value: Hashable>: View {
                         let chosen = option.value == selection
                         Button { selection = option.value } label: {
                             Text(option.label).font(Font.scaled(.body)).lineLimit(1)
-                                .foregroundStyle(chosen ? Color.white : Tokens.textPrimary)
+                                .foregroundStyle(chosen && windowState != .inactive ? Color.white : Tokens.textPrimary)
                                 .padding(.horizontal, TextScale.pt(13)).frame(minHeight: TextScale.pt(20))
-                                .background(chosen ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+                                .background(chosen ? (windowState == .inactive ? Color.white.opacity(0.14) : Color.accentColor) : Color.clear,
+                                            in: RoundedRectangle(cornerRadius: 6))
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
