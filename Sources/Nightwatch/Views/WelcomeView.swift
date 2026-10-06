@@ -32,7 +32,7 @@ struct WelcomeView: View {
                 step("Your earlier settings") {
                     Text("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices.")
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
-                    Button("Import settings…") { importLinked(link) }.buttonStyle(.borderedProminent)
+                    Button("Import settings…") { importLinked(link) }.buttonStyle(ScaledButtonStyle(prominent: true))
                     if state.importFailed {
                         Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
                     }
@@ -56,7 +56,7 @@ struct WelcomeView: View {
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Button(store.autoSite == nil ? "Use this Mac's location" : "Using this Mac's location ✓") { useThisMac() }
-                        .buttonStyle(.borderedProminent).disabled(state.locating || store.autoSite != nil)
+                        .buttonStyle(ScaledButtonStyle(prominent: true)).disabled(state.locating || store.autoSite != nil)
                     Button("Add a site…") {
                         sites.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         sites.latText = ""; sites.lonText = ""; sites.addingSite = true
@@ -82,7 +82,7 @@ struct WelcomeView: View {
                     store.config.welcomed = true; store.saveConfig()
                     dismissWindow(id: "welcome")
                 }
-                .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                .buttonStyle(ScaledButtonStyle(prominent: true)).keyboardShortcut(.defaultAction)
             }
         }
         .padding(22)
@@ -90,7 +90,7 @@ struct WelcomeView: View {
         .background(Theme.bg)
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
-        .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store) }
+        .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store).scaledText() }
         // Notifications are asked for as the welcome closes, after it has said what they are for: from Start watching
         // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away
         // (recompute, not refresh: a refresh already in flight would make a refresh return early).

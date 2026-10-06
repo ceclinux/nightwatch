@@ -42,7 +42,7 @@ struct HorizonSheet: View {
                 Button { measuring = PhotoChoice.pick() } label: { Label("Measure from a photo…", systemImage: "camera") }
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Done") { save(); dismiss() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
+                Button("Done") { save(); dismiss() }.keyboardShortcut(.defaultAction).buttonStyle(ScaledButtonStyle(prominent: true))
             }
         }
         .padding(24)
@@ -61,6 +61,7 @@ struct HorizonSheet: View {
                                   store.config.sites[i].terrain = nil   // checked again for the new spot
                                   store.saveConfig()
                               })
+                .scaledText()
         }
         .onAppear {
             heights = store.config.sites.first { $0.name == siteName }?.horizon ?? Array(repeating: openDeg, count: 8)

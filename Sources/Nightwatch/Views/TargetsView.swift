@@ -157,6 +157,9 @@ struct TargetsView: View {
         .background(Theme.bg)
         .onAppear { consumeRequest() }
         .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
+        // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
+        // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
+        .textSized(store.config.textSize)
     }
 
     private func sidebarRow(_ section: BrowserSection) -> some View {

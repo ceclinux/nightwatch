@@ -28,7 +28,10 @@ struct StatTile: View {
 extension View {
     /// The window's own text at the chosen size (Settings › App › Text size): text with no font of its own follows it,
     /// and a change of size rebuilds the window so every view inside makes its fonts again.
-    func textSized(_ size: TextSize) -> some View { font(Font.scaled(.body)).id(size) }
+    func textSized(_ size: TextSize) -> some View { scaledText().id(size) }
+
+    /// Text and macOS's own buttons at the chosen size, for a window or sheet that is not rebuilt when the size changes.
+    func scaledText() -> some View { font(Font.scaled(.body)).buttonStyle(ScaledButtonStyle()) }
 
     /// A card that opens something: a click, Return or Space with keyboard focus on it, or VoiceOver's own action, which
     /// each card adds beside its label. Not a Button, because a card holds buttons of its own (the heart) that a Button's
@@ -89,6 +92,24 @@ struct TileRow<Content: View>: View {
 
 /// The popover's secondary button (Refresh, All targets): a filled surface.button pill with primary text, so it reads as a
 /// button rather than a caption. One style, so the two can never drift apart.
+/// macOS's own bordered button at the chosen Text size. The button ignores a font set on it or around it and reads only
+/// one set on its label, so this draws the same button with the font put there. At Standard it is identical to the plain
+/// button (compared on screen, 6 October 2026). The font is a property so a change of size makes a new style.
+struct ScaledButtonStyle: PrimitiveButtonStyle {
+    var prominent = false
+    var font = Font.scaled(.body)
+
+    func makeBody(configuration: Configuration) -> some View {
+        let button = Button(role: configuration.role, action: configuration.trigger) { configuration.label.font(font) }
+        if prominent { button.buttonStyle(.borderedProminent) } else { button.buttonStyle(.bordered) }
+    }
+}
+
+extension Text {
+    /// An item of a pop-up picker: the pop-up shows its choice in the item's own font, not one set around the picker.
+    var scaledItem: Text { font(Font.scaled(.body)) }
+}
+
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

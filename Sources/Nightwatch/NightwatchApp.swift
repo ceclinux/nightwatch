@@ -75,10 +75,10 @@ struct NightwatchApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Targets", id: "targets") { TargetsView().environmentObject(store).textSized(store.config.textSize) }
+        Window("Targets", id: "targets") { TargetsView().environmentObject(store) }   // sized inside, see TargetsView.body
             .defaultSize(width: 980, height: 640).defaultPosition(.center)
         // Not rebuilt on a change, so choosing a size in Settings does not throw the page back to its top.
-        Window("Settings", id: "settings") { SettingsView().environmentObject(store).font(Font.scaled(.body)) }
+        Window("Settings", id: "settings") { SettingsView().environmentObject(store).scaledText() }
             .defaultSize(width: 520, height: 560).defaultPosition(.center)
         Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).textSized(store.config.textSize) }
             .windowResizability(.contentSize).defaultPosition(.center)

@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 6 October 2026, version 1.5.1 "Rincewind, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 6 October 2026, version 1.5.2 "Rincewind, patch 2". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -215,6 +215,7 @@ Tags follow the City Watch novels.
 | 1.4.0 | Shepherd's Crown | 5 October 2026 | Aurora alerts outside the UK and Ireland, from the 30-minute aurora forecast of NOAA's Space Weather Prediction Center read at your site and shown as yellow from 10%, amber from 30% and red from 60%; sites in the UK and Ireland keep AuroraWatch UK, whose status is no longer used abroad; a change of site or of the aurora settings is checked at once, not at the next five-minute tick; home is shared whole between your Macs: star a saved site and it is home on each, star This Mac's location and each Mac uses its own; the "Held back by" line no longer names seeing when its tile reads 1″ or better; "Updated" in the popover and on the widgets is on your Mac's own clock when you observe from another time zone |
 | 1.5.0 | Rincewind | 6 October 2026 | A Text size setting (Standard, Large or Extra large) for the popover and every window, kept on each Mac; VoiceOver reads the menu-bar icon as tonight's verdict, sky score and site; cards and the rows of Tonight's plan open with Return or Space as well as a click, when macOS's keyboard navigation is on; the Dark sites page names the nearest site with a clear window tonight, with its distance, direction and times, marks that site's card, and offers a Nearest clear order beside Score; when no site in your radius has a clear window, it says so and keeps the order by score |
 | 1.5.1 | Rincewind, patch 1 | 6 October 2026 | The week ahead reads properly at the size the Targets window opens at: each night's verdict and detail sit on one or two lines, where they used to wrap a word at a time unless the window was dragged much wider; "Less certain" sits under them, and in a narrow window they drop below the day and its bars |
+| 1.5.2 | Rincewind, patch 2 | 6 October 2026 | Buttons and pop-up menus in Settings, Welcome and the site and horizon sheets follow the Text size setting, where they used to stay at the standard size beside larger text; changing Text size no longer sends the Targets window back to Nebulae: it stays on the page you were on, with your search and the open target kept |
 
 ## Install
 

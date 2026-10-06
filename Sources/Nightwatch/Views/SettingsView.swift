@@ -53,7 +53,7 @@ struct SettingsView: View {
                         ui.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         ui.latText = ""; ui.lonText = ""; ui.addingSite = true
                     }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(ScaledButtonStyle(prominent: true))
                         .disabled(!store.config.canAddSite)
                     Spacer()
                 }
@@ -70,9 +70,10 @@ struct SettingsView: View {
                     if let p = ui.presets.first(where: { $0.id == id }) { store.config.fov = p.fov }
                     store.saveConfig()
                 })) {
-                    ForEach(ui.presets) { Text($0.name).tag($0.id) }
-                    Text("Custom").tag("custom")
+                    ForEach(ui.presets) { Text($0.name).scaledItem.tag($0.id) }
+                    Text("Custom").scaledItem.tag("custom")
                 }
+                .id("Preset \(store.config.textSize)")   // a pop-up keeps the items it was built with: rebuilt when the size changes
                 HStack {
                     TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { setFOV(width: $0) }), format: .number)
                     TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { setFOV(height: $0) }), format: .number)
@@ -91,6 +92,7 @@ struct SettingsView: View {
                         let c = Calendar.current.dateComponents([.hour, .minute], from: d)
                         store.config.stopBy.minutes = (c.hour ?? 0) * 60 + (c.minute ?? 0); store.saveConfig()
                     }), displayedComponents: .hourAndMinute)
+                    .controlSize(store.config.textSize == .standard ? .regular : .large)   // the time follows the control's size, not a font
                 }
                 Text("For bed or an early start: the plan ends at this time, and favourites only up after it are left out.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
@@ -129,7 +131,8 @@ struct SettingsView: View {
             }
             Section("Dark sites") {
                 Toggle("Look for darker skies nearby", isOn: bind(\.darkSites.enabled))
-                Picker("Distance unit", selection: bind(\.darkSites.unit)) { Text("Kilometres").tag(DistanceUnit.km); Text("Miles").tag(DistanceUnit.mi) }
+                Picker("Distance unit", selection: bind(\.darkSites.unit)) { Text("Kilometres").scaledItem.tag(DistanceUnit.km); Text("Miles").scaledItem.tag(DistanceUnit.mi) }
+                    .id("Distance unit \(store.config.textSize)")
                 choiceRow("Search radius", bind(\.darkSites.radiusKm), [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300]) {
                     Geo.format(km: $0, unit: store.config.darkSites.unit)
                 }
@@ -154,8 +157,9 @@ struct SettingsView: View {
             Section("Aurora") {
                 Toggle("Alert me to aurora when the sky is clear", isOn: bind(\.aurora.enabled))
                 Picker("Alert from", selection: bind(\.aurora.threshold)) {
-                    ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).tag($0) }
+                    ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).scaledItem.tag($0) }
                 }
+                .id("Alert from \(store.config.textSize)")
                 Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("App") {
@@ -167,8 +171,9 @@ struct SettingsView: View {
                 }))
                 if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(Font.scaled(.caption)).foregroundStyle(Theme.warn) }
                 Picker("Text size", selection: bind(\.textSize)) {
-                    ForEach(TextSize.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                    ForEach(TextSize.allCases, id: \.self) { Text($0.displayName).scaledItem.tag($0) }
                 }
+                .id("Text size \(store.config.textSize)")
                 Text("For Nightwatch's popover and windows on this Mac. Desktop widgets keep their own size.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 // #49: iCloud key-value storage replaces the file path and the symlink advice, which the sandbox cannot follow.
@@ -189,9 +194,9 @@ struct SettingsView: View {
             Section { Button("What the numbers mean") { openWindow(id: "numbers") } }   // #59, at the foot
         }
         .formStyle(.grouped)
-        .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store) }
+        .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store).scaledText() }
         .sheet(isPresented: Binding(get: { ui.horizonFor != nil }, set: { if !$0 { ui.horizonFor = nil } })) {
-            if let name = ui.horizonFor { HorizonSheet(siteName: name).environmentObject(store) }
+            if let name = ui.horizonFor { HorizonSheet(siteName: name).environmentObject(store).scaledText() }
         }
         .preferredColorScheme(.dark)
         .tint(Tokens.controlOn)
@@ -212,8 +217,9 @@ struct SettingsView: View {
 
     private func choiceRow<V: Hashable & Comparable>(_ label: String, _ binding: Binding<V>, _ options: [V], _ text: @escaping (V) -> String) -> some View {
         Picker(label, selection: binding) {
-            ForEach(Array(Set(options + [binding.wrappedValue])).sorted(), id: \.self) { Text(text($0)).tag($0) }
+            ForEach(Array(Set(options + [binding.wrappedValue])).sorted(), id: \.self) { Text(text($0)).scaledItem.tag($0) }
         }
+        .id("\(label) \(store.config.textSize)")   // unique among the rows: one id shared by several drew the first row for each
     }
 
     private func radio(_ on: Bool) -> some View {
@@ -362,7 +368,7 @@ struct AddSiteSheet: View {
             }
             field("How dark is the sky there?") {
                 Picker("", selection: $ui.newSite.bortle) {
-                    ForEach(1...9, id: \.self) { Text("\($0) · \(Bortle.name($0))").tag($0) }
+                    ForEach(1...9, id: \.self) { Text("\($0) · \(Bortle.name($0))").scaledItem.tag($0) }
                 }
                 .labelsHidden()
                 Text(suggested != nil && suggested == ui.newSite.bortle
@@ -381,7 +387,7 @@ struct AddSiteSheet: View {
                     store.saveConfig()
                     dismiss()
                 }
-                .keyboardShortcut(.defaultAction).disabled(!valid || !store.config.canAddSite)
+                .keyboardShortcut(.defaultAction).buttonStyle(ScaledButtonStyle(prominent: true)).disabled(!valid || !store.config.canAddSite)
             }
         }
         .padding(20)

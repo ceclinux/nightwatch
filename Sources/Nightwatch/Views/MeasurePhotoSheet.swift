@@ -62,7 +62,7 @@ struct MeasurePhotoSheet: View {
                 Button(useTitle) {
                     if let d = direction, let v = value { onUse(d, v); dismiss() }
                 }
-                .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).disabled(direction == nil || value == nil)
+                .keyboardShortcut(.defaultAction).buttonStyle(ScaledButtonStyle(prominent: true)).disabled(direction == nil || value == nil)
             }
         }
         .padding(24)

@@ -81,7 +81,7 @@ struct PlanView: View {
             Text("Heart the targets you want to image. Each night, the ones up in the clear window appear here in order of their best time, and you choose which to keep.")
                 .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Button("Browse tonight's targets") { store.targetsRequest = TargetsRequest(section: .group(.nebulae), siteID: nil) }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ScaledButtonStyle(prominent: true))
         }
         .frame(maxWidth: 460).frame(maxWidth: .infinity).padding(.top, 40)
     }
