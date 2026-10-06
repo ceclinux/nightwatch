@@ -2,7 +2,7 @@
 
 # Nightwatch
 
-Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. [delphi-dolphin.com/nightwatch](https://delphi-dolphin.com/nightwatch)
+Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. See the [product page](https://delphi-dolphin.com/nightwatch).
 
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
