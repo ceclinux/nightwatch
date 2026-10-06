@@ -134,7 +134,9 @@ struct TargetsView: View {
             }
             .listStyle(.sidebar)
             .safeAreaInset(edge: .bottom) { filters }
-            .navigationSplitViewColumnWidth(232)
+            // As wide as its longest name needs at the chosen Text size: at Extra large a fixed 232 cut "Eyes and binoculars"
+            // to "Eyes and binocul…" (owner's screenshot, 6 October 2026).
+            .navigationSplitViewColumnWidth(TextScale.pt(232))
         } detail: {
             if let ev = ui.selectedEvent {
                 // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
@@ -246,10 +248,7 @@ struct TargetsView: View {
                     Text("Dark sites").font(Font.scaled(.title2).weight(.semibold))
                     Spacer(minLength: 12)
                     if nearest != nil {
-                        Picker("Sort", selection: $ui.siteSort) {
-                            ForEach(SiteSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented).fixedSize()
+                        SegmentedChoice(title: "Sort", selection: $ui.siteSort, options: SiteSort.allCases.map { ($0, $0.rawValue) }).fixedSize()
                     }
                 }
                 HStack(spacing: 6) {
@@ -301,7 +300,15 @@ struct TargetsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 // The title on its own line and the controls under it, on every page: a short title ("Stars") sat beside
                 // the controls while the others sat above them (owner's UAT, 29 September 2026).
-                VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
+                VStack(alignment: .leading, spacing: 8) {
+                    headerTitle
+                    // Side by side when they fit; at a larger Text size the two controls are wider than the page, and
+                    // Sort goes under the night (owner-approved mock-up A, 6 October 2026).
+                    ViewThatFits(in: .horizontal) {
+                        HStack { nightControl; Spacer(minLength: 12); sortControl }
+                        VStack(alignment: .leading, spacing: 8) { nightControl; sortControl }
+                    }
+                }
                 // A refresh that takes the switch away (no forecast for tomorrow) also puts it back to Tonight, so it
                 // never jumps to tomorrow by itself on a later refresh.
                 Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
@@ -474,22 +481,18 @@ struct TargetsView: View {
             .font(Font.scaled(.title2).weight(.semibold)).lineLimit(1).fixedSize()
     }
 
-    @ViewBuilder private var headerControls: some View {
+    @ViewBuilder private var nightControl: some View {
         if canPlanTomorrow && !isEvents {
-            Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
-                .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
+            SegmentedChoice(title: "Night", showsTitle: false, selection: $ui.tomorrow, options: [(false, "Tonight"), (true, "Tomorrow night")])
+                .fixedSize().padding(.leading, 8)
         }
-        Spacer(minLength: 12)
+    }
+
+    @ViewBuilder private var sortControl: some View {
         if isEvents {
-            Picker("Sort", selection: $ui.eventSort) {
-                ForEach(EventSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented).fixedSize()
+            SegmentedChoice(title: "Sort", selection: $ui.eventSort, options: EventSort.allCases.map { ($0, $0.rawValue) }).fixedSize()
         } else {
-            Picker("Sort", selection: $ui.sort) {
-                ForEach(TargetSort.allCases, id: \.self) { Text(sortLabel($0)).tag($0) }
-            }
-            .pickerStyle(.segmented).fixedSize()
+            SegmentedChoice(title: "Sort", selection: $ui.sort, options: TargetSort.allCases.map { ($0, sortLabel($0)) }).fixedSize()
         }
     }
 

@@ -164,10 +164,8 @@ struct MeasurePhotoSheet: View {
                 }
                 if photo.direction == nil {
                     problem("No compass direction in this photo", "It was taken with location off, or on another camera. Which way were you facing?")
-                    Picker("Facing", selection: $pickedDirection) {
-                        ForEach(0..<8, id: \.self) { Text(Site.horizonDirections[$0]).tag(Optional($0)) }
-                    }
-                    .pickerStyle(.segmented).labelsHidden()
+                    SegmentedChoice(title: "Facing", showsTitle: false, selection: $pickedDirection,
+                                    options: (0..<8).map { (Optional($0), Site.horizonDirections[$0]) })
                 }
                 if photo.pitchDeg == nil {
                     problem("No tilt reading: assuming the phone was level",

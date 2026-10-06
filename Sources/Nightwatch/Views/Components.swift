@@ -93,8 +93,6 @@ struct TileRow<Content: View>: View {
     }
 }
 
-/// The popover's secondary button (Refresh, All targets): a filled surface.button pill with primary text, so it reads as a
-/// button rather than a caption. One style, so the two can never drift apart.
 /// macOS's own bordered button at the chosen Text size. The button ignores a font set on it or around it and reads only
 /// one set on its label, so this draws the same button with the font put there. At Standard it is identical to the plain
 /// button (compared on screen, 6 October 2026). The font is a property so a change of size makes a new style.
@@ -113,6 +111,8 @@ extension Text {
     var scaledItem: Text { font(Font.scaled(.body)) }
 }
 
+/// The popover's secondary button (Refresh, All targets): a filled surface.button pill with primary text, so it reads as a
+/// button rather than a caption. One style, so the two can never drift apart.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

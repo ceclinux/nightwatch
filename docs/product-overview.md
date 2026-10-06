@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 6 October 2026, version 1.5.4 "Rincewind, patch 4". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 6 October 2026, version 1.5.5 "Rincewind, patch 5". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -218,6 +218,7 @@ Tags follow the City Watch novels.
 | 1.5.2 | Rincewind, patch 2 | 6 October 2026 | Buttons and pop-up menus in Settings, Welcome and the site and horizon sheets follow the Text size setting, where they used to stay at the standard size beside larger text; changing Text size no longer sends the Targets window back to Nebulae: it stays on the page you were on, with your search and the open target kept |
 | 1.5.3 | Rincewind, patch 3 | 6 October 2026 | Settings sync can no longer empty your Macs: a Mac new to sync, or one whose copy from iCloud had not yet arrived, used to send its default settings and replace the sites, favourites and settings on every other Mac; now a Mac takes the shared settings before it may change them, and keeps the sites and favourites it already had; if you lost sites this way, updating a Mac that still has them puts them back on all of them; update every Mac, since an older version can still send its settings over the others |
 | 1.5.4 | Rincewind, patch 4 | 6 October 2026 | Links look like links again: in 1.5.2 and 1.5.3 the popover's Apple Weather mark and Download, and the links in About and on dark-site cards, were drawn as bordered buttons; "Download" on the "is available" line always opens the newest release, where it used to open the version the last daily check had found, which could be several versions old; an About Nightwatch button at the foot of Settings, since nothing opened that window before, and About itself shows the app's icon and its credits in full; the desktop widget follows an update by itself, with no Terminal command: macOS kept running the old version's widget and refused what it drew, leaving the widget on its last picture or on grey bars; the first time a new version opens, Nightwatch now has the old widget ended and the new one drawn, through a small helper that does only that, and the widget also steps aside when it finds it has been replaced |
+| 1.5.5 | Rincewind, patch 5 | 6 October 2026 | The Tonight and Tomorrow night switch and the Sort control follow the Text size setting, the last controls that stayed small beside larger text; at Standard they are unchanged; the Targets sidebar widens with Text size, so "Eyes and binoculars" shows in full; the Targets window opens on Tonight's plan, its first page, where it used to open on Nebulae |
 
 ## Install
 

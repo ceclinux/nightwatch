@@ -22,8 +22,8 @@ struct PlanView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(isTomorrow ? "Tomorrow night's plan" : "Tonight's plan").font(Font.scaled(.title2).weight(.semibold))
                 if canPlanTomorrow {
-                    Picker("Night", selection: $tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
-                        .pickerStyle(.segmented).labelsHidden().fixedSize()
+                    SegmentedChoice(title: "Night", showsTitle: false, selection: $tomorrow, options: [(false, "Tonight"), (true, "Tomorrow night")])
+                        .fixedSize()
                 }
                 content
             }
