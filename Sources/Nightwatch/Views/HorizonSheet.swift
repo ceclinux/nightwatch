@@ -18,14 +18,14 @@ struct HorizonSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Horizon at \(siteName)").font(.title3.weight(.semibold))
+            Text("Horizon at \(siteName)").font(Font.scaled(.title3).weight(.semibold))
             Text("How high the sky is blocked in each direction, by houses, trees or hills. Nightwatch counts a target as up only once it clears this. Open sky is the Go rule’s “Targets must reach” height, \(Int(openDeg))°.")
-                .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .top, spacing: 24) {
                 VStack(spacing: 6) {
                     HorizonDial(heights: heights, openDeg: openDeg, terrain: terrain).frame(width: 220, height: 220)
                     Text("Seen from above, north at the top. Grey is blocked\(terrain == nil ? "" : "; brown at the edge is the hills"); the dashed ring is \(Int(openDeg))°.")
-                        .font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center).frame(width: 220)
+                        .font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center).frame(width: 220)
                         .fixedSize(horizontal: false, vertical: true)   // wraps in full rather than ending "Grey is…"
                 }
                 .accessibilityElement(children: .ignore)
@@ -37,7 +37,7 @@ struct HorizonSheet: View {
             }
             terrainBox
             Text("To measure: stand where the telescope goes, face each way, and read the angle to the top of the roof or trees with a clinometer app on your phone. Steps of 5° are plenty.")
-                .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button { measuring = PhotoChoice.pick() } label: { Label("Measure from a photo…", systemImage: "camera") }
                 Spacer()
@@ -46,7 +46,7 @@ struct HorizonSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 600)
+        .frame(width: TextScale.pt(600))
         // A photo dropped on the sheet is measured as one chosen from the button.
         .dropDestination(for: URL.self) { urls, _ in
             guard let u = urls.first else { return false }
@@ -76,11 +76,11 @@ struct HorizonSheet: View {
 
     private func row(_ i: Int) -> some View {
         HStack(spacing: 10) {
-            Text(Site.horizonDirections[i]).font(.system(size: 13, weight: .semibold)).frame(width: 30, alignment: .leading)
-            Text(note(i)).font(.caption).foregroundStyle(Theme.dim).frame(width: 150, alignment: .leading)
+            Text(Site.horizonDirections[i]).font(.system(size: TextScale.pt(13), weight: .semibold)).frame(width: 30, alignment: .leading)
+            Text(note(i)).font(Font.scaled(.caption)).foregroundStyle(Theme.dim).frame(width: TextScale.pt(150), alignment: .leading)
             Button { heights[i] = max(0, heights[i] - 5) } label: { Image(systemName: "minus") }
                 .accessibilityLabel("Lower \(Self.names[i])").disabled(heights[i] <= 0)
-            Text("\(Int(heights[i]))°").monospacedDigit().frame(width: 34)
+            Text("\(Int(heights[i]))°").monospacedDigit().frame(width: TextScale.pt(34))
             Button { heights[i] = min(80, heights[i] + 5) } label: { Image(systemName: "plus") }
                 .accessibilityLabel("Raise \(Self.names[i])").disabled(heights[i] >= 80)
         }
@@ -97,27 +97,27 @@ struct HorizonSheet: View {
     /// any stand above what is set, with a button to raise those directions. Hills only ever raise a direction.
     @ViewBuilder private var terrainBox: some View {
         if store.terrainChecking == siteName {
-            HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the hills around \(siteName)…").font(.caption).foregroundStyle(Theme.dim) }
+            HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the hills around \(siteName)…").font(Font.scaled(.caption)).foregroundStyle(Theme.dim) }
         } else if store.terrainFailed.contains(siteName), terrain == nil {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Couldn't check the terrain just now").font(.callout.weight(.semibold))
-                Text("Open-Meteo is busy or out of reach. Try again in a minute; the horizon is unchanged.").font(.caption).foregroundStyle(Theme.dim)
+                Text("Couldn't check the terrain just now").font(Font.scaled(.callout).weight(.semibold))
+                Text("Open-Meteo is busy or out of reach. Try again in a minute; the horizon is unchanged.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 Button("Try again") { store.retryTerrain(siteName) }
             }
         } else if let t = terrain {
             let raise = Terrain.raises(terrain: t, site: edited, openDeg: openDeg)
             VStack(alignment: .leading, spacing: 4) {
-                Text(Copy.terrainSummary(t)).font(.callout.weight(.semibold))
+                Text(Copy.terrainSummary(t)).font(Font.scaled(.callout).weight(.semibold))
                 Text(raise.isEmpty ? "Lower than your horizon in every direction, so nothing changes. The terrain sees hills only, not trees or buildings: add those by hand or from a photo."
                                    : "Higher than what is set there: a steep valley side or a cliff. The terrain sees hills only, not trees or buildings.")
-                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 if !raise.isEmpty {
                     let dirs = raise.keys.sorted()
                     Button("Raise \(ListFormatter.localizedString(byJoining: dirs.map { "\(Site.horizonDirections[$0]) to \(Int(raise[$0]!))°" }))") {
                         for (i, v) in raise { heights[i] = max(heights[i], v) }
                     }
                 }
-                Text("Terrain: Copernicus DEM GLO-90, via Open-Meteo").font(.system(size: 10)).foregroundStyle(Theme.dim)
+                Text("Terrain: Copernicus DEM GLO-90, via Open-Meteo").font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim)
             }
             .padding(10).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
@@ -166,7 +166,7 @@ struct HorizonDial: View {
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - R, y: c.y - R, width: 2 * R, height: 2 * R)), with: .color(.white.opacity(0.45)), lineWidth: 1)
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - 2.5, y: c.y - 2.5, width: 5, height: 5)), with: .color(Theme.text))
             for (label, x, y) in [("N", c.x, c.y - R - 8), ("E", c.x + R + 8, c.y), ("S", c.x, c.y + R + 8), ("W", c.x - R - 8, c.y)] {
-                ctx.draw(Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text), at: CGPoint(x: x, y: y))
+                ctx.draw(Text(label).font(.system(size: TextScale.pt(11), weight: .semibold)).foregroundStyle(Theme.text), at: CGPoint(x: x, y: y))
             }
         }
     }

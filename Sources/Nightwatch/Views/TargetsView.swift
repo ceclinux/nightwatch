@@ -178,7 +178,7 @@ struct TargetsView: View {
                 Label("Dark sites", systemImage: "moon.stars"); Spacer(); Text("\(store.darkSites.count)").foregroundStyle(Tokens.textSecondary)
             }
         }
-        .font(.system(size: 12))
+        .font(.system(size: TextScale.pt(12)))
     }
 
     /// Switches with the Moon line above them, so the Moon one has context (follow-on 5). Both read "Show …", so on always
@@ -187,16 +187,16 @@ struct TargetsView: View {
         VStack(alignment: .leading, spacing: 6) {
             if let p = plan, let s = store.site, let m = Planner.moonTonight(p), m != .down {
                 HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
-                    .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
+                    .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.statusWarning)
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Text("SHOW").font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).padding(.top, 2)
+                Text("SHOW").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Tokens.textSecondary).padding(.top, 2)
                 Toggle("Doesn't fit my frame", isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
                 Toggle("Washed out by the Moon", isOn: $ui.includeMoonWashed)
             }
         }
-        .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: 11)).padding(10)
+        .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: TextScale.pt(11))).padding(10)
     }
 
     /// Applies a pending request from the popover once, then clears it.
@@ -226,12 +226,12 @@ struct TargetsView: View {
     private var darkSitesList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Dark sites").font(.title2.weight(.semibold))
+                Text("Dark sites").font(Font.scaled(.title2).weight(.semibold))
                 HStack(spacing: 6) {
                     Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").foregroundStyle(Theme.dim)
                     if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(.link) }
                 }
-                .font(.caption)
+                .font(Font.scaled(.caption))
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             if !store.config.darkSites.enabled {
                 Text("Dark sites are off. Turn them on in Settings › Dark sites.").foregroundStyle(Theme.dim).padding(20)
@@ -276,33 +276,33 @@ struct TargetsView: View {
                         let day = "Tomorrow night, \(Copy.dayMonth(p.night.localDate, site: s))"
                         Text(p.primary.map { w in "\(day): clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)) · \(String(format: "%.1f h", w.hours))" }
                              ?? (p.darkSpan == nil ? "\(day): no astronomical darkness." : "\(day): no clear window forecast."))
-                            .font(.caption).foregroundStyle(Tokens.textSecondary)
+                            .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                     } else if p.darkSpan == nil {
-                        Text("No astronomical darkness tonight.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                        Text("No astronomical darkness tonight.").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                     } else if p.primary == nil, canPlanTomorrow, let w = store.tomorrow?.primary {
                         // Said once here instead of on every card (owner, 28 September 2026).
                         Text("\(store.copy.noWindow) Tomorrow night looks clear \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s)).")
-                            .font(.callout).foregroundStyle(Tokens.statusWarning)
+                            .font(Font.scaled(.callout)).foregroundStyle(Tokens.statusWarning)
                     } else if p.primary == nil {
-                        Text(store.copy.noWindow).font(.caption).foregroundStyle(Tokens.textSecondary)
+                        Text(store.copy.noWindow).font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                     }
                 } else {
-                    Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    Text(store.lastError ?? "Waiting for the first forecast…").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
                 // The next moonless run (#62): said once here, where planning happens; the popover stays as it is.
                 if !isEvents, let run = store.moonlessRun, let s = store.site {
-                    Label(Copy.moonlessRun(run, site: s), systemImage: "circle").font(.callout).foregroundStyle(Tokens.textPrimary)
+                    Label(Copy.moonlessRun(run, site: s), systemImage: "circle").font(Font.scaled(.callout)).foregroundStyle(Tokens.textPrimary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
                 if plan?.mode == .bright, ui.section != .favourites, ui.section != .eyes, !isEvents, selectedGroup != .planets {
-                    Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    Text("Bright night: no deep-sky targets suggested.").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
                 // What the search found, under the night's state as before but in the callout size and the warning colour used for the Moon
                 // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
                 if ui.section != .favourites, ui.section != .eyes, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
                                               includeMoonWashed: ui.includeMoonWashed) {
-                    Text(hint).font(.callout).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
+                    Text(hint).font(Font.scaled(.callout)).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
                 }
                 if ui.section == .eyes {
                     let q = ui.search.trimmingCharacters(in: .whitespaces)
@@ -310,13 +310,13 @@ struct TargetsView: View {
                     Text(!q.isEmpty && !matches ? "Nothing here matches “\(q)”."
                          : eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope \(showingTomorrow ? "tomorrow night" : "tonight")."
                          : "No telescope needed. Look first with your eyes; binoculars show the rest.")
-                        .font(.caption).foregroundStyle(Tokens.textSecondary)
+                        .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
-                        Text("No favourites yet. Click the heart on any target to add it here.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                        Text("No favourites yet. Click the heart on any target to add it here.").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                     } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
-                        Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                        Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                     }
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
@@ -327,15 +327,14 @@ struct TargetsView: View {
                             VStack(spacing: 10) {
                                 EventArt(name: "no-events").frame(width: 360, height: 79)   // a wide strip: a quiet horizon
                                 Text(store.events.isEmpty ? "No events tonight" : "No event matches “\(ui.search.trimmingCharacters(in: .whitespaces))”")
-                                    .font(.callout).foregroundStyle(Tokens.textSecondary)
+                                    .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
                             }
                             .frame(maxWidth: .infinity).padding(.top, 40)
                         } else {
                             LazyVGrid(columns: gridColumns, spacing: 12) {
                                 ForEach(shownEvents) { e in
                                     eventCard(e)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture { ui.selectedEvent = e }
+                                        .opens { ui.selectedEvent = e }
                                         .accessibilityElement(children: .combine)
                                         .accessibilityLabel(eventLabel(e))
                                         .accessibilityAddTraits(.isButton)
@@ -352,8 +351,7 @@ struct TargetsView: View {
                             // does not reliably get them. A heart overlaid outside the card was hidden under the Liquid Glass
                             // (owner, 27 September 2026), so it lives inside, beside the chips.
                             card(t, notTonight: f.notTonight, planIndex: order[t.id], eye: ui.section == .eyes ? eyeView(t) : nil)
-                                .contentShape(Rectangle())
-                                .onTapGesture { ui.selected = t }
+                                .opens { ui.selected = t }
                                 .accessibilityElement(children: .combine)
                                 .accessibilityLabel(cardLabel(t, notTonight: f.notTonight, planIndex: order[t.id], eye: ui.section == .eyes ? eyeView(t) : nil))
                                 .accessibilityAddTraits(.isButton)
@@ -363,8 +361,7 @@ struct TargetsView: View {
                         if ui.section == .eyes {
                             ForEach(eyeEvents) { e in
                                 eventCard(e)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { ui.selectedEvent = e }
+                                    .opens { ui.selectedEvent = e }
                                     .accessibilityElement(children: .combine)
                                     .accessibilityLabel(eventLabel(e))
                                     .accessibilityAddTraits(.isButton)
@@ -385,23 +382,22 @@ struct TargetsView: View {
         let next = store.occultationsAhead.filter { !tonight.contains($0.id) && $0.time > Date() }.prefix(4)
         if let s = store.site, !next.isEmpty, ui.search.trimmingCharacters(in: .whitespaces).isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Coming up from \(s.name)").font(.headline)
+                Text("Coming up from \(s.name)").font(Font.scaled(.headline))
                 Text("The Moon covering a planet, a bright star or the Pleiades, seen from here in darkness.")
-                    .font(.caption).foregroundStyle(Tokens.textSecondary)
+                    .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 ForEach(Array(next)) { e in
                     HStack(spacing: 12) {
                         Text(e.time.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)) + ", " + Copy.hhmm(e.time, site: s))
-                            .font(.system(size: 13, weight: .semibold)).frame(width: 150, alignment: .leading)
+                            .font(.system(size: TextScale.pt(13), weight: .semibold)).frame(width: TextScale.pt(150), alignment: .leading)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(e.title).font(.system(size: 13))
-                            Text(e.detail).font(.caption).foregroundStyle(Tokens.textSecondary)
+                            Text(e.title).font(.system(size: TextScale.pt(13)))
+                            Text(e.detail).font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                         }
                         Spacer()
                         Button("Add to Calendar") { CalendarExport.open(e, site: s) }.buttonStyle(SecondaryButtonStyle())
                             .accessibilityLabel("Add \(e.title) on \(e.time.formatted(date: .abbreviated, time: .omitted)) to Calendar")
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { ui.selectedEvent = e }
+                    .opens { ui.selectedEvent = e }
                     .padding(.horizontal, 12).padding(.vertical, 8)
                     .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 9))
                     .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
@@ -440,7 +436,7 @@ struct TargetsView: View {
 
     private var headerTitle: some View {
         Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
-            .font(.title2.weight(.semibold)).lineLimit(1).fixedSize()
+            .font(Font.scaled(.title2).weight(.semibold)).lineLimit(1).fixedSize()
     }
 
     @ViewBuilder private var headerControls: some View {
@@ -483,7 +479,7 @@ struct TargetsView: View {
     private func heart(_ t: RankedTarget) -> some View {
         let on = isFavourite(t)
         return Button { toggleFavourite(t) } label: {
-            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 12, weight: .semibold))
+            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: TextScale.pt(12), weight: .semibold))
                 .foregroundStyle(on ? Theme.accent : Tokens.textPrimary).padding(5)
                 .background(Circle().fill(.black.opacity(0.45)))
         }
@@ -504,11 +500,11 @@ struct TargetsView: View {
             if !MilkyWay.isMilkyWay(t.id) { heart(t) }   // not a catalogue target, so it has no place in Favourites or the plan
         } footer: {
             if let reason = notTonight {
-                Text(reason).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary)
+                Text(reason).font(.system(size: TextScale.pt(10.5))).foregroundStyle(Tokens.textSecondary)
             } else if let s = store.site, let p = plan, let track = p.primary ?? p.darkSpan {
                 VStack(alignment: .leading, spacing: 4) {
-                    if let i = planIndex { Text(Copy.inPlan(i)).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Tokens.accentClear) }
-                    if let eye { Text(Copy.eyeLook(t, eye)).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary) }
+                    if let i = planIndex { Text(Copy.inPlan(i)).font(.system(size: TextScale.pt(10.5), weight: .medium)).foregroundStyle(Tokens.accentClear) }
+                    if let eye { Text(Copy.eyeLook(t, eye)).font(.system(size: TextScale.pt(10.5))).foregroundStyle(Tokens.textSecondary) }
                     ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
                 }
             }
@@ -555,7 +551,7 @@ struct TargetsView: View {
             EmptyView()
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(e.brief ?? e.detail).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                Text(e.brief ?? e.detail).font(.system(size: TextScale.pt(10.5))).foregroundStyle(Tokens.textSecondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan, let ra = e.raHours, let dec = e.decDeg,
                    e.kind == .meteorShower || e.kind == .comet || e.kind == .conjunction {
                     ViewabilityTimeline(target: Planner.skyTrack(id: e.id, name: e.title, raHours: ra, decDeg: dec, window: track, site: s,
@@ -575,41 +571,41 @@ struct DarkSiteCard: View {
         VStack(alignment: .leading, spacing: 8) {
             SiteMapView(site: s)
             HStack(alignment: .firstTextBaseline) {
-                Text(s.name).font(.callout.weight(.semibold)).lineLimit(2)
+                Text(s.name).font(Font.scaled(.callout).weight(.semibold)).lineLimit(2)
                 Spacer()
-                if !plan.forecastMissing { Text("\(plan.score)").font(.title3.weight(.semibold)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
+                if !plan.forecastMissing { Text("\(plan.score)").font(Font.scaled(.title3).weight(.semibold)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
-                .font(.caption).foregroundStyle(Theme.dim)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             // Compared with home, not with whichever site is active: while away, "at home" would be the wrong place (v0.6.5).
             if let home = store.homeSite {
                 let siteSky = s.bortle.map { "Bortle \($0)" } ?? s.band?.displayName ?? "darkness unknown"
                 let atHome = store.isAway ? "at \(store.homeLabel) (home)" : "at home"
                 if !plan.forecastMissing, let hp = store.homePlan {
                     Text("Score \(plan.score) vs \(hp.score) \(atHome) · \(siteSky), home Bortle \(home.bortle)")
-                        .font(.caption).foregroundStyle(plan.score >= hp.score + 20 ? Theme.accent : Theme.dim)
+                        .font(Font.scaled(.caption)).foregroundStyle(plan.score >= hp.score + 20 ? Theme.accent : Theme.dim)
                 } else {
-                    Text("\(siteSky), home Bortle \(home.bortle)").font(.caption).foregroundStyle(Theme.dim)
+                    Text("\(siteSky), home Bortle \(home.bortle)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
             }
             if s.isComputed {
-                Text("Found from light-pollution data: check access and park considerately.").font(.caption).foregroundStyle(Theme.dim)
+                Text("Found from light-pollution data: check access and park considerately.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if let w = plan.primary, let home = store.site {
-                Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(.caption)
+                Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(Font.scaled(.caption))
             } else if plan.forecastMissing {
-                Text("No forecast fetched (beyond the nearest eight, or offline)").font(.caption).foregroundStyle(Theme.dim)
+                Text("No forecast fetched (beyond the nearest eight, or offline)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             } else {
-                Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
+                Text(store.copy.noWindow).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             // Cards in a row share the tallest one's height, with the buttons along the bottom (owner UAT, 29 September 2026).
             Spacer(minLength: 0)
             HStack {
-                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
+                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(Font.scaled(.caption)) }
                 Spacer()
-                Button("Open in Maps") { SiteMaps.open(s) }.font(.caption)
+                Button("Open in Maps") { SiteMaps.open(s) }.font(Font.scaled(.caption))
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
-                Button("Observe from here") { store.visit(s) }.font(.caption)
+                Button("Observe from here") { store.visit(s) }.font(Font.scaled(.caption))
             }
         }
         .padding(12)

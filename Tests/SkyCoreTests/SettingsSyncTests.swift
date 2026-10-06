@@ -77,3 +77,18 @@ private func site(_ name: String) -> Site {
     #expect(SettingsSync.outgoing(here, at: Date()).sharesHome == true)
 }
 
+/// Text size is a matter of one Mac's display and the eyes in front of it, so it stays on that Mac.
+@Test func textSizeStaysOnEachMac() throws {
+    #expect(Config.default.textSize == .standard && TextSize.standard.factor == 1)
+    #expect(TextSize.allCases.map(\.factor) == [1, 1.15, 1.3] && TextSize.allCases.map(\.displayName) == ["Standard", "Large", "Extra large"])
+    var a = Config(); a.textSize = .extraLarge
+    #expect(SettingsSync.outgoing(a, at: Date()).config.textSize == .standard)          // not sent
+    var b = Config(); b.textSize = .large
+    #expect(SettingsSync.merge(remote: SettingsSync.outgoing(a, at: Date()), local: b).textSize == .large)   // nor taken
+    // Saved and read back; a file from before the setting, or with a size this version does not know, reads as standard.
+    let e = JSONEncoder(), d = JSONDecoder()
+    #expect(try d.decode(Config.self, from: e.encode(a)).textSize == .extraLarge)
+    #expect(try d.decode(Config.self, from: Data(#"{"sites":[]}"#.utf8)).textSize == .standard)
+    #expect(try d.decode(Config.self, from: Data(#"{"textSize":"enormous"}"#.utf8)).textSize == .standard)
+}
+

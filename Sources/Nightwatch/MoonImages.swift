@@ -43,15 +43,15 @@ struct MoonTile: View {
                 if let img = loader.image ?? MoonImages.ready(at: at) {
                     Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).clipShape(Circle())
                 } else {
-                    Image(systemName: "moon").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    Image(systemName: "moon").font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
             }
             .frame(width: 32, height: 32)
             .overlay(Circle().stroke(Color.black.opacity(0.6), lineWidth: 1.5))
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(value).font(.system(size: 12.5, weight: .medium)).fixedSize(horizontal: false, vertical: true)
-                if let line { Text(line).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary) }
+                Text(value).font(.system(size: TextScale.pt(12.5), weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                if let line { Text(line).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary) }
             }
             Spacer(minLength: 0)
         }

@@ -63,7 +63,7 @@ struct SiteMapView: View {
                 Color.clear.overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
                 Circle().fill(Tokens.controlOn).frame(width: 16, height: 16).overlay(Circle().stroke(.white, lineWidth: 2.5))
             } else {
-                Image(systemName: "moon.stars").font(.title2).foregroundStyle(Theme.dim)
+                Image(systemName: "moon.stars").font(Font.scaled(.title2)).foregroundStyle(Theme.dim)
             }
         }
         .frame(height: 120)

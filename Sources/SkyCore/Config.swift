@@ -48,6 +48,8 @@ public struct Config: Codable, Equatable, Sendable {
     public var favourites: [String] = []
     /// Tonight's plan (#57): when the night's session must end, and whether Targets shows the plan.
     public var stopBy = StopBy()
+    /// How large the app's text is (1.5). It stays on each Mac: it depends on that Mac's display.
+    public var textSize: TextSize = .standard
     public var showPlan = true
     /// Tonight's plan choices by night key ("2026-09-29"); synced with the rest of the settings (#49).
     public var planChoices: [String: PlanChoices] = [:]
@@ -127,7 +129,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan, planChoices
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan, planChoices, textSize
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -153,9 +155,18 @@ public struct Config: Codable, Equatable, Sendable {
         aurora = try c.decodeIfPresent(AuroraSettings.self, forKey: .aurora) ?? AuroraSettings()
         favourites = try c.decodeIfPresent([String].self, forKey: .favourites) ?? []
         stopBy = try c.decodeIfPresent(StopBy.self, forKey: .stopBy) ?? StopBy()
+        textSize = (try? c.decodeIfPresent(TextSize.self, forKey: .textSize)) ?? .standard   // an unknown size never fails the file
         showPlan = try c.decodeIfPresent(Bool.self, forKey: .showPlan) ?? true
         planChoices = (try? c.decodeIfPresent([String: PlanChoices].self, forKey: .planChoices)) ?? [:]
     }
+}
+
+/// The size of the app's text in its windows and popover (1.5): the designed size, or 15% or 30% larger. The desktop
+/// widgets keep their own size, which WidgetKit fixes.
+public enum TextSize: String, Codable, Sendable, CaseIterable {
+    case standard, large, extraLarge
+    public var factor: Double { switch self { case .standard: 1; case .large: 1.15; case .extraLarge: 1.3 } }
+    public var displayName: String { switch self { case .standard: "Standard"; case .large: "Large"; case .extraLarge: "Extra large" } }
 }
 
 /// Aurora alerts (v0.3): AuroraWatch UK in the UK and Ireland, NOAA's forecast elsewhere (1.4), gated on the local

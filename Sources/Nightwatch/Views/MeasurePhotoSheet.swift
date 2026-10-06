@@ -48,9 +48,9 @@ struct MeasurePhotoSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Measure from a photo").font(.title3.weight(.semibold))
+            Text("Measure from a photo").font(Font.scaled(.title3).weight(.semibold))
             Text("Drag the line to the top of the roof, tree or hill in the way. Nightwatch works out its height from the way the phone was facing and tilted.")
-                .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .top, spacing: 22) {
                 picture.frame(width: 420, height: 560)
                 VStack(alignment: .leading, spacing: 12) { readings }.frame(maxWidth: .infinity, alignment: .leading)
@@ -98,14 +98,14 @@ struct MeasurePhotoSheet: View {
                     if let ly = photo.levelY {
                         Rectangle().stroke(Color.white.opacity(0.75), style: StrokeStyle(lineWidth: 1, dash: [4, 4])).frame(width: w, height: 1)
                             .offset(x: ox, y: oy + ly * scale)
-                        Text(photo.pitchDeg == nil ? "Level, assumed" : "Level, 0°").font(.system(size: 10)).foregroundStyle(.white)
+                        Text(photo.pitchDeg == nil ? "Level, assumed" : "Level, 0°").font(.system(size: TextScale.pt(10))).foregroundStyle(.white)
                             .padding(.horizontal, 5).padding(.vertical, 1).background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 4))
                             .offset(x: ox + 8, y: oy + ly * scale - 18)
                     }
                     if photo.focalPx != nil {
                         Rectangle().fill(Theme.accent).frame(width: w, height: 2).offset(x: ox, y: oy + skylineY * scale - 1)
                         Text(measured.map { "\(Int($0.rounded()))°" } ?? "")
-                            .font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
+                            .font(.system(size: TextScale.pt(11), weight: .semibold)).foregroundStyle(.white)
                             .frame(width: 48, height: 24).background(Theme.accent, in: Capsule()).overlay(Capsule().stroke(.white, lineWidth: 2))
                             .offset(x: ox + w / 2 - 24, y: oy + skylineY * scale - 12)
                     }
@@ -122,7 +122,7 @@ struct MeasurePhotoSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         } else {
             RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.06))
-                .overlay(Text("Nightwatch can't open this file as a photo.").font(.caption).foregroundStyle(Theme.dim))
+                .overlay(Text("Nightwatch can't open this file as a photo.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim))
         }
     }
 
@@ -141,9 +141,9 @@ struct MeasurePhotoSheet: View {
                         "This photo has no lens details (a screenshot or an edited copy, perhaps). Use the original photo from the phone.")
             } else {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Top of what is in the way").font(.caption).foregroundStyle(Theme.dim)
+                    Text("Top of what is in the way").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                     Text(measured.map { "\(offTop ? "More than " : "")\(Int($0.rounded()))°" } ?? "–")
-                        .font(.system(size: offTop ? 24 : 34, weight: .semibold)).monospacedDigit()
+                        .font(.system(size: TextScale.pt(offTop ? 24 : 34), weight: .semibold)).monospacedDigit()
                 }
                 Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
                     if let b = photo.bearingDeg, let d = photo.direction { fact("Facing", "\(Int(b.rounded()))°, \(Self.names[d])") }
@@ -152,15 +152,15 @@ struct MeasurePhotoSheet: View {
                     if let c = photo.covers { fact("Covers", "\(Int(c.from.rounded()))°–\(Int(c.to.rounded()))°: \(coveredDirections(c))") }
                     if let site, let place = photo.place(relativeTo: site) { takenAt(place, site: site) }
                 }
-                .font(.caption)
+                .font(Font.scaled(.caption))
                 if let site, case .near = photo.place(relativeTo: site), let t = photo.taken, !moved {
                     Text("If this is where the telescope stands, \(site.name) can move here. Forecasts and darkness hardly change over this distance; dark sites are measured from the new spot.")
-                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                        .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                     Button("Move \(site.name) here") { onMove?(t); moved = true }
                 }
                 if let site, case .far = photo.place(relativeTo: site) {
                     Text("A horizon belongs to where it was measured. Use a photo taken where the telescope stands at \(site.name), or add the place it was taken as a site of its own.")
-                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                        .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
                 if photo.direction == nil {
                     problem("No compass direction in this photo", "It was taken with location off, or on another camera. Which way were you facing?")
@@ -179,16 +179,16 @@ struct MeasurePhotoSheet: View {
                 }
                 if let d = direction, let v = value {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Set \(Site.horizonDirections[d]) to \(offTop ? "at least " : "")\(Int(v))°").font(.callout.weight(.semibold))
+                        Text("Set \(Site.horizonDirections[d]) to \(offTop ? "at least " : "")\(Int(v))°").font(Font.scaled(.callout).weight(.semibold))
                         Text("Rounded up to the next 5°, so a target counts as up only once it is clear of it.")
-                            .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                            .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                 }
             }
             Text("A guide, not a survey: your mileage may vary. The photo is read and not kept; only the degrees are saved.")
-                .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -222,8 +222,8 @@ struct MeasurePhotoSheet: View {
 
     private func problem(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.callout.weight(.semibold))
-            Text(text).font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+            Text(title).font(Font.scaled(.callout).weight(.semibold))
+            Text(text).font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
         }
     }
 }

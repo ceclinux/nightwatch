@@ -207,3 +207,18 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(Copy.siriTonight(s).contains("Held back by a 40% moon. "))
     _ = t
 }
+
+/// What VoiceOver says for the menu-bar icon (1.5): the app, tonight's verdict, the score and the place, where it used
+/// to hear only the symbol's name.
+@Test func menuBarIconSaysTonightsVerdict() throws {
+    let (p, t) = try plans(november, clearMiddle)
+    let s = snap(p, t, fetchedAt: november)
+    let label = Copy.menuBarLabel(s, now: november), window = try #require(s.window)
+    #expect(label.hasPrefix("Nightwatch, Clear window tonight ") && label.contains(window))
+    #expect(label.hasSuffix("sky score \(s.score), \(s.siteName)"))
+    #expect(!label.contains(".,"))                                      // the headline's own full stop is not read mid-sentence
+    #expect(Copy.menuBarLabel(nil, now: november) == "Nightwatch, no forecast yet")
+    // A forecast too old to trust says so, as the icon's slashed star does.
+    #expect(Copy.menuBarLabel(s, now: november.addingTimeInterval(7 * 3600 + 1200)).hasSuffix(", Forecast 7 h old"))
+}
+

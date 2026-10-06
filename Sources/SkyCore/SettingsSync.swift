@@ -2,7 +2,7 @@ import Foundation
 
 /// Settings shared by every Mac signed in to the same iCloud account (#49), through iCloud key-value storage.
 /// Everything in `Config` travels except what belongs to one Mac: Start at login, where this Mac is observing from right
-/// now (the chosen site, or a dark site being visited) and the first-run welcome. Home travels whole (owner, 5 October
+/// now (the chosen site, or a dark site being visited), its text size and the first-run welcome. Home travels whole (owner, 5 October
 /// 2026): the starred saved site, or "This Mac's location", which each Mac then reads as its own.
 public enum SettingsSync {
     /// The key-value store's key for the payload.
@@ -51,6 +51,7 @@ public enum SettingsSync {
         c.visiting = mac.visiting
         if home { c.homeIsThisMac = mac.homeIsThisMac }
         c.welcomed = mac.welcomed
+        c.textSize = mac.textSize
         return c
     }
 }

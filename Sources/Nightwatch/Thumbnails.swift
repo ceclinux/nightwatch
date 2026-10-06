@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 /// DSS2 colour cutouts from CDS hips2fits at the user's field of view (or 1.5 × the object when it is bigger), cached per object and
@@ -138,7 +139,7 @@ struct ThumbnailView: View {
             } else if let art = loader.art ?? (target.group == .constellations ? ConstellationArt(id: target.id) : nil) {
                 art.padding(4)
             } else {
-                Image(systemName: Theme.glyph(for: target.group)).font(.title2).foregroundStyle(Theme.dim)
+                Image(systemName: Theme.glyph(for: target.group)).font(Font.scaled(.title2)).foregroundStyle(Theme.dim)
             }
         }
         .task(id: target.id) {

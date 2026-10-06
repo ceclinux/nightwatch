@@ -194,6 +194,15 @@ public struct Copy: Sendable {
         return f.string(from: date)
     }
 
+    /// What VoiceOver says for the menu-bar icon (1.5): "Nightwatch, Clear window tonight 21:07–06:43 · 9.6 h, sky score
+    /// 93, Malham", and the forecast's age when it is too old to trust. The icon alone told it only the symbol's name.
+    public static func menuBarLabel(_ s: WidgetSnapshot?, now: Date) -> String {
+        guard let s else { return "Nightwatch, no forecast yet" }
+        let headline = s.headline.hasSuffix(".") ? String(s.headline.dropLast()) : s.headline
+        return (["Nightwatch", headline + (s.window.map { " \($0)" } ?? ""), "sky score \(s.score)", s.siteName] + [s.staleText(now: now)].compactMap { $0 })
+            .joined(separator: ", ")
+    }
+
     /// A time on this Mac's own clock, for when the Mac did something ("Updated 13:15"): it is read against the menu-bar
     /// clock, which differs from the site's when observing from another time zone. The night's times use `hhmm(_:site:)`.
     public static func clockTime(_ date: Date, timeZone: TimeZone = .current) -> String {

@@ -27,7 +27,7 @@ public struct ClearSkyBars: View {
                     VStack(spacing: 2) {
                         if labels, b.peak {
                             // "80%" alone read as visibility, or a clear night (owner's UAT, 30 September 2026).
-                            Text("\(b.clearPct)% clear").font(.system(size: 8, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
+                            Text("\(b.clearPct)% clear").font(.system(size: TextScale.pt(8), weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
                         }
                         ZStack(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 2.5).fill(Tokens.surfaceTrack)
@@ -37,14 +37,14 @@ public struct ClearSkyBars: View {
                         }
                         .frame(height: trackHeight)
                         if labels {
-                            Text(b.hour).font(.system(size: 8.5)).foregroundStyle(Tokens.textSecondary).fixedSize()
+                            Text(b.hour).font(.system(size: TextScale.pt(8.5))).foregroundStyle(Tokens.textSecondary).fixedSize()
                         }
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
             if labels, caption {
-                Text("Clear sky by hour").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary)
+                Text("Clear sky by hour").font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary)
             }
         }
         .accessibilityElement(children: .ignore)

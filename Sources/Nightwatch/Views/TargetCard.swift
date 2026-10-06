@@ -29,13 +29,13 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     // Priority rather than a fixed size: an event's title can be long ("Partial solar eclipse from …").
-                    Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
-                    if let note { Text(note).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1) }
+                    Text(title).font(.system(size: TextScale.pt(11.5), weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
+                    if let note { Text(note).font(.system(size: TextScale.pt(11.5))).foregroundStyle(Tokens.textSecondary).lineLimit(1) }
                     Spacer(minLength: 4)
-                    if let trailing { Text(trailing).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize() }
+                    if let trailing { Text(trailing).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary).fixedSize() }
                 }
                 if !subtitle.isEmpty {
-                    Text(subtitle).font(.system(size: 11.5)).foregroundStyle(Tokens.textPrimary).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(subtitle).font(.system(size: TextScale.pt(11.5))).foregroundStyle(Tokens.textPrimary).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
             footer()
@@ -49,7 +49,7 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
 /// A plain button on a page's caption: "How to shoot this", "Add to tonight's plan".
 extension View {
     func captionButton() -> some View {
-        buttonStyle(.plain).font(.system(size: 11)).padding(.horizontal, 9).padding(.vertical, 5)
+        buttonStyle(.plain).font(.system(size: TextScale.pt(11))).padding(.horizontal, 9).padding(.vertical, 5)
             .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
     }
 }
@@ -77,7 +77,7 @@ struct EventArt: View {
 
     var body: some View {
         if let image { Image(nsImage: image).resizable().aspectRatio(contentMode: .fit).accessibilityHidden(true) }
-        else { Image(systemName: "sparkles").font(.title2).foregroundStyle(Theme.dim).accessibilityHidden(true) }
+        else { Image(systemName: "sparkles").font(Font.scaled(.title2)).foregroundStyle(Theme.dim).accessibilityHidden(true) }
     }
 }
 
@@ -113,7 +113,7 @@ struct SkyPathView: View {
                 Circle().stroke(Color.white.opacity(0.35), lineWidth: 1).frame(width: 2 * r, height: 2 * r).position(c)
                 Circle().stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: r, height: r).position(c)   // 45° up
                 ForEach(Array(zip(["N", "E", "S", "W"], [0.0, 90, 180, 270])), id: \.0) { label, az in
-                    Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.dim)
+                    Text(label).font(.system(size: TextScale.pt(11), weight: .semibold)).foregroundStyle(Theme.dim)
                         .position(outward(pt(SkyPathPoint(label: label, time: .now, azimuthDeg: az, altitudeDeg: 0)), 12))
                 }
                 let pts = path.map(pt)
@@ -133,7 +133,7 @@ struct SkyPathView: View {
                     ForEach(Array(zip(path.indices, pts)), id: \.0) { i, q in
                         let last = i == pts.count - 1, mid = pts.count == 3 && i == 1
                         Circle().fill(last ? Theme.accent : Theme.text).frame(width: 7, height: 7).position(q)
-                        Text("\(path[i].label) \(Copy.hhmm(path[i].time, site: site))").font(.system(size: 10)).foregroundStyle(Theme.text)
+                        Text("\(path[i].label) \(Copy.hhmm(path[i].time, site: site))").font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.text)
                             .padding(.horizontal, 4).background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 3))
                             .fixedSize()
                             .position(mid ? CGPoint(x: q.x, y: q.y - 13) : outward(q, 30))
@@ -174,21 +174,21 @@ struct ShootingTipCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                Label(tip.title, systemImage: tip.symbol).font(.system(size: 13, weight: .semibold))
+                Label(tip.title, systemImage: tip.symbol).font(.system(size: TextScale.pt(13), weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if let line = tip.copyLine { CopyButton(text: line, label: "Copy settings", done: "Settings copied") }   // #61
             }
             ForEach(tip.rows, id: \.label) { r in
                 HStack(alignment: .top, spacing: 8) {
-                    Text(r.label).font(.system(size: 11)).foregroundStyle(Theme.dim).frame(width: 64, alignment: .leading)
-                    Text(r.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                    Text(r.label).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim).frame(width: 64, alignment: .leading)
+                    Text(r.text).font(.system(size: TextScale.pt(12))).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            if let src = tip.source { Text(src).font(.system(size: 10)).foregroundStyle(Theme.dim) }
+            if let src = tip.source { Text(src).font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim) }
         }
         .padding(12)
-        .frame(width: 360, alignment: .leading)
+        .frame(width: TextScale.pt(360), alignment: .leading)
         .captionBacking(cornerRadius: 10)
     }
 }
@@ -213,7 +213,7 @@ struct CopyButton: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { if copies == this { copied = false } }
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 12, weight: copied ? .bold : .regular))
+                .font(.system(size: TextScale.pt(12), weight: copied ? .bold : .regular))
                 .foregroundStyle(copied ? Tokens.accentClear : Theme.text)
                 .frame(width: 28, height: 28)
                 .background(copied ? Tokens.accentClear.opacity(0.25) : Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
@@ -232,7 +232,7 @@ struct HowToShootButton: View {
             HStack(spacing: 5) {
                 Image(systemName: "camera.aperture").accessibilityHidden(true)
                 Text("How to shoot this")
-                Image(systemName: shown ? "chevron.down" : "chevron.up").font(.system(size: 9, weight: .semibold)).accessibilityHidden(true)
+                Image(systemName: shown ? "chevron.down" : "chevron.up").font(.system(size: TextScale.pt(9), weight: .semibold)).accessibilityHidden(true)
             }
         }
         .captionButton().padding(.top, 4)
@@ -277,7 +277,7 @@ struct OccultationView: View {
                 ctx.stroke(p, with: .color(Color(red: 0.62, green: 0.82, blue: 1)), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
                 let s = pt(t.points[0])
                 ctx.fill(Path(ellipseIn: CGRect(x: s.x - 3.5, y: s.y - 3.5, width: 7, height: 7)), with: .color(.white))
-                ctx.draw(Text(t.name).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white), at: CGPoint(x: s.x, y: s.y - 12))
+                ctx.draw(Text(t.name).font(.system(size: TextScale.pt(11), weight: .semibold)).foregroundStyle(.white), at: CGPoint(x: s.x, y: s.y - 12))
             }
         }
         .accessibilityElement(children: .ignore)

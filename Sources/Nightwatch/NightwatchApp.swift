@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
 import UserNotifications
 
@@ -42,6 +43,7 @@ struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Image(systemName: store.iconName)
+            .accessibilityLabel(Copy.menuBarLabel(store.snapshot(), now: Date()))   // VoiceOver: tonight's verdict, not the symbol's name
             .task {
                 if store.showWelcome { NSApp.activate(); openWindow(id: "welcome") }   // first launch only, before the rest of boot
                 await boot()
@@ -64,7 +66,8 @@ struct NightwatchApp: App {
         MenuBarExtra {
             TonightView()
                 .environmentObject(store)
-                .frame(width: 360)
+                .frame(width: TextScale.pt(360))
+                .textSized(store.config.textSize)
         } label: {
             // The label is the status-bar icon and is always rendered at launch; the popover
             // content above is lazy and only builds once opened, so boot() must start here.
@@ -72,15 +75,16 @@ struct NightwatchApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Targets", id: "targets") { TargetsView().environmentObject(store) }
+        Window("Targets", id: "targets") { TargetsView().environmentObject(store).textSized(store.config.textSize) }
             .defaultSize(width: 980, height: 640).defaultPosition(.center)
-        Window("Settings", id: "settings") { SettingsView().environmentObject(store) }
+        // Not rebuilt on a change, so choosing a size in Settings does not throw the page back to its top.
+        Window("Settings", id: "settings") { SettingsView().environmentObject(store).font(Font.scaled(.body)) }
             .defaultSize(width: 520, height: 560).defaultPosition(.center)
-        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store) }
+        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).textSized(store.config.textSize) }
             .windowResizability(.contentSize).defaultPosition(.center)
-        Window("About Nightwatch", id: "about") { AboutView().environmentObject(store) }
+        Window("About Nightwatch", id: "about") { AboutView().environmentObject(store).textSized(store.config.textSize) }
             .defaultSize(width: 420, height: 420).defaultPosition(.center)
-        Window("What the numbers mean", id: "numbers") { NumbersView() }
+        Window("What the numbers mean", id: "numbers") { NumbersView().textSized(store.config.textSize) }
             .defaultSize(width: 780, height: 620).defaultPosition(.center)
     }
 

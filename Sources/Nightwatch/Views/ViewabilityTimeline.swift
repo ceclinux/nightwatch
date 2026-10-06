@@ -62,7 +62,7 @@ struct ViewabilityTimeline: View {
                         .fontWeight(.medium).foregroundStyle(lit ? Tokens.textPrimary : Tokens.textSecondary)
                 }
             }
-            .font(.system(size: 9))
+            .font(.system(size: TextScale.pt(9)))
         }
         .accessibilityHidden(true)   // the card carries the sentence label (spec §7)
     }

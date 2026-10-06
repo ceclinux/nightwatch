@@ -48,8 +48,8 @@ struct EventDetailView: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(event.title).font(.system(size: 24, weight: .semibold)).lineLimit(2)
-            Text(event.detail).font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85)).frame(maxWidth: 420, alignment: .leading)
+            Text(event.title).font(.system(size: TextScale.pt(24), weight: .semibold)).lineLimit(2)
+            Text(event.detail).font(.system(size: TextScale.pt(13))).foregroundStyle(Theme.text.opacity(0.85)).frame(maxWidth: 420, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             EventChips(event: event, onPage: true).padding(.top, 2)
             if let s = store.site {
@@ -70,8 +70,8 @@ struct EventDetailView: View {
         Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
             ForEach(event.facts, id: \.label) { f in
                 GridRow {
-                    Text(f.label).font(.system(size: 11)).foregroundStyle(Theme.dim)
-                    Text(f.value).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                    Text(f.label).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim)
+                    Text(f.value).font(.system(size: TextScale.pt(12))).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

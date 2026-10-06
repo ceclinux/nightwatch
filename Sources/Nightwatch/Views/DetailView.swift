@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 /// A target's detail page (v0.6.4, owner-approved mockup): the image fills the window and the text sits on it in black
@@ -40,7 +41,7 @@ struct DetailView: View {
                         survey(p.image, imageFovDeg: p.fovDeg, free: f.frame(in: .named("pane")), pane: pane)
                     } else {
                         // Offline with nothing cached: the group's glyph, as the cards show.
-                        Image(systemName: Theme.glyph(for: target.group)).font(.system(size: 40)).foregroundStyle(Theme.dim)
+                        Image(systemName: Theme.glyph(for: target.group)).font(.system(size: TextScale.pt(40))).foregroundStyle(Theme.dim)
                             .frame(width: f.size.width, height: f.size.height)
                     }
                 }
@@ -129,7 +130,7 @@ struct DetailView: View {
     private var heart: some View {
         let on = store.config.favourites.contains(target.id)
         return Button { store.config.toggleFavourite(target.id); store.saveConfig() } label: {
-            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: 16, weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
+            Image(systemName: on ? "heart.fill" : "heart").font(.system(size: TextScale.pt(16), weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
         }
         .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
         .accessibilityLabel(on ? "Remove from favourites" : "Add to favourites")
@@ -138,18 +139,18 @@ struct DetailView: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(target.name).font(.system(size: 24, weight: .semibold)).lineLimit(2)
+                Text(target.name).font(.system(size: TextScale.pt(24), weight: .semibold)).lineLimit(2)
                 if !milkyWay { heart }
             }
             Text(target.subtitle + (milkyWay ? "" : target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
-                .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
-            Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
+                .font(.system(size: TextScale.pt(13))).foregroundStyle(Theme.text.opacity(0.85))
+            Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim)
             HStack(spacing: 8) {
                 if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help(milkyWay ? "Lens, exposure and ISO for a camera" : "Filter, exposure and frames for your telescope and this target") }
                 planButton.padding(.top, 4)
             }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
-            if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: 9.5)).foregroundStyle(Theme.dim) }
+            if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim) }
         }
     }
 
@@ -234,7 +235,7 @@ struct AltitudeChart: View {
         // Shared with Tonight's plan's chart (#92), so the two always agree.
         let samples = AltitudeTrack.samples(raHours: target.raHours, decDeg: target.decDeg, night: night, window: window, site: site, minAlt: minAltitude)
         VStack(alignment: .leading, spacing: 3) {
-            Text("Altitude \(nightWords)").font(.system(size: 10)).foregroundStyle(Theme.dim)
+            Text("Altitude \(nightWords)").font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim)
             GeometryReader { g in
                 let x = { (f: Double) in g.size.width * max(0, min(1, f)) }
                 let y = { (alt: Double) in g.size.height * (1 - max(0, min(90, alt)) / 90) }
@@ -243,7 +244,7 @@ struct AltitudeChart: View {
                 if site.horizon == nil {
                     Path { p in p.move(to: CGPoint(x: 0, y: y(minAltitude))); p.addLine(to: CGPoint(x: g.size.width, y: y(minAltitude))) }
                         .stroke(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                    Text("\(Int(minAltitude))°").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 10, y: y(minAltitude) - 7)
+                    Text("\(Int(minAltitude))°").font(.system(size: TextScale.pt(9))).foregroundStyle(Theme.dim).position(x: g.size.width - 10, y: y(minAltitude) - 7)
                 } else {
                     // The horizon the target is behind, as a shaded band under the floor in its direction.
                     Path { p in
@@ -252,7 +253,7 @@ struct AltitudeChart: View {
                         p.addLine(to: CGPoint(x: x(samples.last?.fraction ?? 1), y: g.size.height)); p.closeSubpath()
                     }
                     .fill(Color.white.opacity(0.14))
-                    Text("Horizon").font(.system(size: 9)).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
+                    Text("Horizon").font(.system(size: TextScale.pt(9))).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
                 }
                 Path { p in for (i, s) in samples.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
                     .stroke(Color.white.opacity(0.55), lineWidth: 1.5)
@@ -272,7 +273,7 @@ struct AltitudeChart: View {
                 Text("Clear \(Copy.hhmm(window.start, site: site))–\(Copy.hhmm(window.end, site: site))"); Spacer()
                 Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
             }
-            .font(.system(size: 9.5)).foregroundStyle(Theme.dim)
+            .font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees.")

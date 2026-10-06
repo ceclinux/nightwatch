@@ -46,7 +46,7 @@ struct PlanChart: View {
         let tracks = items.map { AltitudeTrack.samples(raHours: $0.target.raHours, decDeg: $0.target.decDeg, night: night, window: window,
                                                        site: site, minAlt: minAltitude) }
         VStack(alignment: .leading, spacing: 6) {
-            Text("Altitude \(nightWords)").font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
+            Text("Altitude \(nightWords)").font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
                 GeometryReader { g in
                     let w = g.size.width, h = g.size.height
                     let x: (Double) -> CGFloat = { f in w * CGFloat(max(0, min(1, f))) }
@@ -58,7 +58,7 @@ struct PlanChart: View {
                         Path { p in p.move(to: CGPoint(x: 0, y: y(minAltitude))); p.addLine(to: CGPoint(x: g.size.width, y: y(minAltitude))) }
                             .stroke(Color.white.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                         let floorY: CGFloat = y(minAltitude)
-                        Text("\(Int(minAltitude))°").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary)
+                        Text("\(Int(minAltitude))°").font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary)
                             .position(x: w - 12, y: floorY - 7)
                     }
                     let labels = labelSpots(tracks, x: x, y: y, size: g.size)
@@ -72,7 +72,7 @@ struct PlanChart: View {
                 Text("Clear \(Copy.span(window.start, window.end, site: site))"); Spacer()
                 Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
             }
-            .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+            .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
         }
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
         .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
@@ -100,7 +100,7 @@ struct PlanChart: View {
         .stroke(style.colour, style: StrokeStyle(lineWidth: 2.6, dash: style.dash))
         if t.peakTime >= night.sunset, t.peakTime <= night.sunrise {
             Circle().fill(style.colour).frame(width: 7, height: 7).position(x: x(frac(t.peakTime)), y: y(t.peakAltDeg))
-            Text(label(t)).font(.system(size: 10, weight: .medium)).foregroundStyle(style.colour).fixedSize().position(x: CGFloat(spot.x), y: CGFloat(spot.y))
+            Text(label(t)).font(.system(size: TextScale.pt(10), weight: .medium)).foregroundStyle(style.colour).fixedSize().position(x: CGFloat(spot.x), y: CGFloat(spot.y))
         }
     }
 

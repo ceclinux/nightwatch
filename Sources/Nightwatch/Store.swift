@@ -2,12 +2,14 @@ import WidgetKit
 import Foundation
 import SkyCore
 import SwiftUI
+import NightwatchUI
 
 @MainActor
 final class Store: ObservableObject {
     /// The one store: the app's scene and Siri's actions (#53) both use it, so an action run at launch finds it at once.
     static let shared = Store()
-    @Published var config: Config = .default
+    /// The text size is handed to the shared font layer as it changes, so every font made afterwards uses it.
+    @Published var config: Config = .default { didSet { TextScale.factor = config.textSize.factor } }
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
     /// The week ahead page: tonight, tomorrow and the nights after, as far as the forecast reaches.
@@ -98,6 +100,7 @@ final class Store: ObservableObject {
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
         if catalog.objects.isEmpty { lastError = "Catalogue missing: run scripts/fetch-data.sh and rebuild." }
         loadConfig()
+        TextScale.factor = config.textSize.factor
         startSettingsSync()
     }
 

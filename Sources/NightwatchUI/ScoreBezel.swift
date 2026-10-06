@@ -40,6 +40,8 @@ public struct ScoreBezel: View {
                 }
         }
         .frame(width: 91, height: 91)
+        // The whole dial grows with the app's text size, numeral and ticks together, so nothing inside it has to be refitted.
+        .scaleEffect(TextScale.factor).frame(width: TextScale.pt(91), height: TextScale.pt(91))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }

@@ -35,12 +35,12 @@ struct SettingsView: View {
                 }
                 if let v = store.config.visiting {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Visiting").font(.caption.weight(.semibold)).foregroundStyle(Theme.dim)
+                        Text("Visiting").font(Font.scaled(.caption).weight(.semibold)).foregroundStyle(Theme.dim)
                         HStack(spacing: 8) {
                             radio(true)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(v.name)
-                                Text("From Dark sites · Bortle \(v.bortle) · \(Bortle.name(v.bortle).lowercased())").font(.caption).foregroundStyle(Theme.dim)
+                                Text("From Dark sites · Bortle \(v.bortle) · \(Bortle.name(v.bortle).lowercased())").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                             }
                             Spacer()
                             Button("Keep") { store.keepVisiting() }.help("Save \(v.name) to your sites").disabled(!store.config.canAddSite)
@@ -59,10 +59,10 @@ struct SettingsView: View {
                 }
                 if !store.config.canAddSite {
                     Text("You have \(store.config.sites.count) saved sites, the most Nightwatch keeps. Remove one to add another.")
-                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                        .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
                 Text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with.")
-                    .font(.caption).foregroundStyle(Theme.dim)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("Telescope") {
                 Picker("Preset", selection: Binding(get: { store.config.fovPresetID ?? "custom" }, set: { id in
@@ -93,11 +93,11 @@ struct SettingsView: View {
                     }), displayedComponents: .hourAndMinute)
                 }
                 Text("For bed or an early start: the plan ends at this time, and favourites only up after it are left out.")
-                    .font(.caption).foregroundStyle(Theme.dim)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("Go rule") {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")
-                    .font(.caption).foregroundStyle(Theme.dim)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 choiceRow("Clear for at least", Binding(get: { store.config.goRule.minHours }, set: { store.config.goRule.minHours = $0; store.saveConfig() }),
                           [1, 2, 3, 4, 5, 6, 7, 8]) { String(format: "%.0f h", $0) }
                 choiceRow("Cloud cover at most", Binding(get: { store.config.goRule.maxCloudPct }, set: { store.config.goRule.maxCloudPct = $0; store.saveConfig() }),
@@ -121,11 +121,11 @@ struct SettingsView: View {
                 Toggle("Alert only when Open-Meteo agrees", isOn: bind(\.alerts.requireAgreement))
                     .disabled(!signed && !store.config.alerts.requireAgreement)
                 if !signed {
-                    Text("Needs Apple Weather (signed build)").font(.caption).foregroundStyle(Theme.dim)
+                    Text("Needs Apple Weather (signed build)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
                 choiceRow("Quiet hours start", bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 choiceRow("Quiet hours end", bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
-                Text("No banners between those hours; the popover still shows what was missed.").font(.caption).foregroundStyle(Theme.dim)
+                Text("No banners between those hours; the popover still shows what was missed.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("Dark sites") {
                 Toggle("Look for darker skies nearby", isOn: bind(\.darkSites.enabled))
@@ -133,12 +133,12 @@ struct SettingsView: View {
                 choiceRow("Search radius", bind(\.darkSites.radiusKm), [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300]) {
                     Geo.format(km: $0, unit: store.config.darkSites.unit)
                 }
-                Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.").font(.caption).foregroundStyle(Theme.dim)
+                Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("Bright nights") {
                 Toggle("Moon and planets when there is no proper darkness", isOn: bind(\.brightNights.enabled))
                 choiceRow("Minimum clear run", bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }
-                Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(.caption).foregroundStyle(Theme.dim)
+                Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if Distribution.checksForUpdates {   // the App Store build has no update check
                 Section("Updates") {
@@ -148,7 +148,7 @@ struct SettingsView: View {
                         store.saveConfig()
                     }))
                     Text("Asks GitHub for the latest release and shows a line in the popover when there is a newer one. Nothing else is sent.")
-                        .font(.caption).foregroundStyle(Theme.dim)
+                        .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
             }
             Section("Aurora") {
@@ -156,7 +156,7 @@ struct SettingsView: View {
                 Picker("Alert from", selection: bind(\.aurora.threshold)) {
                     ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).tag($0) }
                 }
-                Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(.caption).foregroundStyle(Theme.dim)
+                Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("App") {
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
@@ -165,14 +165,19 @@ struct SettingsView: View {
                     catch { ui.loginStatus = error.localizedDescription }
                     if SMAppService.mainApp.status == .requiresApproval { ui.loginStatus = "Approve Nightwatch under System Settings › General › Login Items." }
                 }))
-                if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(.caption).foregroundStyle(Theme.warn) }
+                if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(Font.scaled(.caption)).foregroundStyle(Theme.warn) }
+                Picker("Text size", selection: bind(\.textSize)) {
+                    ForEach(TextSize.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                Text("For Nightwatch's popover and windows on this Mac. Desktop widgets keep their own size.")
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 // #49: iCloud key-value storage replaces the file path and the symlink advice, which the sandbox cannot follow.
                 Text(store.syncsSettings
-                     ? "Settings sync through iCloud to your other Macs, home included: with This Mac's location as home, each Mac uses its own. Start at login and where this Mac is observing from stay on this Mac."
+                     ? "Settings sync through iCloud to your other Macs, home included: with This Mac's location as home, each Mac uses its own. Start at login, text size and where this Mac is observing from stay on this Mac."
                      : "Not signed in to iCloud: settings stay on this Mac.")
-                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 if store.configLoadFailed {
-                    Text("The config file could not be read, so changes are not being saved. A copy is at config.json.bad. Fix the file, or reset to defaults.").font(.caption).foregroundStyle(Theme.warn)
+                    Text("The config file could not be read, so changes are not being saved. A copy is at config.json.bad. Fix the file, or reset to defaults.").font(Font.scaled(.caption)).foregroundStyle(Theme.warn)
                 }
                 Button("Reset config", role: .destructive) { ui.confirmReset = true }
                     .confirmationDialog("Replace your settings with defaults? Sites and settings will be lost.", isPresented: $ui.confirmReset) {
@@ -223,11 +228,11 @@ struct SettingsView: View {
                     HStack(spacing: 6) {
                         Text(title).foregroundStyle(enabled ? Theme.text : Theme.dim)
                         if home {
-                            Text("Home").font(.system(size: 10, weight: .semibold)).foregroundStyle(Tokens.statusWarning)
+                            Text("Home").font(.system(size: TextScale.pt(10), weight: .semibold)).foregroundStyle(Tokens.statusWarning)
                                 .padding(.horizontal, 5).padding(.vertical, 1).overlay(Capsule().stroke(Tokens.statusWarning.opacity(0.6)))
                         }
                     }
-                    Text(detail).font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    Text(detail).font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
@@ -297,7 +302,7 @@ struct AddSiteSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Add a site").font(.title3.weight(.semibold))
+            Text("Add a site").font(Font.scaled(.title3).weight(.semibold))
             field("Search for a place") {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass").foregroundStyle(Theme.dim).accessibilityHidden(true)
@@ -312,8 +317,8 @@ struct AddSiteSheet: View {
                         ForEach(search.results, id: \.self) { r in
                             Button { choose(r) } label: {
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(r.title).font(.system(size: 13, weight: .semibold))
-                                    if !r.subtitle.isEmpty { Text(r.subtitle).font(.system(size: 11)).foregroundStyle(Theme.dim) }
+                                    Text(r.title).font(.system(size: TextScale.pt(13), weight: .semibold))
+                                    if !r.subtitle.isEmpty { Text(r.subtitle).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim) }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 10).padding(.vertical, 6)
@@ -325,12 +330,12 @@ struct AddSiteSheet: View {
                     .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.surfaceTile))
                 }
                 Text("Places from Apple Maps. Only what you type is sent, never where you are.")
-                    .font(.caption).foregroundStyle(Theme.dim)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if let c = coordinate { SiteMapView(coordinate: c) }
             field("Name") {
                 TextField("", text: $ui.newSite.name, prompt: Text("Back garden"))
-                if nameTaken { Text("You already have a site called \(trimmed).").font(.caption).foregroundStyle(Tokens.statusWarning) }
+                if nameTaken { Text("You already have a site called \(trimmed).").font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning) }
             }
             HStack(alignment: .top, spacing: 12) {
                 // A pair pasted into Latitude, as maps copy them ("53.381, -1.470"), fills both fields.
@@ -353,7 +358,7 @@ struct AddSiteSheet: View {
                 Text(store.autoSite == nil
                      ? "This Mac's location is not available yet. Search above, type the coordinates, or paste them as a pair from a map."
                      : "or search above, type the coordinates, or paste them as a pair from a map: Sheffield is 53.381, −1.470")
-                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             field("How dark is the sky there?") {
                 Picker("", selection: $ui.newSite.bortle) {
@@ -363,7 +368,7 @@ struct AddSiteSheet: View {
                 Text(suggested != nil && suggested == ui.newSite.bortle
                      ? "Suggested from light-pollution data for this spot. Change it if you know better. The Bortle scale, 1 darkest to 9 brightest."
                      : "The Bortle scale, 1 darkest to 9 brightest. It is shown in the popover header; it does not change the forecast.")
-                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Spacer()
@@ -380,7 +385,7 @@ struct AddSiteSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 480)
+        .frame(width: TextScale.pt(480))
         // New coordinates, however they arrived, get the grid's darkness where it covers them.
         .onChange(of: coordinate) { _, c in
             suggested = c.flatMap { store.suggestedBortle(at: $0) }
@@ -401,7 +406,7 @@ struct AddSiteSheet: View {
 
     private func field<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption.weight(.semibold)).foregroundStyle(Theme.dim)
+            Text(label).font(Font.scaled(.caption).weight(.semibold)).foregroundStyle(Theme.dim)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)

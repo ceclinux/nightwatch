@@ -23,23 +23,23 @@ struct WelcomeView: View {
             HStack(spacing: 12) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 52, height: 52).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Welcome to Nightwatch").font(.title2.weight(.semibold))
-                    Text("Two questions, then it watches the sky for you.").font(.callout).foregroundStyle(Theme.dim)
+                    Text("Welcome to Nightwatch").font(Font.scaled(.title2).weight(.semibold))
+                    Text("Two questions, then it watches the sky for you.").font(Font.scaled(.callout)).foregroundStyle(Theme.dim)
                 }
             }
             // 0.6.x settings synced by a link the sandbox cannot follow (0.7.0): choosing the file is allowed.
             if let link = store.linkedSettings {
                 step("Your earlier settings") {
                     Text("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices.")
-                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                        .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                     Button("Import settings…") { importLinked(link) }.buttonStyle(.borderedProminent)
                     if state.importFailed {
-                        Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(.caption).foregroundStyle(Tokens.statusWarning)
+                        Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
                     }
                 }
             }
             if let e = store.importError {
-                Text(e).font(.caption).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
+                Text(e).font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
             }
             step("1  What do you image with?") {
                 ForEach(state.presets) { p in
@@ -53,7 +53,7 @@ struct WelcomeView: View {
             }
             step("2  Where do you observe from?") {
                 Text("Nightwatch needs a place to forecast for. Your location stays on this Mac; only its coordinates go to the weather services.")
-                    .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Button(store.autoSite == nil ? "Use this Mac's location" : "Using this Mac's location ✓") { useThisMac() }
                         .buttonStyle(.borderedProminent).disabled(state.locating || store.autoSite != nil)
@@ -64,18 +64,18 @@ struct WelcomeView: View {
                     if state.locating { ProgressView().controlSize(.small) }
                 }
                 if state.locating {
-                    Text("If macOS asks, choose Allow.").font(.caption).foregroundStyle(Theme.dim)
+                    Text("If macOS asks, choose Allow.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
-                if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(.caption) }
+                if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(Font.scaled(.caption)) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
                     Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
-                        .font(.caption).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
+                        .font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
                 }
             }
             Text(store.site == nil
                  ? "No place yet: Nightwatch starts forecasting as soon as it has one. You can add it later in Settings."
                  : "You'll get a heads-up an hour before sunset on nights worth imaging. Change any of this later in Settings.")
-                .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("Start watching") {
@@ -86,7 +86,7 @@ struct WelcomeView: View {
             }
         }
         .padding(22)
-        .frame(width: 460)
+        .frame(width: TextScale.pt(460))
         .background(Theme.bg)
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
@@ -127,7 +127,7 @@ struct WelcomeView: View {
 
     private func step<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
+            Text(title).font(Font.scaled(.headline))
             content()
         }
         .padding(12)
@@ -141,7 +141,7 @@ struct WelcomeView: View {
                 Image(systemName: on ? "largecircle.fill.circle" : "circle").foregroundStyle(on ? Tokens.controlOn : Theme.dim).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                    Text(detail).font(.caption).foregroundStyle(Theme.dim)
+                    Text(detail).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
                 Spacer(minLength: 0)
             }

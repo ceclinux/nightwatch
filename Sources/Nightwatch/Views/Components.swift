@@ -12,10 +12,10 @@ struct StatTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
-            Text(value ?? "No data").font(.system(size: 12.5, weight: .medium))
+            Text(label).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
+            Text(value ?? "No data").font(.system(size: TextScale.pt(12.5), weight: .medium))
                 .foregroundStyle(value == nil ? Tokens.textSecondary : Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
-            if let hint { Text(hint).font(.system(size: 9)).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true) }
+            if let hint { Text(hint).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true) }
         }
         .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, maxHeight: .infinity, alignment: .topLeading)   // fills its TileRow
         .accessibilityElement(children: .combine)
@@ -25,12 +25,29 @@ struct StatTile: View {
     }
 }
 
+extension View {
+    /// The window's own text at the chosen size (Settings › App › Text size): text with no font of its own follows it,
+    /// and a change of size rebuilds the window so every view inside makes its fonts again.
+    func textSized(_ size: TextSize) -> some View { font(Font.scaled(.body)).id(size) }
+
+    /// A card that opens something: a click, Return or Space with keyboard focus on it, or VoiceOver's own action, which
+    /// each card adds beside its label. Not a Button, because a card holds buttons of its own (the heart) that a Button's
+    /// label would swallow.
+    func opens(_ action: @escaping () -> Void) -> some View {
+        contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .focusable(interactions: .activate)   // as a button is: in the Tab order when macOS's keyboard navigation is on
+            .onKeyPress(.return) { action(); return .handled }
+            .onKeyPress(.space) { action(); return .handled }
+    }
+}
+
 /// Black caption backing for text laid over an image (the detail page, v0.6.4), so white text stays legible on any photo.
 extension View {
     func captionBacking(cornerRadius: CGFloat = 6) -> some View { modifier(CaptionBacking(cornerRadius: cornerRadius)) }
     /// An 11 pt label in a caption backing: the detail page's back button and field-of-view note.
     func captionPill() -> some View {
-        font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).padding(.horizontal, 9).padding(.vertical, 5).captionBacking()
+        font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textPrimary).padding(.horizontal, 9).padding(.vertical, 5).captionBacking()
     }
 }
 
@@ -39,7 +56,7 @@ struct StaleBadge: View {
     let fetchedAt: Date
     var body: some View {
         HStack(spacing: 4) { WarningDot(size: 5); Text(Copy.hoursAgo(fetchedAt, now: Date())) }
-            .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
+            .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.statusWarning)
             .accessibilityElement(children: .combine)
     }
 }
@@ -54,7 +71,7 @@ struct Chip: View {
             if let icon { Image(systemName: icon).accessibilityHidden(true) }
             Text(text)
         }
-        .font(.system(size: 9.5, weight: .medium))
+        .font(.system(size: TextScale.pt(9.5), weight: .medium))
         .foregroundStyle(warning ? Tokens.statusWarning : Tokens.textPrimary)
         .padding(.horizontal, 7).padding(.vertical, 3)
         .nightwatchGlass(in: Capsule(), fill: Color.black.opacity(0.55))
@@ -75,7 +92,7 @@ struct TileRow<Content: View>: View {
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 11, weight: .medium)).foregroundStyle(Tokens.textPrimary)
+            .font(.system(size: TextScale.pt(11), weight: .medium)).foregroundStyle(Tokens.textPrimary)
             .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 22)
             .background(Tokens.surfaceButton.opacity(configuration.isPressed ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 6))
             .contentShape(RoundedRectangle(cornerRadius: 6))

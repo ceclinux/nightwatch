@@ -166,7 +166,7 @@ struct SourceLine: View {
                 Link(destination: url) { image }.accessibilityLabel("Apple Weather, legal attribution and data sources")
             } else { image.accessibilityLabel("Apple Weather") }
         } else if let src = snapshot?.source {
-            Text(src).font(.caption2).foregroundStyle(.secondary)
+            Text(src).font(Font.scaled(.caption2)).foregroundStyle(.secondary)
         }
     }
 }
@@ -180,15 +180,15 @@ struct TonightCard: View {
             if let s = snapshot {
                 ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel).frame(width: 92, height: 92)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Tonight · \(s.siteName)").font(.caption).foregroundStyle(.secondary)
-                    Text(s.headline).font(.headline)
+                    Text("Tonight · \(s.siteName)").font(Font.scaled(.caption)).foregroundStyle(.secondary)
+                    Text(s.headline).font(Font.scaled(.headline))
                     ForEach([s.window, s.reason, s.tomorrow].compactMap { $0 }, id: \.self) {
-                        Text($0).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        Text($0).font(Font.scaled(.callout)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     }
                     SourceLine(snapshot: s, mark: mark).padding(.top, 2)
                 }
             } else {
-                Text(Copy.siriTonight(nil)).font(.callout)
+                Text(Copy.siriTonight(nil)).font(Font.scaled(.callout))
             }
         }
         .modifier(CardStyle())
@@ -202,8 +202,8 @@ struct AnswerCard: View {
     let mark: NSImage?
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let s = snapshot { Text("Tonight · \(s.siteName)").font(.caption).foregroundStyle(.secondary) }
-            Text(text).font(.callout).fixedSize(horizontal: false, vertical: true)
+            if let s = snapshot { Text("Tonight · \(s.siteName)").font(Font.scaled(.caption)).foregroundStyle(.secondary) }
+            Text(text).font(Font.scaled(.callout)).fixedSize(horizontal: false, vertical: true)
             SourceLine(snapshot: snapshot, mark: mark)
         }
         .modifier(CardStyle())

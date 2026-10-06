@@ -13,7 +13,7 @@ struct NumbersView: View {
     var body: some View {
         NavigationSplitView {
             List(NumbersGuide.entries, selection: $selected) { e in
-                Text(e.title).font(.system(size: 13)).tag(e.id)
+                Text(e.title).font(.system(size: TextScale.pt(13))).tag(e.id)
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(210)
@@ -24,8 +24,8 @@ struct NumbersView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         ForEach(NumbersGuide.entries) { e in
                             VStack(alignment: .leading, spacing: 6) {
-                                Text(e.title).font(.system(size: 17, weight: .semibold)).accessibilityAddTraits(.isHeader)
-                                Text(e.body).font(.system(size: 13.5)).foregroundStyle(Tokens.textSecondary)
+                                Text(e.title).font(.system(size: TextScale.pt(17), weight: .semibold)).accessibilityAddTraits(.isHeader)
+                                Text(e.body).font(.system(size: TextScale.pt(13.5))).foregroundStyle(Tokens.textSecondary)
                                     .lineSpacing(3).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                             }
                             .id(e.id)
