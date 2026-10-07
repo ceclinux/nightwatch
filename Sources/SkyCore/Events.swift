@@ -177,7 +177,8 @@ public enum Events {
     /// "5 November"
     static func day(_ d: Date, site: Site) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "en_GB"); f.timeZone = site.timeZone; f.dateFormat = "d MMMM"
+        f.locale = L10n.locale; f.timeZone = site.timeZone
+        f.dateFormat = L10n.language == .simplifiedChinese ? "M月d日" : "d MMMM"
         return f.string(from: d)
     }
 
@@ -185,9 +186,9 @@ public enum Events {
     static func moonNote(at date: Date, site: Site, hides: String) -> String {
         let m = Ephemeris.moon(at: date, site: site)
         let lit = Int((m.illumination * 100).rounded())
-        if m.position.altDeg <= 0 { return "Below the horizon at \(Copy.hhmm(date, site: site)) (\(lit)% lit)" }
-        let up = "\(lit)% lit and \(Int(m.position.altDeg.rounded()))° up at \(Copy.hhmm(date, site: site))"
-        return m.illumination > 0.5 ? "\(up): it will \(hides)" : up
+        if m.position.altDeg <= 0 { return L10n.format("Below the horizon at \(Copy.hhmm(date, site: site)) (\(lit)% lit)") }
+        let up = L10n.format("\(lit)% lit and \(Int(m.position.altDeg.rounded()))° up at \(Copy.hhmm(date, site: site))")
+        return m.illumination > 0.5 ? L10n.format("\(up): it will \(hides)") : up
     }
 
     /// The date of a shower's peak nearest `date`, and the whole days from `date` to it (negative when past).
@@ -215,16 +216,16 @@ public enum Events {
             case 0, 1: peakText = "At peak tonight"
             case 2: peakText = "Peak tomorrow night (\(peakNight))"
             case 3...: peakText = "Peak night \(peakNight), in \(days - 1) days"
-            default: peakText = "Past its peak (night of \(peakNight))"
+            default: peakText = L10n.format("Past its peak (night of \(peakNight))")
             }
             let top = highest(raHours: s.raHours, decDeg: s.decDeg, from: dark.start, to: dark.end, site: site)
             let where_ = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).name
             let up = top.alt > 0
             var e = SkyEvent(id: "shower-\(s.id)", kind: .meteorShower, title: s.name,
-                             detail: up ? "\(peakText) · radiant in \(where_), best \(Copy.hhmm(top.time, site: site))"
-                                        : "\(peakText) · radiant in \(where_), below the horizon tonight",
+                             detail: up ? L10n.format("\(peakText) · radiant in \(where_), best \(Copy.hhmm(top.time, site: site))")
+                                        : L10n.format("\(peakText) · radiant in \(where_), below the horizon tonight"),
                              time: dark.start, endTime: dark.end, raHours: s.raHours, decDeg: s.decDeg)
-            e.brief = up ? "\(peakText) · radiant in \(where_)" : e.detail
+            e.brief = up ? L10n.format("\(peakText) · radiant in \(where_)") : e.detail
             e.best = up ? top.time : nil
             e.atPeak = days == 0 || days == 1
             e.behindHorizon = up && !top.clear
@@ -233,23 +234,23 @@ public enum Events {
             if days >= 2, let pn = try? Ephemeris.night(localDate: eve.addingTimeInterval(12 * 3600), site: site) {
                 let pd = darkness(pn)
                 let ptop = highest(raHours: s.raHours, decDeg: s.decDeg, from: pd.start, to: pd.end, site: site)
-                e.calendarSpan = CalendarSpan(title: "\(s.name) peak", start: pd.start, end: pd.end,
-                                              notes: ptop.alt > 0 ? "Radiant in \(where_), highest at \(Copy.hhmm(ptop.time, site: site)), \(Int(ptop.alt.rounded()))° up. ZHR \(s.zhr)."
-                                                                  : "Radiant in \(where_), below the horizon. ZHR \(s.zhr).")
+                e.calendarSpan = CalendarSpan(title: L10n.format("\(s.name) peak"), start: pd.start, end: pd.end,
+                                              notes: ptop.alt > 0 ? L10n.format("Radiant in \(where_), highest at \(Copy.hhmm(ptop.time, site: site)), \(Int(ptop.alt.rounded()))° up. ZHR \(s.zhr).")
+                                                                  : L10n.format("Radiant in \(where_), below the horizon. ZHR \(s.zhr)."))
             }
-            let speed = s.velocityKms >= 55 ? "fast" : s.velocityKms <= 30 ? "slow" : "medium"
+            let speed = s.velocityKms >= 55 ? L10n.text("fast") : s.velocityKms <= 30 ? L10n.text("slow") : L10n.text("medium")
             e.facts = [
-                EventFact("Peak", days >= 0 && days <= 1 ? "Tonight, ZHR \(s.zhr)" : "Night of \(peakNight), ZHR \(s.zhr)"),
-                EventFact("Radiant", up ? "\(where_), highest at \(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"
-                                        : "\(where_), below the horizon all night"),
+                EventFact(L10n.text("Peak"), days >= 0 && days <= 1 ? L10n.format("Tonight, ZHR \(s.zhr)") : L10n.format("Night of \(peakNight), ZHR \(s.zhr)")),
+                EventFact(L10n.text("Radiant"), up ? L10n.format("\(where_), highest at \(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up")
+                                        : L10n.format("\(where_), below the horizon all night")),
             ]
             // The ZHR assumes the radiant overhead and a perfectly dark sky; the rate falls with the radiant's height.
             if up {
                 let rate = max(1, Int((Double(s.zhr) * sin(top.alt * .pi / 180)).rounded()))
-                e.facts.append(EventFact("At peak, from here", "Up to about \(rate) an hour, under a dark, moonless sky"))
-                e.facts.append(EventFact("Moon", moonNote(at: top.time, site: site, hides: "hide all but the brightest meteors")))
+                e.facts.append(EventFact(L10n.text("At peak, from here"), L10n.format("Up to about \(rate) an hour, under a dark, moonless sky")))
+                e.facts.append(EventFact(L10n.text("Moon"), moonNote(at: top.time, site: site, hides: L10n.text("hide all but the brightest meteors"))))
             }
-            e.facts += [EventFact("Speed", "\(s.velocityKms) km/s (\(speed))"), EventFact("Parent", s.parent)]
+            e.facts += [EventFact(L10n.text("Speed"), L10n.format("\(s.velocityKms) km/s (\(speed))")), EventFact(L10n.text("Parent"), s.parent)]
             return e
         }
     }
@@ -258,32 +259,32 @@ public enum Events {
         let limit = date.addingTimeInterval(Double(withinDays) * 86_400)
         var out: [SkyEvent] = []
         func times(_ begin: Date?, _ peak: Date, _ end: Date?) -> [EventFact] {
-            [begin.map { EventFact("Begins", "\(day($0, site: site)) \(Copy.hhmm($0, site: site))") },
-             EventFact("Peak", "\(day(peak, site: site)) \(Copy.hhmm(peak, site: site))"),
-             end.map { EventFact("Ends", "\(day($0, site: site)) \(Copy.hhmm($0, site: site))") }].compactMap { $0 }
+            [begin.map { EventFact(L10n.text("Begins"), "\(day($0, site: site)) \(Copy.hhmm($0, site: site))") },
+             EventFact(L10n.text("Peak"), "\(day(peak, site: site)) \(Copy.hhmm(peak, site: site))"),
+             end.map { EventFact(L10n.text("Ends"), "\(day($0, site: site)) \(Copy.hhmm($0, site: site))") }].compactMap { $0 }
         }
         if let l = Ephemeris.nextLunarEclipse(after: date), l.peak <= limit {
             var e = SkyEvent(id: "lunar-\(Int(l.peak.timeIntervalSince1970))", kind: .lunarEclipse,
-                             title: "\(l.kind.rawValue.capitalized) lunar eclipse", detail: "Peak obscuration \(Int((l.obscuration * 100).rounded()))%",
+                             title: L10n.format("\(L10n.text(l.kind.rawValue.capitalized)) lunar eclipse"), detail: L10n.format("Peak obscuration \(Int((l.obscuration * 100).rounded()))%"),
                              time: l.peak, endTime: l.end, raHours: nil, decDeg: nil)
             func moonAlt(_ d: Date?) -> Double { d.map { Ephemeris.moon(at: $0, site: site).position.altDeg } ?? -90 }
             let alt = moonAlt(l.peak)
             let partly = moonAlt(l.begin) > 0 || moonAlt(l.end) > 0
-            let seen = alt > 0 ? "\(Int(alt.rounded()))° up"
-                     : partly ? "Below the horizon at peak; the Moon is up for part of the eclipse"
-                     : "Below the horizon throughout: not visible from \(site.name)"
-            e.facts = times(l.begin, l.peak, l.end) + [EventFact("Moon at peak", seen)]
-            if alt <= 0 { e.detail += partly ? " · partly visible here" : " · not visible here" }
+            let seen = alt > 0 ? L10n.format("\(Int(alt.rounded()))° up")
+                     : partly ? L10n.text("Below the horizon at peak; the Moon is up for part of the eclipse")
+                     : L10n.format("Below the horizon throughout: not visible from \(site.name)")
+            e.facts = times(l.begin, l.peak, l.end) + [EventFact(L10n.text("Moon at peak"), seen)]
+            if alt <= 0 { e.detail += partly ? L10n.text(" · partly visible here") : L10n.text(" · not visible here") }
             out.append(e)
         }
         if let s = Ephemeris.nextLocalSolarEclipse(after: date, site: site), s.peak <= limit {
             var e = SkyEvent(id: "solar-\(Int(s.peak.timeIntervalSince1970))", kind: .solarEclipse,
-                             title: "\(s.kind.rawValue.capitalized) solar eclipse from \(site.name)", detail: "Peak obscuration \(Int((s.obscuration * 100).rounded()))%",
+                             title: L10n.format("\(L10n.text(s.kind.rawValue.capitalized)) solar eclipse from \(site.name)"), detail: L10n.format("Peak obscuration \(Int((s.obscuration * 100).rounded()))%"),
                              time: s.peak, endTime: s.partialEnd, raHours: nil, decDeg: nil)
             let alt = Ephemeris.sunAltitude(at: s.peak, site: site)
-            e.facts = times(s.partialBegin, s.peak, s.partialEnd) + [EventFact("Sun at peak", alt > 0 ? "\(Int(alt.rounded()))° up"
-                                                                          : "Below the horizon; the eclipse is seen at sunrise or sunset"),
-                      EventFact("Safety", "Never look at the Sun, or point a telescope or camera at it, without a certified solar filter.")]
+            e.facts = times(s.partialBegin, s.peak, s.partialEnd) + [EventFact(L10n.text("Sun at peak"), alt > 0 ? L10n.format("\(Int(alt.rounded()))° up")
+                                                                          : L10n.text("Below the horizon; the eclipse is seen at sunrise or sunset")),
+                      EventFact(L10n.text("Safety"), L10n.text("Never look at the Sun, or point a telescope or camera at it, without a certified solar filter."))]
             out.append(e)
         }
         return out
@@ -300,17 +301,17 @@ public enum Events {
                 let (a, pa) = bodies[i], (b, pb) = bodies[j]
                 let sep = Ephemeris.separationDeg(ra1Hours: pa.raHours, dec1Deg: pa.decDeg, ra2Hours: pb.raHours, dec2Deg: pb.decDeg)
                 guard sep <= maxSeparationDeg else { continue }
-                var detail = String(format: "%.1f° apart", sep)
-                var e = SkyEvent(id: "conj-\(a)-\(b)", kind: .conjunction, title: "\(a) near \(b)", detail: detail, time: date, endTime: nil,
+                var detail = String(format: L10n.text("%.1f° apart"), sep)
+                var e = SkyEvent(id: "conj-\(a)-\(b)", kind: .conjunction, title: L10n.format("\(L10n.text(a)) near \(L10n.text(b))"), detail: detail, time: date, endTime: nil,
                                  raHours: pa.raHours, decDeg: pa.decDeg)
                 e.separationDeg = sep
-                e.facts = [EventFact("Separation", String(format: "%.1f°", sep))]
+                e.facts = [EventFact(L10n.text("Separation"), String(format: "%.1f°", sep))]
                 if let f = fov {
                     let fits = Events.fits(separationDeg: sep, fov: f, includesMoon: a == "Moon" || b == "Moon")
                     e.fits = fits
-                    detail += fits ? " · fits your field of view" : " · wider than your field of view"
-                    e.facts.append(EventFact("Your field of view", String(format: "%g × %g°: ", f.widthDeg, f.heightDeg)
-                                             + (fits ? "both fit in one frame" : "too narrow for both at once")))
+                    detail += fits ? L10n.text(" · fits your field of view") : L10n.text(" · wider than your field of view")
+                    e.facts.append(EventFact(L10n.text("Your field of view"), String(format: "%g × %g°: ", f.widthDeg, f.heightDeg)
+                                             + (fits ? L10n.text("both fit in one frame") : L10n.text("too narrow for both at once"))))
                 }
                 if let n = night {
                     let d = twilight(n)
@@ -319,10 +320,10 @@ public enum Events {
                         e.best = top.time
                         e.behindHorizon = !top.clear
                         e.brief = detail
-                        detail += " · best \(Copy.hhmm(top.time, site: site))"
-                        e.facts.append(EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"))
+                        detail += L10n.format(" · best \(Copy.hhmm(top.time, site: site))")
+                        e.facts.append(EventFact(L10n.text("Best"), L10n.format("\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up")))
                     } else {
-                        e.facts.append(EventFact("Best", "Below the horizon at night"))
+                        e.facts.append(EventFact(L10n.text("Best"), L10n.text("Below the horizon at night")))
                     }
                 }
                 e.detail = detail
@@ -340,20 +341,20 @@ public enum Events {
         guard top.alt > minAlt else { return nil }
         let where_ = Ephemeris.constellation(raHours: pos.raHours, decDeg: pos.decDeg).name
         var e = SkyEvent(id: "comet-\(designation)", kind: .comet, title: designation,
-                         detail: String(format: "mag %.1f · in %@ · best %@, %.0f° up", pos.magnitude, where_, Copy.hhmm(top.time, site: site), top.alt),
+                         detail: String(format: L10n.text("mag %.1f · in %@ · best %@, %.0f° up"), pos.magnitude, where_, Copy.hhmm(top.time, site: site), top.alt),
                          time: d.start, endTime: d.end, raHours: pos.raHours, decDeg: pos.decDeg)
         e.best = top.time
         e.behindHorizon = !top.clear
-        e.brief = String(format: "mag %.1f · in %@, %.0f° up at best", pos.magnitude, where_, top.alt)
+        e.brief = String(format: L10n.text("mag %.1f · in %@, %.0f° up at best"), pos.magnitude, where_, top.alt)
         var mag = String(format: "%.1f", pos.magnitude)
         if let l = later {
             let change = l.magnitude - pos.magnitude   // smaller magnitude is brighter
-            mag += abs(change) < 0.1 ? ", steady" : String(format: ", %@ (%.1f in a week)", change < 0 ? "brightening" : "fading", l.magnitude)
+            mag += abs(change) < 0.1 ? L10n.text(", steady") : String(format: L10n.text(", %@ (%.1f in a week)"), change < 0 ? "brightening" : "fading", l.magnitude)
         }
-        e.facts = [EventFact("Magnitude", mag), EventFact("Where", where_),
-                   EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"),
-                   EventFact("Distance", String(format: "%.2f AU from Earth, %.2f AU from the Sun", pos.deltaAU, pos.rAU)),
-                   EventFact("Moon", moonNote(at: top.time, site: site, hides: "wash out its faint tail"))]
+        e.facts = [EventFact(L10n.text("Magnitude"), mag), EventFact(L10n.text("Where"), where_),
+                   EventFact(L10n.text("Best"), L10n.format("\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up")),
+                   EventFact(L10n.text("Distance"), String(format: L10n.text("%.2f AU from Earth, %.2f AU from the Sun"), pos.deltaAU, pos.rAU)),
+                   EventFact(L10n.text("Moon"), moonNote(at: top.time, site: site, hides: L10n.text("wash out its faint tail")))]
         return e
     }
 
@@ -362,19 +363,19 @@ public enum Events {
     public static func occultation(_ o: Occultation, site: Site) -> SkyEvent {
         let first = o.contacts.min { $0.disappears < $1.disappears }!
         let names = o.contacts.map(\.name)
-        let who = o.id == "pleiades" ? ListFormatter.localizedString(byJoining: names) + (names.count == 1 ? " goes" : " go") : "\(o.object) goes"
-        var e = SkyEvent(id: "occ-\(o.id)-\(Int(o.start.timeIntervalSince1970))", kind: .occultation, title: "The Moon covers \(o.object)",
-                         detail: "\(who) behind the Moon · \(Int(first.altDeg.rounded()))° up", time: o.start, endTime: o.end, raHours: nil, decDeg: nil)
+        let who = o.id == "pleiades" ? ListFormatter.localizedString(byJoining: names) + (names.count == 1 ? L10n.text(" goes") : L10n.text(" go")) : L10n.format("\(o.object) goes")
+        var e = SkyEvent(id: "occ-\(o.id)-\(Int(o.start.timeIntervalSince1970))", kind: .occultation, title: L10n.format("The Moon covers \(o.object)"),
+                         detail: L10n.format("\(who) behind the Moon · \(Int(first.altDeg.rounded()))° up"), time: o.start, endTime: o.end, raHours: nil, decDeg: nil)
         e.best = o.start
         e.occultation = o
-        func edge(_ lit: Bool) -> String { lit ? "lit edge" : "dark edge" }
+        func edge(_ lit: Bool) -> String { lit ? L10n.text("lit edge") : L10n.text("dark edge") }
         e.facts = o.contacts.sorted { $0.disappears < $1.disappears }.map { c in
-            EventFact(c.name, "gone \(Copy.hhmm(c.disappears, site: site)) at the \(edge(c.disappearsAtLitEdge)) · back \(Copy.hhmm(c.reappears, site: site)) at the \(edge(c.reappearsAtLitEdge))")
+            EventFact(c.name, L10n.format("gone \(Copy.hhmm(c.disappears, site: site)) at the \(edge(c.disappearsAtLitEdge)) · back \(Copy.hhmm(c.reappears, site: site)) at the \(edge(c.reappearsAtLitEdge))"))
         }
         let lit = Int((o.moonIllumination * 100).rounded())
-        e.facts.append(EventFact("Moon", "\(lit)% lit, \(Int(o.moonAltDeg.rounded()))° up in the \(Geo.compass(o.moonAzDeg))"))
-        e.facts.append(EventFact("Watch with", o.id.hasPrefix("planet-") || o.object == "the Pleiades" && lit < 50
-                                 ? "Your eyes or binoculars" : "Binoculars: a star is faint beside the Moon"))
+        e.facts.append(EventFact(L10n.text("Moon"), L10n.format("\(lit)% lit, \(Int(o.moonAltDeg.rounded()))° up in the \(Geo.compass(o.moonAzDeg))")))
+        e.facts.append(EventFact(L10n.text("Watch with"), o.id.hasPrefix("planet-") || o.id == "pleiades" && lit < 50
+                                 ? L10n.text("Your eyes or binoculars") : L10n.text("Binoculars: a star is faint beside the Moon")))
         return e
     }
 
@@ -392,26 +393,26 @@ public enum Events {
         if p.peak < start { hi = (start, p.appearsAzimuthDeg ?? p.peakAzimuthDeg, p.appearsElevationDeg ?? p.maxElevationDeg) }
         else if p.peak > end { hi = (end, p.vanishesAzimuthDeg ?? p.peakAzimuthDeg, p.vanishesElevationDeg ?? p.maxElevationDeg) }
         else { hi = (p.peak, p.peakAzimuthDeg, p.maxElevationDeg) }
-        let highest = "\(Int(hi.alt.rounded()))° up in the\(dir(hi.az))"
-        var e = SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: "ISS pass",
+        let highest = L10n.format("\(Int(hi.alt.rounded()))° up in the\(dir(hi.az))")
+        var e = SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: L10n.text("ISS pass"),
                          detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(hi.time, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
                          time: start, endTime: end, raHours: nil, decDeg: nil)
         e.best = hi.time
         e.behindHorizon = site.horizonDeg(azimuthDeg: hi.az).map { hi.alt < $0 } ?? false   // even its highest seen point
-        let first_ = SkyPathPoint(label: emerges ? "Appears" : "Rises", time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
+        let first_ = SkyPathPoint(label: emerges ? L10n.text("Appears") : L10n.text("Rises"), time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
                                   altitudeDeg: emerges ? (p.appearsElevationDeg ?? 0) : 0)
-        let last_ = SkyPathPoint(label: fades ? "Fades" : "Sets", time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,
+        let last_ = SkyPathPoint(label: fades ? L10n.text("Fades") : L10n.text("Sets"), time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,
                                  altitudeDeg: fades ? (p.vanishesElevationDeg ?? 0) : 0)
         // Seen only from its sunlit start to its end: a peak outside that stretch is not drawn.
         e.path = hi.time == start || hi.time == end ? [first_, last_]
-            : [first_, SkyPathPoint(label: "Highest", time: hi.time, azimuthDeg: hi.az, altitudeDeg: hi.alt), last_]
+            : [first_, SkyPathPoint(label: L10n.text("Highest"), time: hi.time, azimuthDeg: hi.az, altitudeDeg: hi.alt), last_]
         let minutes = max(1, Int((end.timeIntervalSince(start) / 60).rounded()))
-        e.facts = [EventFact(emerges ? "Appears" : "Rises", "\(Copy.hhmm(start, site: site))\(dir(emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg))"
-                                                          + (emerges ? ", out of Earth's shadow" : "")),
-                   EventFact("Highest", "\(Copy.hhmm(hi.time, site: site)), \(highest)"),
-                   EventFact(fades ? "Fades" : "Sets", "\(Copy.hhmm(end, site: site))\(dir(fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg))"
-                                                     + (fades ? ", into Earth's shadow" : "")),
-                   EventFact("Visible for", "About \(minutes) minute\(minutes == 1 ? "" : "s")")]
+        e.facts = [EventFact(emerges ? L10n.text("Appears") : L10n.text("Rises"), "\(Copy.hhmm(start, site: site))\(dir(emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg))"
+                                                          + (emerges ? L10n.text(", out of Earth's shadow") : "")),
+                   EventFact(L10n.text("Highest"), "\(Copy.hhmm(hi.time, site: site)), \(highest)"),
+                   EventFact(fades ? L10n.text("Fades") : L10n.text("Sets"), "\(Copy.hhmm(end, site: site))\(dir(fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg))"
+                                                     + (fades ? L10n.text(", into Earth's shadow") : "")),
+                   EventFact(L10n.text("Visible for"), L10n.format("About \(minutes) minute\(minutes == 1 || L10n.language == .simplifiedChinese ? "" : "s")"))]
         return e
     }
 

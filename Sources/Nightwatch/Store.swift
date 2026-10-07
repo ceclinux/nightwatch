@@ -8,6 +8,17 @@ import NightwatchUI
 final class Store: ObservableObject {
     /// The one store: the app's scene and Siri's actions (#53) both use it, so an action run at launch finds it at once.
     static let shared = Store()
+    @Published private(set) var language = AppLanguage.saved()
+
+    func setLanguage(_ language: AppLanguage) {
+        guard language != self.language else { return }
+        UserDefaults.standard.set(language.rawValue, forKey: AppLanguage.defaultsKey)
+        self.language = language
+        Notifier.registerActions()
+        // Rebuild generated descriptions from the cached forecast, without fetching weather again.
+        // Language changes must not deliver notifications or advance the alert state.
+        Task { await recompute(now: Date(), deliverAlerts: false) }
+    }
     /// The text size is handed to the shared font layer as it changes, so every font made afterwards uses it.
     @Published var config: Config = .default { didSet { TextScale.factor = config.textSize.factor } }
     @Published var plan: NightPlan?
@@ -86,7 +97,7 @@ final class Store: ObservableObject {
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
         switch LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) {
         case .linked(let url): linkedSettings = url        // the welcome offers to import it through a file picker
-        case .failed(let path): importError = "Could not copy your earlier settings from \(path). Set Nightwatch up again, or copy that file into Settings by hand."
+        case .failed(let path): importError = L10n.format("Could not copy your earlier settings from \(path). Set Nightwatch up again, or copy that file into Settings by hand.")
         case .imported, .nothing: break
         }
         StateFiles.migrate(from: Store.cacheDir)
@@ -98,7 +109,7 @@ final class Store: ObservableObject {
         comets = Store.read("comets.json") ?? []
         tle = Store.read("iss-tle.json")
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
-        if catalog.objects.isEmpty { lastError = "Catalogue missing: run scripts/fetch-data.sh and rebuild." }
+        if catalog.objects.isEmpty { lastError = L10n.text("Catalogue missing: run scripts/fetch-data.sh and rebuild.") }
         loadConfig()
         TextScale.factor = config.textSize.factor
         startSettingsSync()
@@ -126,7 +137,7 @@ final class Store: ObservableObject {
         } catch {
             configLoadFailed = true
             if let d = try? Data(contentsOf: url) { try? d.write(to: url.appendingPathExtension("bad"), options: .atomic) }
-            lastError = "Could not read \(url.path): \(error.localizedDescription) A copy is at config.json.bad. Settings will not be saved until you fix the file or use Reset config in Settings."
+            lastError = L10n.format("Could not read \(url.path): \(error.localizedDescription) A copy is at config.json.bad. Settings will not be saved until you fix the file or use Reset config in Settings.")
         }
     }
 
@@ -253,7 +264,7 @@ final class Store: ObservableObject {
     /// A target's name by id from the whole catalogue, for a saved Show Target shortcut on a night it is not in the list.
     func targetName(id: String) -> String? {
         if let t = plan.flatMap({ p in (p.targets + p.brightTargets + p.favourites.map(\.target)).first { $0.id == id } }) { return t.name }
-        if id == "moon" { return "Moon" }
+        if id == "moon" { return L10n.text("Moon") }
         if id.hasPrefix("planet-"), let p = Planet(rawValue: String(id.dropFirst(7))) { return p.displayName }
         if let s = stars.first(where: { $0.id == id }) { return s.name }
         if let c = constellations.first(where: { $0.id == id }) { return c.name }
@@ -284,14 +295,14 @@ final class Store: ObservableObject {
     var homeSite: Site? { config.homeSite(auto: autoSite) }
     var isAway: Bool { config.isAway(auto: autoSite) }
     /// "Home", or "my location" when home is this Mac's location.
-    var homeLabel: String { config.sites.isEmpty ? "my location" : (homeSite?.name ?? "home") }
+    var homeLabel: String { config.sites.isEmpty ? L10n.text("my location") : (homeSite?.name ?? L10n.text("home")) }
     var isStale: Bool { (forecast?.fetchedAt).map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true }
     var iconName: String { Theme.icon(for: plan, stale: isStale, now: Date()) }
 
     /// `send`: pass the change to this account's other Macs (#49); false for a change that came from one.
     func saveConfig(send: Bool = true) {
         if configLoadFailed {
-            lastError = "Not saved: \(ConfigStore.defaultURL.lastPathComponent) could not be read. Fix it, or use Reset config in Settings."
+            lastError = L10n.format("Not saved: \(ConfigStore.defaultURL.lastPathComponent) could not be read. Fix it, or use Reset config in Settings.")
         } else {
             try? ConfigStore.save(config, to: ConfigStore.defaultURL)
             configModDate = Store.configModDate()
@@ -351,7 +362,7 @@ final class Store: ObservableObject {
         if let m = Store.configModDate(), m > (configModDate ?? .distantPast) { loadConfig() }
         guard !refreshing, !awaitingFix else { return }
         guard let site else {
-            if !configLoadFailed { lastError = "No site. Add one in Settings or allow location access." }
+            if !configLoadFailed { lastError = L10n.text("No site. Add one in Settings or allow location access.") }
             return
         }
         refreshing = true
@@ -363,7 +374,7 @@ final class Store: ObservableObject {
                 Store.write(forecast, "forecast.json")
                 lastError = nil
             } catch {
-                lastError = "Forecast fetch failed: \(error.localizedDescription)"
+                lastError = L10n.format("Forecast fetch failed: \(error.localizedDescription)")
             }
         }
         await refreshAuxiliary(now: now)
@@ -397,14 +408,14 @@ final class Store: ObservableObject {
     }
 
     /// The night in progress until its darkness ends, then the coming one (Ephemeris.currentNight).
-    func recompute(now: Date) async {
+    func recompute(now: Date, deliverAlerts: Bool = true) async {
         // Asked first: after this, everything up to the alert step runs without suspending, so two overlapping recomputes
         // can never step the alerts with an older plan or site.
-        let canNotify = config.notifyEnabled ? await Notifier.authorised() : false
+        let canNotify = deliverAlerts && config.notifyEnabled ? await Notifier.authorised() : false
         guard let site, let fc = forecast else { return }
         guard forecastMatches(site) else {
             plan = nil; tomorrow = nil; week = []; events = []; darkSites = []; sitePlans = []; bestAway = nil
-            lastError = "Forecast is for a different site; refreshing"
+            lastError = L10n.text("Forecast is for a different site; refreshing")
             clearWidgetSnapshot()
             return
         }

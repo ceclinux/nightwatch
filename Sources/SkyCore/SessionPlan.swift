@@ -75,10 +75,10 @@ public enum SessionPlanner {
         for id in favourites + choices.added where seen.insert(id).inserted {
             guard let t = byID[id] else { continue }
             if let reason = reasons[id] ?? nil { omitted.append(PlanOmission(target: t, reason: reason)); continue }
-            if t.moonWashed { omitted.append(PlanOmission(target: t, reason: "Washed out by the Moon")); continue }
-            guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: site.horizon == nil ? "Not up in the clear window" : "Behind your horizon in the clear window")); continue }
+            if t.moonWashed { omitted.append(PlanOmission(target: t, reason: L10n.text("Washed out by the Moon"))); continue }
+            guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: site.horizon == nil ? L10n.text("Not up in the clear window") : L10n.text("Behind your horizon in the clear window"))); continue }
             guard v.start < end else {
-                omitted.append(PlanOmission(target: t, reason: "Up only after your finish time, \(Copy.hhmm(end, site: site))")); continue
+                omitted.append(PlanOmission(target: t, reason: L10n.format("Up only after your finish time, \(Copy.hhmm(end, site: site))"))); continue
             }
             if choices.removed.contains(id) { takenOff.append(t); continue }
             items.append(PlanItem(target: t, added: !favourites.contains(id)))

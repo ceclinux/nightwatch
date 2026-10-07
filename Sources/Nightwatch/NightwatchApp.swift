@@ -68,23 +68,25 @@ struct NightwatchApp: App {
                 .environmentObject(store)
                 .frame(width: TextScale.pt(360))
                 .textSized(store.config.textSize)
+                .interfaceLanguage(store.language)
         } label: {
             // The label is the status-bar icon and is always rendered at launch; the popover
             // content above is lazy and only builds once opened, so boot() must start here.
             MenuBarLabel(store: store, boot: boot)
+                .environment(\.locale, L10n.locale)
         }
         .menuBarExtraStyle(.window)
 
-        Window("Targets", id: "targets") { TargetsView().environmentObject(store) }   // sized inside, see TargetsView.body
+        Window(L10n.text("Targets"), id: "targets") { TargetsView().environmentObject(store).interfaceLanguage(store.language) }   // sized inside, see TargetsView.body
             .defaultSize(width: 980, height: 640).defaultPosition(.center)
         // Not rebuilt on a change, so choosing a size in Settings does not throw the page back to its top.
-        Window("Settings", id: "settings") { SettingsView().environmentObject(store).scaledText() }
+        Window(L10n.text("Settings"), id: "settings") { SettingsView().environmentObject(store).scaledText().interfaceLanguage(store.language) }
             .defaultSize(width: 520, height: 560).defaultPosition(.center)
-        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).scaledText().id(store.config.textSize) }   // rebuilt on a change, as textSized does
+        Window(L10n.text("Welcome to Nightwatch"), id: "welcome") { WelcomeView().environmentObject(store).scaledText().id(store.config.textSize).interfaceLanguage(store.language) }   // rebuilt on a change, as textSized does
             .windowResizability(.contentSize).defaultPosition(.center)
-        Window("About Nightwatch", id: "about") { AboutView().environmentObject(store).textSized(store.config.textSize) }
+        Window(L10n.text("About Nightwatch"), id: "about") { AboutView().environmentObject(store).textSized(store.config.textSize).interfaceLanguage(store.language) }
             .defaultSize(width: 420, height: 640).defaultPosition(.center)
-        Window("What the numbers mean", id: "numbers") { NumbersView().textSized(store.config.textSize) }
+        Window(L10n.text("What the numbers mean"), id: "numbers") { NumbersView().textSized(store.config.textSize).interfaceLanguage(store.language) }
             .defaultSize(width: 780, height: 620).defaultPosition(.center)
     }
 

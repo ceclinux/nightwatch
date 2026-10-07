@@ -17,7 +17,7 @@ struct NumbersView: View {
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(210)
-            .accessibilityLabel("Terms")
+            .accessibilityLabel(L10n.text("Terms"))
         } detail: {
             ScrollViewReader { proxy in
                 ScrollView {

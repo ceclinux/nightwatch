@@ -4,13 +4,13 @@ public enum TargetGroup: String, Codable, CaseIterable, Sendable {
     case nebulae, galaxies, clusters, stars, planets, events, constellations
     public var displayName: String {
         switch self {
-        case .nebulae: "Nebulae"
-        case .galaxies: "Galaxies"
-        case .clusters: "Star clusters"
-        case .stars: "Stars"
-        case .planets: "Planets and Moon"
-        case .events: "Events"
-        case .constellations: "Constellations"
+        case .nebulae: L10n.text("Nebulae")
+        case .galaxies: L10n.text("Galaxies")
+        case .clusters: L10n.text("Star clusters")
+        case .stars: L10n.text("Stars")
+        case .planets: L10n.text("Planets and Moon")
+        case .events: L10n.text("Events")
+        case .constellations: L10n.text("Constellations")
         }
     }
 }
@@ -86,6 +86,7 @@ public struct Catalog: Sendable {
     ]
 
     /// OpenNGC type codes in words, for card subtitles ("Emission nebula").
+    // Canonical values also drive filter and visibility rules; translate at presentation, never in these rules.
     public static let typeNames: [String: String] = [
         "G": "Galaxy", "GPair": "Galaxy pair", "GTrpl": "Galaxy triplet", "GGroup": "Galaxy group",
         "OCl": "Open cluster", "GCl": "Globular cluster", "Cl+N": "Cluster with nebula", "*Ass": "Stellar association",

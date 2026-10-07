@@ -13,7 +13,7 @@ struct StatTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
-            Text(value ?? "No data").font(.system(size: TextScale.pt(12.5), weight: .medium))
+            Text(value ?? L10n.text("No data")).font(.system(size: TextScale.pt(12.5), weight: .medium))
                 .foregroundStyle(value == nil ? Tokens.textSecondary : Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
             if let hint { Text(hint).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true) }
         }

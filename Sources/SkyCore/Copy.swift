@@ -5,38 +5,38 @@ import Foundation
 public struct Copy: Sendable {
     public init() {}
 
-    public var refresh: String { "Refresh" }
-    public var noWindow: String { "No clear window tonight." }
-    public var cancelTitle: String { "Cancelled. Clouds moving in" }
-    public var lessCertainTitle: String { "Less certain. Forecasts disagree" }
-    public func offlineSince(_ time: String) -> String { "Offline since \(time)" }
-    public func goTitle(windowStart: String) -> String { "Clear from \(windowStart)" }
+    public var refresh: String { L10n.text("Refresh") }
+    public var noWindow: String { L10n.text("No clear window tonight.") }
+    public var cancelTitle: String { L10n.text("Cancelled. Clouds moving in") }
+    public var lessCertainTitle: String { L10n.text("Less certain. Forecasts disagree") }
+    public func offlineSince(_ time: String) -> String { L10n.format("Offline since \(time)") }
+    public func goTitle(windowStart: String) -> String { L10n.format("Clear from \(windowStart)") }
     public func headsUpTitle(windowStart: String, hours: Double) -> String {
-        String(format: "Clear skies tonight from %@ · %.1f h", windowStart, hours)
+        String(format: L10n.text("Clear skies tonight from %@ · %.1f h"), windowStart, hours)
     }
-    public func tomorrowTitle(hours: Double) -> String { String(format: "Tomorrow night looks clear · %.1f h", hours) }
+    public func tomorrowTitle(hours: Double) -> String { String(format: L10n.text("Tomorrow night looks clear · %.1f h"), hours) }
 
     // Bright nights (v0.3).
     public func brightHeadsUpTitle(windowStart: String, targets: [RankedTarget]) -> String {
-        "Bright night tonight from \(windowStart) · \(Copy.brightList(targets))"
+        L10n.format("Bright night tonight from \(windowStart) · \(Copy.brightList(targets))")
     }
-    public func brightGoTitle(windowStart: String) -> String { "Bright night. Clear from \(windowStart)" }
-    public func brightTomorrowTitle(hours: Double) -> String { String(format: "Tomorrow looks bright and clear · %.1f h", hours) }
+    public func brightGoTitle(windowStart: String) -> String { L10n.format("Bright night. Clear from \(windowStart)") }
+    public func brightTomorrowTitle(hours: Double) -> String { String(format: L10n.text("Tomorrow looks bright and clear · %.1f h"), hours) }
     /// "Moon 62%, Saturn": the Moon with its illumination, planets by name, in the plan's order.
     public static func brightList(_ targets: [RankedTarget]) -> String {
-        targets.map { $0.id == "moon" ? "Moon \($0.subtitle.prefix { $0 != " " })" : $0.name }.joined(separator: ", ")
+        targets.map { $0.id == "moon" ? L10n.format("Moon \($0.subtitle.prefix { $0 != " " })") : L10n.text($0.name) }.joined(separator: ", ")
     }
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
     /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
         let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) : ""
-        if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
+        if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + L10n.text(" well placed.") + line }
         var parts: [String] = []
-        if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
-        else if plan.moonIllumination < 0.1 { parts.append("No Moon") }
-        else { parts.append("Moon \(Int((plan.moonIllumination * 100).rounded()))%") }
-        if !plan.best.isEmpty { parts.append(plan.best.map(\.name).joined(separator: ", ") + " well placed") }
+        if let set = plan.moonSet { parts.append(L10n.format("Moon sets \(Copy.hhmm(set, site: site))")) }
+        else if plan.moonIllumination < 0.1 { parts.append(L10n.text("No Moon")) }
+        else { parts.append(L10n.format("Moon \(Int((plan.moonIllumination * 100).rounded()))%")) }
+        if !plan.best.isEmpty { parts.append(plan.best.map(\.name).joined(separator: ", ") + L10n.text(" well placed")) }
         return parts.joined(separator: ". ") + "." + line
     }
 
@@ -48,27 +48,27 @@ public struct Copy: Sendable {
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
     public static func heldBack(_ factors: [LimitingFactor]) -> String? {
-        factors.isEmpty ? nil : "Held back by " + factors.prefix(2).map(\.text).joined(separator: " and ")
+        factors.isEmpty ? nil : L10n.text("Held back by ") + factors.prefix(2).map(\.text).joined(separator: L10n.text(" and "))
     }
 
     /// The bezel's screen-reader sentence (spec §7).
     public static func bezelLabel(_ plan: NightPlan, site: Site) -> String {
-        guard let w = plan.primary else { return "Sky score \(plan.score) of 100. No clear window." }
-        var s = "Sky score \(plan.score) of 100. Clear from \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))"
-        if let h = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += ", clearest hour \(hhmm(h.time, site: site)) at \(max(0, 100 - h.effectiveCloud))% clear" }
+        guard let w = plan.primary else { return L10n.format("Sky score \(plan.score) of 100. No clear window.") }
+        var s = L10n.format("Sky score \(plan.score) of 100. Clear from \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))")
+        if let h = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += L10n.format(", clearest hour \(hhmm(h.time, site: site)) at \(max(0, 100 - h.effectiveCloud))% clear") }
         return s + "."
     }
 
     public static func moonText(_ m: MoonTonight, site: Site) -> String {
         switch m {
-        case .sets(let t): "Sets \(hhmm(t, site: site))"
-        case .rises(let t): "Rises \(hhmm(t, site: site))"
-        case .upAllNight: "Up all night"
-        case .down: "Down tonight"
+        case .sets(let t): L10n.format("Sets \(hhmm(t, site: site))")
+        case .rises(let t): L10n.format("Rises \(hhmm(t, site: site))")
+        case .upAllNight: L10n.text("Up all night")
+        case .down: L10n.text("Down tonight")
         }
     }
 
-    public static func hoursAgo(_ from: Date, now: Date) -> String { "\(Int(now.timeIntervalSince(from) / 3600)) h ago" }
+    public static func hoursAgo(_ from: Date, now: Date) -> String { L10n.format("\(Int(now.timeIntervalSince(from) / 3600)) h ago") }
 
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
@@ -78,18 +78,18 @@ public struct Copy: Sendable {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let found = targets.filter { $0.matches(query) }
         let here = found.filter { $0.group == group }
-        var parts = [here.isEmpty ? "No match for “\(q)” in \(group.displayName) tonight."
-                                  : "\(here.count) \(here.count == 1 ? "match" : "matches") for “\(q)” in \(group.displayName)."]
+        var parts = [here.isEmpty ? L10n.format("No match for “\(q)” in \(group.displayName) tonight.")
+                                  : L10n.format("\(here.count) \(here.count == 1 ? L10n.text("match") : L10n.text("matches")) for “\(q)” in \(group.displayName).")]
         // Counted per switch: a match both Moon-washed and outside the field of view is named by both.
         let washed = here.filter { $0.hiddenByMoon(includeMoonWashed: includeMoonWashed) }.count
-        if washed > 0 { parts.append("\(washed) Moon-washed, shown last.") }
+        if washed > 0 { parts.append(L10n.format("\(washed) Moon-washed, shown last.")) }
         let unfit = here.filter { $0.hiddenByFit(fitsOnly: fitsOnly) }.count
-        if unfit > 0 { parts.append("\(unfit) not fitting your field of view, shown last.") }
+        if unfit > 0 { parts.append(L10n.format("\(unfit) not fitting your field of view, shown last.")) }
         let elsewhere = TargetGroup.allCases.filter { $0 != group }.compactMap { g -> String? in
             let n = found.filter { $0.group == g }.count
             return n == 0 ? nil : "\(g.displayName) (\(n))"
         }
-        if !elsewhere.isEmpty { parts.append("Also in \(elsewhere.joined(separator: ", ")).") }
+        if !elsewhere.isEmpty { parts.append(L10n.format("Also in \(elsewhere.joined(separator: ", ")).")) }
         return parts.joined(separator: " ")
     }
 
@@ -98,24 +98,24 @@ public struct Copy: Sendable {
     public static func cardLabel(_ t: RankedTarget, lit: Bool, nearMoon: Bool, site: Site) -> String {
         let name = [t.catalogueID, t.cardNote, t.cardName].compactMap { $0 }.joined(separator: " ")   // as the card reads
         var parts = [name]
-        if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
+        if let m = t.magnitude { parts.append(String(format: L10n.text("magnitude %.1f"), m)) }
         parts.append(frameChip(t))
-        if t.moonWashed { parts.append("Moon-washed") } else if nearMoon { parts.append("Near Moon") }
+        if t.moonWashed { parts.append(L10n.text("Moon-washed")) } else if nearMoon { parts.append(L10n.text("Near Moon")) }
         if !lit {
             // No clear window: when it is up in darkness anyway, as the card now shows (owner, 28 September 2026).
             if let v = t.viewable {
-                parts.append("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
-            } else { parts.append("no clear window, too low in darkness tonight") }
+                parts.append(L10n.format("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"))
+            } else { parts.append(L10n.text("no clear window, too low in darkness tonight")) }
         }
         else if let v = t.viewable {
-            parts.append("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
-        } else { parts.append("viewable outside the clear window") }
+            parts.append(L10n.format("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"))
+        } else { parts.append(L10n.text("viewable outside the clear window")) }
         return parts.joined(separator: ", ")
     }
 
     /// The notify switch in Settings › Alerts: "Notify at HH:MM" for the nudge before the window, unless quiet hours would drop that nudge.
     public static func notifyLabel(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String {
-        notifyTime(plan, site: site, settings: settings).map { "Notify at \($0)" } ?? "Notify when clear"
+        notifyTime(plan, site: site, settings: settings).map { L10n.format("Notify at \($0)") } ?? L10n.text("Notify when clear")
     }
     /// The heads-up's "20:30", or nil when there is no window or it falls in quiet hours.
     public static func notifyTime(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String? {
@@ -127,21 +127,21 @@ public struct Copy: Sendable {
     /// The neutral frame chip on a Targets card (follow-on 1).
     public static func frameChip(_ t: RankedTarget) -> String {
         switch t.fit {
-        case .fits: t.frameFill.map { "Fills \(max(1, Int(($0 * 100).rounded())))% of frame" } ?? "Fits frame"
-        case .small: "Small in frame"
-        case .mosaic: "Mosaic"
+        case .fits: t.frameFill.map { L10n.format("Fills \(max(1, Int(($0 * 100).rounded())))% of frame") } ?? L10n.text("Fits frame")
+        case .small: L10n.text("Small in frame")
+        case .mosaic: L10n.text("Mosaic")
         }
     }
 
     /// The v0.5 agreement line.
     public static func agreementText(_ a: Agreement, site: Site) -> String {
         switch a {
-        case .agree: "Open-Meteo agrees"
-        case .cloudFrom(let t): "Open-Meteo sees cloud from \(hhmm(t, site: site))"
-        case .clearFrom(let t): "Open-Meteo sees it clear from \(hhmm(t, site: site))"
-        case .noWindow: "Open-Meteo sees no clear window"
-        case .agreeNoWindow: "Open-Meteo agrees: no clear window"
-        case .clearRun(let a, let b): "Open-Meteo has a clear run \(hhmm(a, site: site))–\(hhmm(b, site: site))"
+        case .agree: L10n.text("Open-Meteo agrees")
+        case .cloudFrom(let t): L10n.format("Open-Meteo sees cloud from \(hhmm(t, site: site))")
+        case .clearFrom(let t): L10n.format("Open-Meteo sees it clear from \(hhmm(t, site: site))")
+        case .noWindow: L10n.text("Open-Meteo sees no clear window")
+        case .agreeNoWindow: L10n.text("Open-Meteo agrees: no clear window")
+        case .clearRun(let a, let b): L10n.format("Open-Meteo has a clear run \(hhmm(a, site: site))–\(hhmm(b, site: site))")
         }
     }
 
@@ -169,23 +169,24 @@ public struct Copy: Sendable {
             guard now < y else { return nil }
             // Check again at the nudge time before Open-Meteo's run: the same lead the user chose for the nudge.
             let check = x.addingTimeInterval(-Double(alerts.preWindowMinutes) * 60)
-            let sees = "a second forecast sees \(range(x, y)) clear."
-            return Advice(line: (check > now ? "Check again at \(hhmm(check, site: site))" : "Check the sky now") + ": " + sees,
-                          sentence: "A second forecast sees \(range(x, y)) clear.")
+            let sees = L10n.format("a second forecast sees \(range(x, y)) clear.")
+            return Advice(line: (check > now ? L10n.format("Check again at \(hhmm(check, site: site))") : L10n.text("Check the sky now")) + ": " + sees,
+                          sentence: L10n.format("A second forecast sees \(range(x, y)) clear."))
         }
         let sees: String = switch a {
-        case .cloudFrom(let t): "sees cloud from \(hhmm(t, site: site))"
-        case .clearFrom(let t): "sees it clear only from \(hhmm(t, site: site))"
-        case .clearRun(let x, let y): "sees it clear \(range(x, y)) instead"
-        case .noWindow, .agree, .agreeNoWindow: "sees no clear window"
+        case .cloudFrom(let t): L10n.format("sees cloud from \(hhmm(t, site: site))")
+        case .clearFrom(let t): L10n.format("sees it clear only from \(hhmm(t, site: site))")
+        case .clearRun(let x, let y): L10n.format("sees it clear \(range(x, y)) instead")
+        case .noWindow, .agree, .agreeNoWindow: L10n.text("sees no clear window")
         }
-        return Advice(line: "Less certain: a second forecast \(sees).",
-                      sentence: "A second forecast \(sees), so this window is less certain than usual.")
+        return Advice(line: L10n.format("Less certain: a second forecast \(sees)."),
+                      sentence: L10n.format("A second forecast \(sees), so this window is less certain than usual."))
     }
 
     /// "Sun 27 Sep": the one way a date is written in the interface (owner, 28 September 2026).
     public static func dayMonth(_ date: Date, site: Site) -> String {
-        let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "EEE d MMM"; f.locale = Locale(identifier: "en_GB")
+        let f = DateFormatter(); f.timeZone = site.timeZone; f.locale = L10n.locale
+        f.dateFormat = L10n.language == .simplifiedChinese ? "M月d日 EEE" : "EEE d MMM"
         return f.string(from: date)
     }
 
@@ -197,9 +198,9 @@ public struct Copy: Sendable {
     /// What VoiceOver says for the menu-bar icon (1.5): "Nightwatch, Clear window tonight 21:07–06:43 · 9.6 h, sky score
     /// 93, Malham", and the forecast's age when it is too old to trust. The icon alone told it only the symbol's name.
     public static func menuBarLabel(_ s: WidgetSnapshot?, now: Date) -> String {
-        guard let s else { return "Nightwatch, no forecast yet" }
+        guard let s else { return L10n.text("Nightwatch, no forecast yet") }
         let headline = s.headline.hasSuffix(".") ? String(s.headline.dropLast()) : s.headline
-        return (["Nightwatch", headline + (s.window.map { " \($0)" } ?? ""), "sky score \(s.score)", s.siteName] + [s.staleText(now: now)].compactMap { $0 })
+        return (["Nightwatch", headline + (s.window.map { " \($0)" } ?? ""), L10n.format("sky score \(s.score)"), s.siteName] + [s.staleText(now: now)].compactMap { $0 })
             .joined(separator: ", ")
     }
 
@@ -215,7 +216,7 @@ public struct Copy: Sendable {
     /// "5 h", "1 h 40 min", "40 min".
     public static func duration(_ seconds: TimeInterval) -> String {
         let m = Int((seconds / 60).rounded()), h = m / 60, r = m % 60
-        return h == 0 ? "\(r) min" : (r == 0 ? "\(h) h" : "\(h) h \(r) min")
+        return h == 0 ? L10n.format("\(r) min") : (r == 0 ? L10n.format("\(h) h") : L10n.format("\(h) h \(r) min"))
     }
 
     /// "20:40–03:10".
@@ -224,17 +225,17 @@ public struct Copy: Sendable {
     /// The plan page's summary: "Clear 21:40–02:10 · 4.5 h · Moon 78%", with "finish by 00:30" when that ends it first.
     public static func planSummary(_ s: SessionPlan, plan: NightPlan, site: Site) -> String {
         let full = plan.primary ?? s.window
-        let stop = s.window.end < full.end ? " · finish by \(hhmm(s.window.end, site: site))" : ""
-        return "Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%"
+        let stop = s.window.end < full.end ? L10n.format(" · finish by \(hhmm(s.window.end, site: site))") : ""
+        return L10n.format("Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%")
     }
 
     /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for
     /// a target that is not a favourite.
     public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
         let t = item.target
-        var parts = item.added ? ["Added for this night"] : []
-        if let v = t.viewable { parts.append("\(site.horizon == nil ? "Up" : "Clear of your horizon") \(span(v.start, v.end, site: site))") }
-        parts.append("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°")
+        var parts = item.added ? [L10n.text("Added for this night")] : []
+        if let v = t.viewable { parts.append("\(site.horizon == nil ? L10n.text("Up") : L10n.text("Clear of your horizon")) \(span(v.start, v.end, site: site))") }
+        parts.append(L10n.format("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°"))
         if let kit = ShootingTips.planKit(t, presetID: presetID) { parts.append(kit) }
         let text = parts.joined(separator: " · ")
         return text.prefix(1).uppercased() + text.dropFirst()
@@ -243,14 +244,15 @@ public struct Copy: Sendable {
     /// "Best at the same time as the Crescent Nebula", or with two or more, "…as the Crescent Nebula and M31". Nil without a clash.
     public static func planClash(_ item: PlanItem) -> String? {
         guard !item.clashes.isEmpty else { return nil }
-        let names = item.clashes.map { $0.commonName.map { "the \($0)" } ?? $0.catalogueID }
-        let list = names.count == 1 ? names[0] : names.dropLast().joined(separator: ", ") + " and " + names.last!
-        return "Best at the same time as \(list)"
+        let names = item.clashes.map { $0.commonName.map { L10n.format("the \($0)") } ?? $0.catalogueID }
+        let list = names.count == 1 ? names[0] : names.dropLast().joined(separator: ", ") + L10n.text(" and ") + names.last!
+        return L10n.format("Best at the same time as \(list)")
     }
 
     /// A target card in the plan: "In the plan, 1st".
     public static func inPlan(_ index: Int) -> String {
         let n = index + 1, suffix = (n % 100 / 10 == 1) ? "th" : (["th", "st", "nd", "rd"] + Array(repeating: "th", count: 6))[n % 10]
+        if L10n.language == .simplifiedChinese { return L10n.format("In the plan, item \(n)") }
         return "In the plan, \(n)\(suffix)"
     }
 
@@ -260,21 +262,21 @@ public struct Copy: Sendable {
     /// A site's horizon for its Settings row: "Horizon: 45° S, SW · 40° SE", the directions higher than open sky (`openDeg`,
     /// the go rule's height), highest first; "Horizon: open sky" when none is. Lower ones change nothing (Site.floorDeg).
     public static func horizonSummary(_ site: Site, openDeg: Double) -> String {
-        guard let h = site.horizon, h.count == 8 else { return "Horizon: open sky" }
+        guard let h = site.horizon, h.count == 8 else { return L10n.text("Horizon: open sky") }
         let groups = Dictionary(grouping: h.indices.filter { h[$0] > openDeg }, by: { h[$0] }).sorted { $0.key > $1.key }
-        guard !groups.isEmpty else { return "Horizon: open sky" }
-        return "Horizon: " + groups.map { deg, idx in "\(Int(deg))° " + idx.sorted().map { Site.horizonDirections[$0] }.joined(separator: ", ") }
+        guard !groups.isEmpty else { return L10n.text("Horizon: open sky") }
+        return L10n.text("Horizon: ") + groups.map { deg, idx in "\(Int(deg))° " + idx.sorted().map { Site.horizonDirections[$0] }.joined(separator: ", ") }
             .joined(separator: " · ")
     }
 
     /// The terrain box's heading: "Hills reach 7° to the NW, 6° to the N, NE and W", the highest two heights.
     public static func terrainSummary(_ terrain: [Double]) -> String {
         let rounded = terrain.map { Int($0.rounded()) }
-        guard let top = rounded.max(), top > 0 else { return "No hills above the horizon around here" }
+        guard let top = rounded.max(), top > 0 else { return L10n.text("No hills above the horizon around here") }
         let heights = Array(Set(rounded.filter { $0 > 0 })).sorted(by: >).prefix(2)
-        return "Hills reach " + heights.map { h in
+        return L10n.text("Hills reach ") + heights.map { h in
             let dirs = rounded.indices.filter { rounded[$0] == h }.map { Site.horizonDirections[$0] }
-            return "\(h)° to the " + ListFormatter.localizedString(byJoining: dirs)
+            return L10n.format("\(h)° to the ") + ListFormatter.localizedString(byJoining: dirs)
         }.joined(separator: ", ")
     }
 
@@ -286,21 +288,21 @@ public struct Copy: Sendable {
             e.clear == true && !e.behindHorizon && e.when >= night.sunset && e.when < night.sunrise && e.kind != .comet && (e.kind != .meteorShower || e.atPeak)
         }.sorted { $0.when < $1.when }.prefix(2)
         guard !picks.isEmpty else { return nil }
-        return "Also tonight: " + picks.map { "\($0.kind == .meteorShower ? $0.title + " at peak" : $0.title) at \(hhmm($0.when, site: site))" }
+        return L10n.text("Also tonight: ") + picks.map { L10n.format("\($0.kind == .meteorShower ? $0.title + L10n.text(" at peak") : $0.title) at \(hhmm($0.when, site: site))") }
             .joined(separator: ", ") + "."
     }
 
     public static func headsUpPlan(_ s: SessionPlan, plan: NightPlan, site: Site) -> String? {
         guard let first = s.items.first else { return nil }
-        func name(_ t: RankedTarget) -> String { t.commonName.map { "the \($0)" } ?? t.catalogueID }
-        var text = "Your plan: " + s.items.prefix(2).map { "\(name($0.target)), best at \(hhmm($0.target.peakTime, site: site))" }
-            .joined(separator: ", then ") + "."
+        func name(_ t: RankedTarget) -> String { t.commonName.map { L10n.format("the \($0)") } ?? t.catalogueID }
+        var text = L10n.text("Your plan: ") + s.items.prefix(2).map { L10n.format("\(name($0.target)), best at \(hhmm($0.target.peakTime, site: site))") }
+            .joined(separator: L10n.text(", then ")) + "."
         let from = (first.target.viewable?.start ?? s.window.start).addingTimeInterval(-1800)
         let dew = plan.darkHours.first { h in
             guard h.time >= from, h.time < s.window.end, let t = h.tempC, let d = h.dewPointC else { return false }
             return t - d < 2
         }
-        if let d = dew { text += " Fit the dew heater: dew likely after \(hhmm(max(d.time, s.window.start), site: site))." }
+        if let d = dew { text += L10n.format(" Fit the dew heater: dew likely after \(hhmm(max(d.time, s.window.start), site: site)).") }
         return text
     }
 
@@ -309,22 +311,22 @@ public struct Copy: Sendable {
     public static func moonlessRun(_ r: MoonlessRun, site: Site) -> String {
         let last = dayMonth(r.last.localDate, site: site)
         if r.includesTonight {
-            return r.last.key == r.first.key ? "Moonless tonight." : "Moonless tonight, and until \(last)."
+            return r.last.key == r.first.key ? L10n.text("Moonless tonight.") : L10n.format("Moonless tonight, and until \(last).")
         }
         var first = dayMonth(r.first.localDate, site: site)
         if r.first.key == r.last.key { first = last }
-        else if first.suffix(3) == last.suffix(3) { first = String(first.dropLast(4)) }   // "Thu 8 – Mon 19 Oct": one month named once
+        else if L10n.language == .english, first.suffix(3) == last.suffix(3) { first = String(first.dropLast(4)) }   // "Thu 8 – Mon 19 Oct": one month named once
         let range = r.first.key == r.last.key ? first : "\(first) – \(last)"
-        return "Next moonless run: \(range)" + (r.newMoon.map { " · new Moon \(dayMonth($0, site: site))" } ?? "")
+        return L10n.format("Next moonless run: \(range)") + (r.newMoon.map { L10n.format(" · new Moon \(dayMonth($0, site: site))") } ?? "")
     }
 
     /// "Your first clear window with Nightwatch: 21:10–01:40." Said once, ever (#64, owner-approved mock-up).
     public static func firstClear(_ w: ClearWindow, site: Site) -> String {
-        "Your first clear window with Nightwatch: \(span(w.start, w.end, site: site))."
+        L10n.format("Your first clear window with Nightwatch: \(span(w.start, w.end, site: site)).")
     }
 
     // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
-    static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
+    static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { L10n.format("Forecast from \($0).") } }
 
     /// A clause as a sentence: its own full stop, never two.
     static func sentence(_ s: String) -> String { s.hasSuffix(".") ? s : s + "." }
@@ -332,8 +334,8 @@ public struct Copy: Sendable {
     /// "Sky Score": "Sky score 72 at Home. Clear window tonight. 20:40–03:10 · 6.5 h. Held back by a 40% moon. Forecast
     /// from Apple Weather." On a night without a window the reason and "Tomorrow 21:10–01:40." follow instead.
     public static func siriTonight(_ s: WidgetSnapshot?) -> String {
-        guard let s else { return "Nightwatch has no forecast yet. Open it once to set where you observe." }
-        return (["Sky score \(s.score) at \(s.siteName)", s.headline, s.window, s.reason, s.tomorrow].compactMap { $0 }.map(sentence)
+        guard let s else { return L10n.text("Nightwatch has no forecast yet. Open it once to set where you observe.") }
+        return ([L10n.format("Sky score \(s.score) at \(s.siteName)"), s.headline, s.window, s.reason, s.tomorrow].compactMap { $0 }.map(sentence)
                 + [siriSource(s)].compactMap { $0 }).joined(separator: " ")
     }
 
@@ -341,28 +343,28 @@ public struct Copy: Sendable {
     public static func siriBest(_ s: WidgetSnapshot?, session: SessionPlan?, site: Site?) -> String {
         guard let s else { return siriTonight(nil) }
         if let session, let site, !session.items.isEmpty {
-            let list = session.items.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.target.peakTime, site: site))" }
-            return "Tonight's plan: " + list.joined(separator: ", then ") + "."
+            let list = session.items.map { L10n.format("\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.target.peakTime, site: site))") }
+            return L10n.text("Tonight's plan: ") + list.joined(separator: L10n.text(", then ")) + "."
         }
         // On a cloudy night with a clear one tomorrow, say so, as the Targets window does (owner's UAT, 29 September 2026).
         guard !s.targets.isEmpty else {
-            let tomorrow = s.tomorrow.map { "Tomorrow night looks clear \($0.replacingOccurrences(of: "Tomorrow ", with: ""))." }
-            return ([sentence(s.headline), "No targets are suggested tonight."] + [tomorrow].compactMap { $0 }).joined(separator: " ")
+            let tomorrow = s.tomorrow.map { L10n.format("Tomorrow night looks clear \($0.replacingOccurrences(of: L10n.text("Tomorrow "), with: "")).") }
+            return ([sentence(s.headline), L10n.text("No targets are suggested tonight.")] + [tomorrow].compactMap { $0 }).joined(separator: " ")
         }
         // `best` already reads "Best 00:40 · 64° up"; lower-cased after the name.
-        return "Tonight's best targets: " + s.targets.map { "\($0.name), \($0.best.prefix(1).lowercased() + $0.best.dropFirst())" }
+        return L10n.text("Tonight's best targets: ") + s.targets.map { "\($0.name), \($0.best.prefix(1).lowercased() + $0.best.dropFirst())" }
             .joined(separator: "; ") + "."
     }
 
     /// "Events Tonight": up to three, with whether it will be clear then.
     public static func siriEvents(_ events: [SkyEvent]) -> String {
-        guard !events.isEmpty else { return "No events tonight." }
+        guard !events.isEmpty else { return L10n.text("No events tonight.") }
         return events.prefix(3).map { e in
-            [e.title + ".", e.clear.map { $0 ? "Clear then." : "Cloudy then." }].compactMap { $0 }.joined(separator: " ")
+            [e.title + ".", e.clear.map { $0 ? L10n.text("Clear then.") : L10n.text("Cloudy then.") }].compactMap { $0 }.joined(separator: " ")
         }.joined(separator: " ")
     }
 
     public func scoreBand(_ score: Int) -> String {
-        switch score { case 80...: "Excellent"; case 50..<80: "Fair"; case 20..<50: "Poor"; default: "Overcast" }
+        switch score { case 80...: L10n.text("Excellent"); case 50..<80: L10n.text("Fair"); case 20..<50: L10n.text("Poor"); default: L10n.text("Overcast") }
     }
 }

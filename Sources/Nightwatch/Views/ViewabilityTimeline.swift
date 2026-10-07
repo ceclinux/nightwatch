@@ -58,7 +58,7 @@ struct ViewabilityTimeline: View {
                 Text(caption).foregroundStyle(Tokens.textSecondary)
                 Spacer()
                 if target.viewable != nil {
-                    Text("\(lit ? "Best" : "Highest") \(Copy.hhmm(target.peakTime, site: site)) · \(Int(target.peakAltDeg.rounded()))°")
+                    Text("\(lit ? L10n.text("Best") : L10n.text("Highest")) \(Copy.hhmm(target.peakTime, site: site)) · \(Int(target.peakAltDeg.rounded()))°")
                         .fontWeight(.medium).foregroundStyle(lit ? Tokens.textPrimary : Tokens.textSecondary)
                 }
             }
@@ -68,7 +68,7 @@ struct ViewabilityTimeline: View {
     }
 
     private var caption: String {
-        guard let v = target.viewable else { return lit ? "Viewable outside the clear window" : "Too low in darkness tonight" }
-        return "\(lit ? "Viewable" : "Up in darkness") \(Copy.hhmm(v.start, site: site))–\(Copy.hhmm(v.end, site: site))"
+        guard let v = target.viewable else { return lit ? L10n.text("Viewable outside the clear window") : L10n.text("Too low in darkness tonight") }
+        return "\(lit ? L10n.text("Viewable") : L10n.text("Up in darkness")) \(Copy.hhmm(v.start, site: site))–\(Copy.hhmm(v.end, site: site))"
     }
 }

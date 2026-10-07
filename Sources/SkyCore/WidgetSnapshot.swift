@@ -45,6 +45,9 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// The aurora level for this site when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
     public var aurora: AuroraStatus?
+    /// Resolved app language, so the widget's own labels agree with the translated snapshot. Nil in older snapshots.
+    public var languageCode: String? = nil
+    public var interfaceLanguage: AppLanguage? { languageCode.flatMap(AppLanguage.init(rawValue:)) }
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, fetchedAt: Date, site: Site, rule: GoRule,
                             bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil,
@@ -52,15 +55,15 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         func hm(_ d: Date) -> String { Copy.hhmm(d, site: site) }
         let w = plan.primary
         let noDarkness = w == nil && !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness)
-        let headline = w != nil ? (plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight")
-                                : (noDarkness ? "No astronomical darkness" : copy.noWindow)
+        let headline = w != nil ? (plan.mode == .bright ? L10n.text("Bright night: Moon and planets") : L10n.text("Clear window tonight"))
+                                : (noDarkness ? L10n.text("No astronomical darkness") : copy.noWindow)
         let reason: String? = w != nil ? Copy.heldBack(plan.limiting)
-            : (noDarkness ? "Too far north or south for this date." : Planner.noWindowReasonText(plan: plan, rule: rule, bright: bright, site: site))
+            : (noDarkness ? L10n.text("Too far north or south for this date.") : Planner.noWindowReasonText(plan: plan, rule: rule, bright: bright, site: site))
         let picks = plan.mode == .bright ? plan.brightTargets : plan.best
         return WidgetSnapshot(
             siteName: site.name, fetchedAt: fetchedAt, score: plan.score, mode: plan.mode, headline: headline,
             window: w.map { "\(hm($0.start))–\(hm($0.end)) · \(String(format: "%.1f h", $0.hours))" },
-            windowShort: w.map { (plan.mode == .bright ? "Bright " : "Clear ") + "\(hm($0.start))–\(hm($0.end))" },
+            windowShort: w.map { (plan.mode == .bright ? L10n.text("Bright ") : L10n.text("Clear ")) + "\(hm($0.start))–\(hm($0.end))" },
             reason: reason,
             agreement: Copy.advice(plan, site: site, alerts: alerts)?.line ?? plan.agreement.map { Copy.agreementText($0, site: site) },
             agreementWarns: plan.agreement.map(Copy.agreementWarns) ?? false,
@@ -68,33 +71,33 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             bezelLabel: Copy.bezelLabel(plan, site: site),
             bars: Planner.clearSkyBars(plan: plan, site: site), barsLabel: Copy.barsLabel(plan: plan, site: site),
             targets: picks.prefix(3).map { t in
-                WidgetTarget(id: t.id, catalogueID: t.catalogueID, name: t.commonName ?? t.typeName,
-                             best: "Best \(hm(t.peakTime)) · \(Int(t.peakAltDeg.rounded()))° up", group: t.group)
+                WidgetTarget(id: t.id, catalogueID: L10n.text(t.catalogueID), name: t.commonName ?? L10n.text(t.typeName),
+                             best: L10n.format("Best \(hm(t.peakTime)) · \(Int(t.peakAltDeg.rounded()))° up"), group: t.group)
             },
-            tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { "Tomorrow \(hm($0.start))–\(hm($0.end))" } : nil,
-            notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
+            tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { L10n.format("Tomorrow \(hm($0.start))–\(hm($0.end))") } : nil,
+            notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { L10n.format("notify \($0)") },
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
-            source: source, updated: "Updated \(Copy.clockTime(fetchedAt, timeZone: clock))",
-            aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil })
+            source: source, updated: L10n.format("Updated \(Copy.clockTime(fetchedAt, timeZone: clock))"),
+            aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil }, languageCode: L10n.language.rawValue)
     }
 
     /// "Aurora amber" in the level's colour (AuroraWatch UK's), or nil when there is none or it is over an hour old at `now`.
     public func auroraLine(now: Date) -> (text: String, hex: UInt32)? {
         guard let a = aurora, let end = auroraExpires, now < end else { return nil }
-        return ("Aurora \(a.level.rawValue)", a.level.hex)
+        return (L10n.format("Aurora \(L10n.text(a.level.rawValue, language: interfaceLanguage))", language: interfaceLanguage), a.level.hex)
     }
     /// When the aurora line stops showing, so the widget can redraw then.
     public var auroraExpires: Date? { aurora.map { $0.updated.addingTimeInterval(AuroraSettings.freshFor) } }
 
     /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
     public static let sample = WidgetSnapshot(
-        siteName: "Dark Site", fetchedAt: Date(), score: 78, mode: .dark, headline: "Clear window tonight",
+        siteName: "Dark Site", fetchedAt: Date(), score: 78, mode: .dark, headline: L10n.text("Clear window tonight"),
         window: "21:10–01:40 · 4.5 h", windowShort: "Clear 21:10–01:40", reason: "Held back by a 40% moon",
-        agreement: "Open-Meteo agrees", agreementWarns: false,
+        agreement: L10n.text("Open-Meteo agrees"), agreementWarns: false,
         slots: Array(repeating: .cloudy, count: 10) + Array(repeating: .clear, count: 27) + Array(repeating: .partCloud, count: 11) + Array(repeating: .daylight, count: 12),
         bezelLabel: "Sky score 78", bars: [20, 35, 80, 92, 88, 76, 40, 25].enumerated().map { i, c in
             ClearSkyBar(hour: String(format: "%02d", (20 + i) % 24), clearPct: c, lit: (2...5).contains(i), peak: i == 3)
-        }, barsLabel: "Clear sky by hour.",
+        }, barsLabel: L10n.text("Clear sky by hour."),
         targets: [WidgetTarget(id: "M13", catalogueID: "M13", name: "Hercules Cluster", best: "Best 21:30 · 71° up", group: .clusters),
                   WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)],
         tomorrow: nil, notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05", aurora: nil)
@@ -102,6 +105,6 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// "Forecast 7 h old" once the snapshot's forecast is more than six hours old at `now` (the alerts' stale rule); else nil.
     public func staleText(now: Date) -> String? {
         let age = now.timeIntervalSince(fetchedAt)
-        return age > 6 * 3600 ? "Forecast \(Int(age / 3600)) h old" : nil
+        return age > 6 * 3600 ? L10n.format("Forecast \(Int(age / 3600)) h old", language: interfaceLanguage) : nil
     }
 }

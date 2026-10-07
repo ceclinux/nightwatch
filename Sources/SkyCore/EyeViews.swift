@@ -60,7 +60,9 @@ public enum EyeViews {
     /// left out (their brightness is not known here) and a solar eclipse is never suggested for the eye.
     /// A conjunction with Uranus or Neptune is left out: neither is a naked-eye planet.
     public static func includes(_ e: SkyEvent) -> Bool {
-        if e.kind == .conjunction { return !["Uranus", "Neptune"].contains { e.title.contains($0) } }
+        if e.kind == .conjunction {
+            return !["Uranus", "Neptune"].contains { e.id.contains($0) || e.title.contains($0) || e.title.contains(L10n.text($0)) }
+        }
         return [.meteorShower, .issPass, .lunarEclipse, .occultation].contains(e.kind)
     }
 }
@@ -69,15 +71,15 @@ extension Copy {
     /// What it looks like, not how to photograph it: "A faint smudge to the eye", "A fuzzy ball in binoculars".
     public static func eyeLook(_ t: RankedTarget, _ v: EyeView) -> String {
         let eye = v == .nakedEye
-        if t.id == "moon" { return "Its seas to the eye; craters along the shadow line in binoculars" }
-        if t.id == "milky-way-core" { return "A bright glow of stars, the band at its widest, split by dark lanes of dust" }
-        if t.id == "milky-way-cygnus" { return "A misty band of light, split in two by a dark rift" }
+        if t.id == "moon" { return L10n.text("Its seas to the eye; craters along the shadow line in binoculars") }
+        if t.id == "milky-way-core" { return L10n.text("A bright glow of stars, the band at its widest, split by dark lanes of dust") }
+        if t.id == "milky-way-cygnus" { return L10n.text("A misty band of light, split in two by a dark rift") }
         switch t.group {
-        case .planets: return eye ? "A bright star that does not twinkle" : "A small steady point in binoculars"
-        case .galaxies: return eye ? "A faint smudge to the eye" : "A small oval glow in binoculars"
-        case .clusters where t.typeName == "Globular cluster": return eye ? "A fuzzy star to the eye" : "A fuzzy ball in binoculars"
-        case .clusters: return eye ? "A misty patch to the eye" : "A spray of stars in binoculars"
-        default: return eye ? "A misty glow to the eye" : "A small grey patch in binoculars"
+        case .planets: return eye ? L10n.text("A bright star that does not twinkle") : L10n.text("A small steady point in binoculars")
+        case .galaxies: return eye ? L10n.text("A faint smudge to the eye") : L10n.text("A small oval glow in binoculars")
+        case .clusters where t.typeName == "Globular cluster": return eye ? L10n.text("A fuzzy star to the eye") : L10n.text("A fuzzy ball in binoculars")
+        case .clusters: return eye ? L10n.text("A misty patch to the eye") : L10n.text("A spray of stars in binoculars")
+        default: return eye ? L10n.text("A misty glow to the eye") : L10n.text("A small grey patch in binoculars")
         }
     }
 }

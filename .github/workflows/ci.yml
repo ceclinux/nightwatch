@@ -26,6 +26,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: swift --version
+      - name: Check localization resources
+        run: node scripts/check-localization.mjs
       - name: Tests
         run: swift test
       - name: xcodegen

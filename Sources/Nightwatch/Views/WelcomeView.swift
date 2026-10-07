@@ -4,6 +4,7 @@ import NightwatchUI
 import SkyCore
 
 final class WelcomeState: ObservableObject {
+    let languageAtPresentation = AppLanguage.saved()
     @Published var presets: [TelescopePreset] = (try? TelescopePresets.bundled()) ?? []
     @Published var locating = false
     @Published var locationFailed = false
@@ -23,62 +24,63 @@ struct WelcomeView: View {
             HStack(spacing: 12) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 52, height: 52).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Welcome to Nightwatch").font(Font.scaled(.title2).weight(.semibold))
-                    Text("Two questions, then it watches the sky for you.").font(Font.scaled(.callout)).foregroundStyle(Theme.dim)
+                    Text(L10n.text("Welcome to Nightwatch")).font(Font.scaled(.title2).weight(.semibold))
+                    Text(L10n.text("Two questions, then it watches the sky for you.")).font(Font.scaled(.callout)).foregroundStyle(Theme.dim)
                 }
             }
+            LanguagePicker()
             // 0.6.x settings synced by a link the sandbox cannot follow (0.7.0): choosing the file is allowed.
             if let link = store.linkedSettings {
-                step("Your earlier settings") {
-                    Text("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices.")
+                step(L10n.text("Your earlier settings")) {
+                    Text(L10n.format("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices."))
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
-                    Button("Import settings…") { importLinked(link) }.buttonStyle(ScaledButtonStyle(prominent: true))
+                    Button(L10n.text("Import settings…")) { importLinked(link) }.buttonStyle(ScaledButtonStyle(prominent: true))
                     if state.importFailed {
-                        Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
+                        Text(L10n.text("That file isn't Nightwatch settings. Choose config.json, or set up below.")).font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
                     }
                 }
             }
             if let e = store.importError {
                 Text(e).font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
             }
-            step("1  What do you image with?") {
+            step(L10n.text("1  What do you image with?")) {
                 ForEach(state.presets) { p in
                     choice(p.name, detail: String(format: "%g × %g°", p.fov.widthDeg, p.fov.heightDeg), on: store.config.fovPresetID == p.id) {
                         store.config.fovPresetID = p.id; store.config.fov = p.fov; store.saveConfig()
                     }
                 }
-                choice("Something else", detail: "Enter its field of view in Settings", on: store.config.fovPresetID == nil) {
+                choice(L10n.text("Something else"), detail: L10n.text("Enter its field of view in Settings"), on: store.config.fovPresetID == nil) {
                     store.config.fovPresetID = nil; store.saveConfig()
                 }
             }
-            step("2  Where do you observe from?") {
-                Text("Nightwatch needs a place to forecast for. Your location stays on this Mac; only its coordinates go to the weather services.")
+            step(L10n.text("2  Where do you observe from?")) {
+                Text(L10n.text("Nightwatch needs a place to forecast for. Your location stays on this Mac; only its coordinates go to the weather services."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
-                    Button(store.autoSite == nil ? "Use this Mac's location" : "Using this Mac's location ✓") { useThisMac() }
+                    Button(store.autoSite == nil ? L10n.text("Use this Mac's location") : L10n.text("Using this Mac's location ✓")) { useThisMac() }
                         .buttonStyle(ScaledButtonStyle(prominent: true)).disabled(state.locating || store.autoSite != nil)
-                    Button("Add a site…") {
+                    Button(L10n.text("Add a site…")) {
                         sites.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         sites.latText = ""; sites.lonText = ""; sites.addingSite = true
                     }
                     if state.locating { ProgressView().controlSize(.small) }
                 }
                 if state.locating {
-                    Text("If macOS asks, choose Allow.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                    Text(L10n.text("If macOS asks, choose Allow.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
-                if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(Font.scaled(.caption)) }
+                if let s = store.site, store.config.activeSiteName != nil { Text(L10n.format("Observing from \(s.name) ✓")).font(Font.scaled(.caption)) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
-                    Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
+                    Text(L10n.text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site."))
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
                 }
             }
             Text(store.site == nil
-                 ? "No place yet: Nightwatch starts forecasting as soon as it has one. You can add it later in Settings."
-                 : "You'll get a heads-up an hour before sunset on nights worth imaging. Change any of this later in Settings.")
+                 ? L10n.text("No place yet: Nightwatch starts forecasting as soon as it has one. You can add it later in Settings.")
+                 : L10n.text("You'll get a heads-up an hour before sunset on nights worth imaging. Change any of this later in Settings."))
                 .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
-                Button("Start watching") {
+                Button(L10n.text("Start watching")) {
                     store.config.welcomed = true; store.saveConfig()
                     dismissWindow(id: "welcome")
                 }
@@ -94,15 +96,19 @@ struct WelcomeView: View {
         // Notifications are asked for as the welcome closes, after it has said what they are for: from Start watching
         // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away
         // (recompute, not refresh: a refresh already in flight would make a refresh return early).
-        .onDisappear { Task { @MainActor in await Notifier.requestAuthorisation(); await store.recompute(now: Date()) } }
+        .onDisappear {
+            // A language change rebuilds this view too; it must not request notification permission.
+            guard state.languageAtPresentation == store.language else { return }
+            Task { @MainActor in await Notifier.requestAuthorisation(); await store.recompute(now: Date()) }
+        }
     }
 
     private func importLinked(_ link: URL) {
         let panel = NSOpenPanel()
         panel.directoryURL = link.deletingLastPathComponent()
         panel.allowedContentTypes = [.json]
-        panel.message = "Choose your Nightwatch settings file (\(link.lastPathComponent))"
-        panel.prompt = "Import"
+        panel.message = L10n.format("Choose your Nightwatch settings file (\(link.lastPathComponent))")
+        panel.prompt = L10n.text("Import")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard store.importSettings(from: url) else { state.importFailed = true; return }
         // Boot skipped the location fix while the welcome was pending: settings that observe from this Mac need one now.

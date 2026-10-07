@@ -36,9 +36,9 @@ extension Planner {
 extension Copy {
     /// The bars' screen-reader sentence.
     public static func barsLabel(plan: NightPlan, site: Site) -> String {
-        var s = "Clear sky by hour."
-        if let p = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += " Clearest \(hhmm(p.time, site: site)) at \(max(0, 100 - p.effectiveCloud))% clear." }
-        if let w = plan.primary { s += " Clear window \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))." }
+        var s = L10n.text("Clear sky by hour.")
+        if let p = plan.darkHours.min(by: { $0.effectiveCloud < $1.effectiveCloud }) { s += L10n.format(" Clearest \(hhmm(p.time, site: site)) at \(max(0, 100 - p.effectiveCloud))% clear.") }
+        if let w = plan.primary { s += L10n.format(" Clear window \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site)).") }
         return s
     }
 }

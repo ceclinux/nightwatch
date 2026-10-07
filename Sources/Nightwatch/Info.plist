@@ -3,6 +3,8 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key><string>Nightwatch</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string></array>
   <key>CFBundleDisplayName</key><string>Nightwatch</string>
   <key>CFBundleExecutable</key><string>Nightwatch</string>
   <key>CFBundleIdentifier</key><string>io.github.rsutcliffe.nightwatch</string>

@@ -166,7 +166,7 @@ public struct Config: Codable, Equatable, Sendable {
 public enum TextSize: String, Codable, Sendable, CaseIterable {
     case standard, large, extraLarge
     public var factor: Double { switch self { case .standard: 1; case .large: 1.15; case .extraLarge: 1.3 } }
-    public var displayName: String { switch self { case .standard: "Standard"; case .large: "Large"; case .extraLarge: "Extra large" } }
+    public var displayName: String { switch self { case .standard: L10n.text("Standard"); case .large: L10n.text("Large"); case .extraLarge: L10n.text("Extra large") } }
 }
 
 /// Aurora alerts (v0.3): AuroraWatch UK in the UK and Ireland, NOAA's forecast elsewhere (1.4), gated on the local

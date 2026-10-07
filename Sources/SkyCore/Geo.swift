@@ -8,7 +8,7 @@ public struct Coordinate: Codable, Equatable, Sendable {
 
 public enum DistanceUnit: String, Codable, Sendable {
     case km, mi
-    public var displayName: String { self == .km ? "Kilometres" : "Miles" }
+    public var displayName: String { self == .km ? L10n.text("Kilometres") : L10n.text("Miles") }
 }
 
 public enum Geo {

@@ -20,9 +20,9 @@ struct PlanView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text(isTomorrow ? "Tomorrow night's plan" : "Tonight's plan").font(Font.scaled(.title2).weight(.semibold))
+                Text(isTomorrow ? L10n.text("Tomorrow night's plan") : L10n.text("Tonight's plan")).font(Font.scaled(.title2).weight(.semibold))
                 if canPlanTomorrow {
-                    SegmentedChoice(title: "Night", showsTitle: false, selection: $tomorrow, options: [(false, "Tonight"), (true, "Tomorrow night")])
+                    SegmentedChoice(title: L10n.text("Night"), showsTitle: false, selection: $tomorrow, options: [(false, L10n.text("Tonight")), (true, L10n.text("Tomorrow night"))])
                         .fixedSize()
                 }
                 content
@@ -39,33 +39,33 @@ struct PlanView: View {
                 if session.items.isEmpty && session.takenOff.isEmpty && session.omitted.isEmpty {
                     empty
                 } else {
-                    Text("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(isTomorrow ? "tomorrow night" : "tonight"): your choices are kept for this night, even if you make them the day before.")
+                    Text(L10n.format("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight")): your choices are kept for this night, even if you make them the day before."))
                         .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     // Each target keeps its line style from night to night (owner, 1 October 2026).
                     let styles = ChartLayout.styles(for: session.items.map(\.target.id), count: PlanLineStyle.all.count)
                     if !session.items.isEmpty {
                         PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
-                                  site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight", styles: styles)
+                                  site: s, nightWords: isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight"), styles: styles)
                     }
                     VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s) } }
                     if session.items.isEmpty {
-                        Text("Nothing left in the plan for this night.").font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
+                        Text(L10n.text("Nothing left in the plan for this night.")).font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
                     }
                     others(session, night: p.night.key, site: s)
-                    Text("Heart a target to keep it in every plan, or use Add to plan on its page for one night only.")
+                    Text(L10n.text("Heart a target to keep it in every plan, or use Add to plan on its page for one night only."))
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
             } else if p.mode == .bright {
-                note("A bright night: the plan is for dark, clear nights. The Moon and planets are in Targets.")
+                note(L10n.text("A bright night: the plan is for dark, clear nights. The Moon and planets are in Targets."))
             } else if p.primary == nil, canPlanTomorrow, let w = store.tomorrow?.primary {
-                note("\(store.copy.noWindow) Tomorrow night looks clear \(Copy.span(w.start, w.end, site: s)): choose Tomorrow night above to plan it.")
+                note(L10n.format("\(store.copy.noWindow) Tomorrow night looks clear \(Copy.span(w.start, w.end, site: s)): choose Tomorrow night above to plan it."))
             } else if p.primary == nil {
-                note(isTomorrow ? "No clear window forecast for tomorrow night." : store.copy.noWindow)
+                note(isTomorrow ? L10n.text("No clear window forecast for tomorrow night.") : store.copy.noWindow)
             } else {
-                note("Your finish time comes before \(isTomorrow ? "tomorrow night's" : "tonight's") clear window opens.")
+                note(L10n.format("Your finish time comes before \(isTomorrow ? L10n.text("tomorrow night's") : L10n.text("tonight's")) clear window opens."))
             }
         } else {
-            note(store.lastError ?? "Waiting for the first forecast…")
+            note(store.lastError ?? L10n.text("Waiting for the first forecast…"))
         }
     }
 
@@ -77,10 +77,10 @@ struct PlanView: View {
     private var empty: some View {
         VStack(spacing: 12) {
             Image(systemName: "heart").font(.system(size: TextScale.pt(34))).foregroundStyle(Tokens.textSecondary).accessibilityHidden(true)
-            Text("Your plan is made from your favourites").font(Font.scaled(.headline))
-            Text("Heart the targets you want to image. Each night, the ones up in the clear window appear here in order of their best time, and you choose which to keep.")
+            Text(L10n.text("Your plan is made from your favourites")).font(Font.scaled(.headline))
+            Text(L10n.text("Heart the targets you want to image. Each night, the ones up in the clear window appear here in order of their best time, and you choose which to keep."))
                 .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            Button("Browse tonight's targets") { store.targetsRequest = TargetsRequest(section: .group(.nebulae), siteID: nil) }
+            Button(L10n.text("Browse tonight's targets")) { store.targetsRequest = TargetsRequest(section: .group(.nebulae), siteID: nil) }
                 .buttonStyle(ScaledButtonStyle(prominent: true))
         }
         .frame(maxWidth: 460).frame(maxWidth: .infinity).padding(.top, 40)
@@ -94,7 +94,7 @@ struct PlanView: View {
                 Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .semibold)).monospacedDigit().frame(width: 58, alignment: .leading)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .semibold))
+                        Text(L10n.text(t.catalogueID.isEmpty ? t.name : t.catalogueID)).font(.system(size: TextScale.pt(14), weight: .semibold))
                         if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(t.cardName).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
                     }
                     Text(Copy.planDetail(item, presetID: store.config.fovPresetID, site: site))
@@ -112,9 +112,9 @@ struct PlanView: View {
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { onSelect(t) }
-            Button("Not \(isTomorrow ? "tomorrow" : "tonight")") { store.setInPlan(t.id, false, night: night) }
+            Button(L10n.format("Not \(isTomorrow ? L10n.text("tomorrow") : L10n.text("tonight"))")) { store.setInPlan(t.id, false, night: night) }
                 .buttonStyle(SecondaryButtonStyle())
-                .accessibilityLabel("Take \(t.name) off the plan")
+                .accessibilityLabel(L10n.format("Take \(t.name) off the plan"))
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
@@ -126,20 +126,20 @@ struct PlanView: View {
         if !session.takenOff.isEmpty || !session.omitted.isEmpty {
             HStack(alignment: .top, spacing: 16) {
                 if !session.takenOff.isEmpty {
-                    group(isTomorrow ? "TAKEN OFF TOMORROW NIGHT" : "TAKEN OFF TONIGHT") {
+                    group(isTomorrow ? L10n.text("TAKEN OFF TOMORROW NIGHT") : L10n.text("TAKEN OFF TONIGHT")) {
                         ForEach(session.takenOff) { t in
                             HStack {
-                                Text("\(t.name) · best \(Copy.hhmm(t.peakTime, site: site))").font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary)
+                                Text(L10n.format("\(t.name) · best \(Copy.hhmm(t.peakTime, site: site))")).font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary)
                                 Spacer()
-                                Button("Put back") { store.setInPlan(t.id, true, night: night) }
+                                Button(L10n.text("Put back")) { store.setInPlan(t.id, true, night: night) }
                                     .buttonStyle(.plain).foregroundStyle(Tokens.controlOn).font(.system(size: TextScale.pt(13)))
-                                    .accessibilityLabel("Put \(t.name) back in the plan")
+                                    .accessibilityLabel(L10n.format("Put \(t.name) back in the plan"))
                             }
                         }
                     }
                 }
                 if !session.omitted.isEmpty {
-                    group("FAVOURITES NOT IN THE PLAN") {
+                    group(L10n.text("FAVOURITES NOT IN THE PLAN")) {
                         ForEach(session.omitted) { o in
                             Text("\(o.target.name) · \(o.reason.prefix(1).lowercased() + o.reason.dropFirst())")
                                 .font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)

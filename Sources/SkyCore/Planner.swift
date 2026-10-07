@@ -36,7 +36,7 @@ public struct ScoreInputs {
 
 public enum DewRisk: String, Codable, Sendable {
     case low, medium, high
-    public var displayName: String { rawValue.capitalized }
+    public var displayName: String { L10n.text(rawValue.capitalized) }
 }
 
 public enum LimitingKind: String, Codable, Sendable { case cloud, moon, seeing, transparency, wind, dew }
@@ -132,18 +132,19 @@ public enum Planner {
         func add(_ k: LimitingKind, _ text: String, lost: Double, of weight: Double) {
             if lost > weight / 3 { out.append(LimitingFactor(kind: k, text: text, pointsLost: lost)) }
         }
-        add(.cloud, "patchy cloud", lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
-        add(.moon, "a \(Int((s.moonIllumination * 100).rounded()))% moon", lost: 15 - t.moon, of: 15)
+        add(.cloud, L10n.text("patchy cloud"), lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
+        add(.moon, L10n.format("a \(Int((s.moonIllumination * 100).rounded()))% moon"), lost: 15 - t.moon, of: 15)
         // Worded from what the tiles show, so the line never contradicts them: transparency only when its tile is not
         // "Good", and seeing only when its tile reads worse than the 1″ the guide calls excellent.
         if let v = t.seeing, let band = Copy.seeingBand(s.darkHours), band > Copy.excellentSeeingBand, let figure = Copy.seeingText(s.darkHours) {
-            add(.seeing, "seeing at \(figure)", lost: 7.5 - v, of: 7.5)
+            add(.seeing, L10n.format("seeing at \(figure)"), lost: 7.5 - v, of: 7.5)
         }
-        if let v = t.transparency, let band = Copy.transparencyText(s.darkHours), band != "Good" {
-            add(.transparency, "\(band.lowercased()) transparency", lost: 7.5 - v, of: 7.5)
+        if let v = t.transparency, let level = Copy.transparencyBand(s.darkHours), level > 3,
+           let band = Copy.transparencyText(s.darkHours) {
+            add(.transparency, L10n.format("\(band.lowercased()) transparency"), lost: 7.5 - v, of: 7.5)
         }
-        if let w = t.avgWind { add(.wind, String(format: "wind at %.0f km/h", w), lost: t.windPenalty, of: 5) }
-        if let d = t.dew { add(.dew, "\(d == .high ? "high" : "medium") dew risk", lost: t.dewPenalty, of: 5) }
+        if let w = t.avgWind { add(.wind, String(format: L10n.text("wind at %.0f km/h"), w), lost: t.windPenalty, of: 5) }
+        if let d = t.dew { add(.dew, L10n.format("\(d == .high ? L10n.text("high") : L10n.text("medium")) dew risk"), lost: t.dewPenalty, of: 5) }
         return out.sorted { $0.pointsLost > $1.pointsLost }
     }
 }
@@ -192,7 +193,16 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
     /// A card's second line, so the name people know is never cut (owner, 28 September 2026): "Little Sombrero Galaxy",
     /// the kind when there is no name ("Galaxy"), or a star's designation ("α Cyg").
-    public var cardName: String { commonName ?? typeName }
+    public var cardName: String { commonName ?? L10n.text(typeName) }
+
+    public var displaySubtitle: String {
+        if id == "moon" {
+            return L10n.format("\(subtitle.components(separatedBy: "%").first ?? "")% illuminated")
+        }
+        let parts = subtitle.components(separatedBy: " in ")
+        if parts.count == 2 { return L10n.format("\(parts[0]) in \(parts[1])") }
+        return L10n.text(subtitle)
+    }
 
     /// The Targets search, ignoring case. A catalogue number ("C43", "C 43", "NGC7814", "m 31") must begin one of the name's
     /// " · " parts once spaces are removed, so "C43" does not find NGC 4303; a bare number ("7814") must begin one part's
@@ -204,7 +214,7 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
         guard !q.isEmpty else { return true }
         let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
         guard let first = number.first, first.isNumber else {
-            return [name, subtitle, typeName].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
+            return [name, subtitle, typeName, L10n.text(name), L10n.text(typeName)].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
         }
         let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
         if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }
@@ -401,7 +411,7 @@ extension Planner {
             // A bright star is a point that outshines the Moon's glow, so it is never Moon-washed.
             let tr = track(raHours: st.raHours, decDeg: st.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
             guard passes(tr) else { return nil }
-            let t = described(RankedTarget(id: st.id, name: st.name, subtitle: "Star, \(st.designation)", group: .stars,
+            let t = described(RankedTarget(id: st.id, name: st.name, subtitle: L10n.format("Star, \(st.designation)"), group: .stars,
                                            raHours: st.raHours, decDeg: st.decDeg, sizeArcmin: nil, magnitude: st.magnitude, fit: .small,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(st.raHours, st.decDeg), moonWashed: false,
                                            visibleFraction: tr.fraction),
@@ -411,7 +421,7 @@ extension Planner {
             let pos = Ephemeris.planet(p, at: window.midpoint, site: site)
             let tr = track(raHours: pos.raHours, decDeg: pos.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
             guard passes(tr) else { return nil }
-            let t = described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+            let t = described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: L10n.text("Planet"), group: .planets,
                                            raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(pos.raHours, pos.decDeg), moonWashed: false,
                                            visibleFraction: tr.fraction),
@@ -431,7 +441,7 @@ extension Planner {
             // From the constellation's centre; never Moon-washed, since a constellation spans too much sky to be washed out.
             let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
             guard passes(tr) else { return nil }
-            let t = described(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
+            let t = described(RankedTarget(id: c.id, name: c.name, subtitle: L10n.text("Constellation"), group: .constellations,
                                            raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(c.raHours, c.decDeg), moonWashed: false,
                                            visibleFraction: tr.fraction),
@@ -508,11 +518,11 @@ extension Planner {
             guard let src = source(id), let b = build(src, window: span, site: site, fov: fov, rule: rule, moon: moon, moonUp: moonUp) else { return nil }
             let floor = Int(b.minAlt.rounded())
             let reason: String?
-            if window == nil { reason = "No astronomical darkness tonight" }
+            if window == nil { reason = L10n.text("No astronomical darkness tonight") }
             else if case .moon = src, moon.illumination <= 0.05 { reason = "New Moon tonight" }   // too thin for the list
             else if b.fraction >= 0.5 { reason = nil }
-            else if b.fraction == 0 { reason = site.horizon == nil ? "Below \(floor)° in tonight's window" : "Behind your horizon in tonight's window" }
-            else { reason = site.horizon == nil ? "Above \(floor)° for under half of tonight's window" : "Clear of your horizon for under half of tonight's window" }
+            else if b.fraction == 0 { reason = site.horizon == nil ? L10n.format("Below \(floor)° in tonight's window") : L10n.text("Behind your horizon in tonight's window") }
+            else { reason = site.horizon == nil ? L10n.format("Above \(floor)° for under half of tonight's window") : L10n.text("Clear of your horizon for under half of tonight's window") }
             return FavouriteTarget(target: b.target, notTonight: reason)
         }
     }
@@ -583,7 +593,7 @@ extension Planner {
             let pos = Ephemeris.planet(p, at: t, site: site)
             guard pos.altDeg >= brightTargetFloorDeg else { return nil }
             let sep = Ephemeris.separationDeg(ra1Hours: pos.raHours, dec1Deg: pos.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
-            return described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+            return described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: L10n.text("Planet"), group: .planets,
                                           raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
                                           peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: sep, moonWashed: false, visibleFraction: 1),
                              viewable: nil, site: site, typeName: "Planet", catalogueID: p.displayName)
@@ -654,34 +664,34 @@ extension Planner {
     static func brightRunReason(_ hours: [HourlyConditions], from start: Date, to end: Date, rule: GoRule, site: Site) -> String {
         guard let best = longestClearRun(hours, from: start, to: end, rule: rule, usable: {
             brightTargetUp(inHourFrom: $0.time, from: start, to: end, site: site)
-        }) else { return "No Moon or planet \(Int(brightTargetFloorDeg))° up in the clear hours of nautical darkness." }
-        return String(format: "Longest clear run with a target up is %.1f h from %@; the bright rule needs %.1f h.",
+        }) else { return L10n.format("No Moon or planet \(Int(brightTargetFloorDeg))° up in the clear hours of nautical darkness.") }
+        return String(format: L10n.text("Longest clear run with a target up is %.1f h from %@; the bright rule needs %.1f h."),
                       Copy.shortRun(best.hours, rule: rule), Copy.hhmm(best.start, site: site), rule.minHours)
     }
 
     public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site,
                                       mode: PlanMode = .dark, brightTargetsUp: Bool = true) -> String? {
-        let spanName = mode == .bright ? "nautical darkness" : "darkness"
-        let ruleName = mode == .bright ? "the bright rule" : "the rule"
+        let spanName = mode == .bright ? L10n.text("nautical darkness") : L10n.text("darkness")
+        let ruleName = mode == .bright ? L10n.text("the bright rule") : L10n.text("the rule")
         let darkLen = darkEnd.timeIntervalSince(darkStart) / 3600
         if darkLen < rule.minHours {
             return mode == .bright
-                ? String(format: "Only %.1f h of %@; %@ needs %.1f h.", darkLen, spanName, ruleName, rule.minHours)
-                : String(format: "Only %.1f h of %@; %@ needs %.0f h.", darkLen, spanName, ruleName, rule.minHours)
+                ? String(format: L10n.text("Only %.1f h of %@; %@ needs %.1f h."), darkLen, spanName, ruleName, rule.minHours)
+                : String(format: L10n.text("Only %.1f h of %@; %@ needs %.0f h."), darkLen, spanName, ruleName, rule.minHours)
         }
         if mode == .bright, !brightTargetsUp {
-            return "No Moon or planet \(Int(brightTargetFloorDeg))° up during nautical darkness."
+            return L10n.format("No Moon or planet \(Int(brightTargetFloorDeg))° up during nautical darkness.")
         }
         let dark = darkHours.sorted { $0.time < $1.time }
         guard !dark.isEmpty else { return nil }
         let clear = dark.filter { $0.effectiveCloud <= rule.maxCloudPct }
         if clear.isEmpty {
             let low = dark.map(\.effectiveCloud).min() ?? 0
-            return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
+            return L10n.format("Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%.")
         }
         if mode == .bright { return brightRunReason(dark, from: darkStart, to: darkEnd, rule: rule, site: site) }
         guard let best = longestClearRun(dark, from: darkStart, to: darkEnd, rule: rule) else { return nil }
-        return String(format: "Longest clear run is %@ from %@; %@ needs %.0f h.",
+        return String(format: L10n.text("Longest clear run is %@ from %@; %@ needs %.0f h."),
                       Copy.hoursText(Copy.shortRun(best.hours, rule: rule)), Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
     }
 }

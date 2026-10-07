@@ -66,6 +66,17 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 **[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
 
+## Language / 界面语言
+
+Nightwatch supports English and Simplified Chinese. Choose **Settings › App › Language** (or use the language picker
+on the welcome screen): **Follow System**, **English**, or **简体中文**. The interface updates immediately; the preference
+is kept on this Mac, not synced through iCloud. Signed builds pass the chosen language to their desktop widgets too.
+
+Nightwatch 支持英文和简体中文。在 **设置 › 应用 › 语言**（或首次启动的欢迎页）中选择 **跟随系统 / English / 简体中文**，
+切换立即生效，无需重启。地点名称、星表编号及部分天体专名保留原文。macOS 权限提示和第三方错误信息使用系统语言。
+
+See [docs/localization.md](docs/localization.md) for translation maintenance and verification.
+
 ## Build and install (macOS 14+, Xcode 26 or later)
 
     brew install xcodegen         # generates the Xcode project from project.yml, once

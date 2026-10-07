@@ -1,0 +1,3 @@
+"NSLocationUsageDescription" = "Nightwatch 使用你的位置计算日落、黑夜时段及当地可见的天体。你也可以改为手动设置观测地点。";
+"NSLocationWhenInUseUsageDescription" = "Nightwatch 使用你的位置计算日落、黑夜时段及当地可见的天体。你也可以改为手动设置观测地点。";
+"NSHumanReadableCopyright" = "MIT 许可证。数据来源与署名详见“关于”。";

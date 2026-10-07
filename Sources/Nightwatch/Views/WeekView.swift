@@ -18,19 +18,19 @@ struct WeekView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("The week ahead").font(Font.scaled(.title2).weight(.semibold))
+                Text(L10n.text("The week ahead")).font(Font.scaled(.title2).weight(.semibold))
                 if let s = store.site, !store.week.isEmpty {
                     let clear = store.week.filter { $0.plan.primary != nil }.count
-                    Text("\(s.name) · the next \(store.week.count) nights · \(clear == 0 ? "none" : "\(clear)") with a clear window")
+                    Text(L10n.format("\(s.name) · the next \(store.week.count) nights · \(clear == 0 ? L10n.text("none") : "\(clear)") with a clear window"))
                         .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
                     if let run = store.moonlessRun {
                         Label(Copy.moonlessRun(run, site: s), systemImage: "circle").font(Font.scaled(.callout)).foregroundStyle(Tokens.textPrimary)
                     }
-                    Text("Moon and darkness are worked out exactly for every night. Cloud comes from the forecast, which is less certain the further ahead it looks. Seeing and transparency are forecast for the next three nights only.")
+                    Text(L10n.text("Moon and darkness are worked out exactly for every night. Cloud comes from the forecast, which is less certain the further ahead it looks. Seeing and transparency are forecast for the next three nights only."))
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     VStack(spacing: 6) { ForEach(store.week, id: \.plan.night.key) { row($0, site: s) } }
                 } else {
-                    Text(store.lastError ?? "Waiting for the first forecast…").font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
+                    Text(store.lastError ?? L10n.text("Waiting for the first forecast…")).font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,9 +65,9 @@ struct WeekView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         let button = Group {
             if n.daysAhead <= 1, p.primary != nil, store.config.showPlan {
-                Button("Open plan") { onOpenPlan(n.daysAhead == 1) }
+                Button(L10n.text("Open plan")) { onOpenPlan(n.daysAhead == 1) }
                     .buttonStyle(SecondaryButtonStyle()).fixedSize()
-                    .accessibilityLabel("Open \(n.daysAhead == 1 ? "tomorrow night's" : "tonight's") plan")
+                    .accessibilityLabel(L10n.format("Open \(n.daysAhead == 1 ? L10n.text("tomorrow night's") : L10n.text("tonight's")) plan"))
             }
         }
         return Group {

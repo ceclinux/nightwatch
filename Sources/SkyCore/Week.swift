@@ -71,9 +71,13 @@ extension Copy {
 
     /// The Transparency tile's word, from 7Timer's bands averaged over darkness: "Good" up to band 3, else "Average"; nil
     /// when there is none. The reason line words transparency from this too, so the two cannot disagree.
+    static func transparencyBand(_ darkHours: [HourlyConditions]) -> Int? {
+        let bands = darkHours.compactMap(\.transparency)
+        return bands.isEmpty ? nil : bands.reduce(0, +) / bands.count
+    }
+
     public static func transparencyText(_ darkHours: [HourlyConditions]) -> String? {
-        let transp = darkHours.compactMap(\.transparency)
-        return transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
+        transparencyBand(darkHours).map { $0 <= 3 ? L10n.text("Good") : L10n.text("Average") }
     }
 
     static func hoursText(_ h: Double) -> String { String(format: "%.1f h", h).replacingOccurrences(of: ".0 h", with: " h") }
@@ -86,10 +90,10 @@ extension Copy {
     /// "Tonight", "Tomorrow", then the weekday.
     public static func weekDay(_ n: WeekNight, site: Site) -> String {
         switch n.daysAhead {
-        case 0: return "Tonight"
-        case 1: return "Tomorrow"
+        case 0: return L10n.text("Tonight")
+        case 1: return L10n.text("Tomorrow")
         default:
-            let f = DateFormatter(); f.locale = Locale(identifier: "en_GB"); f.timeZone = site.timeZone; f.dateFormat = "EEEE"
+            let f = DateFormatter(); f.locale = L10n.locale; f.timeZone = site.timeZone; f.dateFormat = "EEEE"
             return f.string(from: n.plan.night.localDate)
         }
     }
@@ -97,33 +101,33 @@ extension Copy {
     /// "Clear 22:00–03:00 · 5 h", or the longest clear run when the night misses the rule.
     public static func weekVerdict(_ p: NightPlan, rule: GoRule, bright: BrightSettings, site: Site) -> String {
         if let w = p.primary {
-            return (p.mode == .bright ? "Bright night · clear " : "Clear ") + "\(span(w.start, w.end, site: site)) · \(hoursText(w.hours))"
+            return (p.mode == .bright ? L10n.text("Bright night · clear ") : L10n.text("Clear ")) + "\(span(w.start, w.end, site: site)) · \(hoursText(w.hours))"
         }
-        guard let d = p.darkSpan else { return "No astronomical darkness" }
+        guard let d = p.darkSpan else { return L10n.text("No astronomical darkness") }
         let isBright = p.mode == .bright
         var r = rule; if isBright { r.minHours = bright.minHours }
         guard let run = Planner.longestClearRun(p.darkHours, from: d.start, to: d.end, rule: r, usable: {
             !isBright || Planner.brightTargetUp(inHourFrom: $0.time, from: d.start, to: d.end, site: site)
-        }) else { return "No clear window" }
-        return "No clear window · longest clear run \(hoursText(shortRun(run.hours, rule: r))) from \(hhmm(run.start, site: site))"
+        }) else { return L10n.text("No clear window") }
+        return L10n.format("No clear window · longest clear run \(hoursText(shortRun(run.hours, rule: r))) from \(hhmm(run.start, site: site))")
     }
 
     /// "Dark 20:46–05:11 · Moon 80%, up all night · seeing 1.25–1.5″"
     public static func weekDetail(_ p: NightPlan, site: Site) -> String {
         var parts: [String] = []
-        if let d = p.darkSpan { parts.append("Dark \(span(d.start, d.end, site: site))") }
-        let pct = "Moon \(Int((p.moonIllumination * 100).rounded()))%"
+        if let d = p.darkSpan { parts.append(L10n.format("Dark \(span(d.start, d.end, site: site))")) }
+        let pct = L10n.format("Moon \(Int((p.moonIllumination * 100).rounded()))%")
         switch Planner.moonTonight(p) {
-        case .sets(let t): parts.append("\(pct), sets \(hhmm(t, site: site))")
-        case .rises(let t): parts.append("\(pct), rises \(hhmm(t, site: site))")
-        case .upAllNight: parts.append("\(pct), up all night")
-        case .down: parts.append("\(pct), down all night")
+        case .sets(let t): parts.append(L10n.format("\(pct), sets \(hhmm(t, site: site))"))
+        case .rises(let t): parts.append(L10n.format("\(pct), rises \(hhmm(t, site: site))"))
+        case .upAllNight: parts.append(L10n.format("\(pct), up all night"))
+        case .down: parts.append(L10n.format("\(pct), down all night"))
         case nil: parts.append(pct)
         }
-        if let s = seeingText(p.darkHours) { parts.append("seeing \(s)") }
+        if let s = seeingText(p.darkHours) { parts.append(L10n.format("seeing \(s)")) }
         return parts.joined(separator: " · ")
     }
 
     /// From three days out the cloud forecast is labelled, never hidden (owner's "Less certain" wording).
-    public static func weekLead(daysAhead: Int) -> String? { daysAhead >= 3 ? "Less certain · \(daysAhead) days ahead" : nil }
+    public static func weekLead(daysAhead: Int) -> String? { daysAhead >= 3 ? L10n.format("Less certain · \(daysAhead) days ahead") : nil }
 }

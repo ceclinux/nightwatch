@@ -56,7 +56,7 @@ struct MoonTile: View {
             Spacer(minLength: 0)
         }
         .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, maxHeight: .infinity, alignment: .leading)   // fills its TileRow
-        .accessibilityElement(children: .combine).accessibilityLabel("Moon, \(value)\(line.map { ", \($0)" } ?? "")")
+        .accessibilityElement(children: .combine).accessibilityLabel(L10n.format("Moon, \(value)\(line.map { ", \($0)" } ?? "")"))
         // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
         // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).
         .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))

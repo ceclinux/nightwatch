@@ -88,7 +88,7 @@ struct Headline: View {
         VStack(alignment: .leading, spacing: 3) {
             // Aurora (v0.6.6) at the end of the header line, where it costs no height.
             HStack(spacing: 6) {
-                Text("TONIGHT · \(s.siteName.uppercased())").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                Text(L10n.format("TONIGHT · \(s.siteName.uppercased())", language: s.interfaceLanguage)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
                 if let a = s.auroraLine(now: now) {
                     Spacer(minLength: 0)
                     AuroraMark(text: a.text.uppercased(), hex: a.hex, size: 9.5)
@@ -133,7 +133,7 @@ struct WeatherMark: View {
         if let m = Self.image(s) {
             let mark = Image(nsImage: m).resizable().scaledToFit().frame(height: 9)
             if link, let l = Self.legal(s) {
-                Link(destination: l) { mark }.accessibilityLabel("Apple Weather, legal attribution and data sources")
+                Link(destination: l) { mark }.accessibilityLabel(L10n.text("Apple Weather, legal attribution and data sources", language: s.interfaceLanguage))
             } else {
                 mark.accessibilityLabel("Apple Weather")
             }
@@ -158,7 +158,7 @@ struct SmallView: View {
     let now: Date
     var body: some View {
         VStack(spacing: 6) {
-            ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel)
+            ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
             // The small size has room for one short line: the first sentence of the headline ("Nothing to see here").
             Text(s.windowShort ?? (s.headline.components(separatedBy: ". ").first ?? s.headline).trimmingCharacters(in: CharacterSet(charactersIn: ".")))
                 .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Tokens.textPrimary)
@@ -183,12 +183,12 @@ struct MediumView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel)
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
                 Headline(s: s, now: now, compact: true)
                 Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false)
+            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false, language: s.interfaceLanguage)
             HStack { Spacer(minLength: 0); WeatherAttribution(s: s) }
         }
     }
@@ -205,16 +205,16 @@ struct LargeView: View {
         // a clear night with three targets and cut off the footer (25 September 2026).
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel)
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
                 Headline(s: s, now: now, showStale: false)
                 Spacer(minLength: 0)
             }
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false)
+            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false, language: s.interfaceLanguage)
             Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
-            Text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+            Text(L10n.text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT", language: s.interfaceLanguage)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             if s.targets.isEmpty {
-                Text(s.windowShort == nil ? "No clear window, so nothing is recommended."
-                     : s.mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window.")
+                Text(L10n.text(s.windowShort == nil ? "No clear window, so nothing is recommended."
+                     : s.mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window.", language: s.interfaceLanguage))
                     .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             }
             VStack(alignment: .leading, spacing: 5) { ForEach(s.targets, id: \.id) { t in
@@ -236,7 +236,7 @@ struct LargeView: View {
             // place against a quieter footer (owner, 27 September 2026).
             HStack(alignment: .center, spacing: 0) {
                 if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else {
-                    Text(s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))")
+                    Text(s.updated ?? L10n.format("Updated \(Copy.clockTime(s.fetchedAt))", language: s.interfaceLanguage))
                 }
                 Spacer(minLength: 8)
                 WeatherMark(s: s, link: true)
@@ -269,7 +269,7 @@ struct NightwatchWidgetView: View {
             } else {
                 VStack(spacing: 6) {
                     Image(systemName: "star").font(.title2).foregroundStyle(Tokens.textSecondary)
-                    Text("Open Nightwatch to load tonight's sky").font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
+                    Text(L10n.text("Open Nightwatch to load tonight's sky")).font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
                         .multilineTextAlignment(.center)
                 }
             }
@@ -287,7 +287,7 @@ struct NightwatchWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Nightwatch", provider: Provider()) { NightwatchWidgetView(entry: $0) }
             .configurationDisplayName("Nightwatch")
-            .description("Tonight's sky at a glance")
+            .description(Text(L10n.text("Tonight's sky at a glance")))
             .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
             .contentMarginsDisabled()   // the view applies the system's margins itself, symmetric where it is centred
     }

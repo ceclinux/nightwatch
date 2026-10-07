@@ -1,0 +1,3 @@
+"NSLocationUsageDescription" = "Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.";
+"NSLocationWhenInUseUsageDescription" = "Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.";
+"NSHumanReadableCopyright" = "MIT licence. Data attributions in About.";

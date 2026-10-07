@@ -4,7 +4,7 @@ import Foundation
 public enum AuroraLevel: String, Codable, Sendable, Comparable, CaseIterable {
     case green, yellow, amber, red
     public static func < (a: AuroraLevel, b: AuroraLevel) -> Bool { allCases.firstIndex(of: a)! < allCases.firstIndex(of: b)! }
-    public var displayName: String { rawValue.capitalized }
+    public var displayName: String { L10n.text(rawValue.capitalized) }
     /// AuroraWatch UK's own colour for the level, as its status-descriptions list publishes it. The owner chose these
     /// over the night palette (25 September 2026), so the aurora line is the one place Nightwatch shows green or pure red.
     public var hex: UInt32 {
@@ -55,7 +55,7 @@ public struct AuroraStatus: Codable, Equatable, Sendable {
     }
     /// The popover's line: "Aurora: amber (AuroraWatch UK) ↗" or "Aurora: amber, 35% (NOAA forecast) ↗".
     public var line: String {
-        source == .noaa ? "Aurora: \(level.rawValue), \(percent ?? 0)% (NOAA forecast) ↗" : "Aurora: \(level.rawValue) (AuroraWatch UK) ↗"
+        source == .noaa ? L10n.format("Aurora: \(L10n.text(level.rawValue)), \(percent ?? 0)% (NOAA forecast) ↗") : L10n.format("Aurora: \(L10n.text(level.rawValue)) (AuroraWatch UK) ↗")
     }
 }
 
@@ -149,10 +149,11 @@ public enum AuroraAlert {
               !AlertEngine.inQuietHours(now, site: site, settings: alerts),
               s.lastLevel.map({ status.level > $0 }) ?? true
         else { return (nil, s) }
-        let said = status.source == .noaa ? "NOAA's aurora forecast for here is \(status.percent ?? 0)% (\(status.level.rawValue))."
-                                          : "AuroraWatch UK reports \(status.level.rawValue)."
-        let note = AlertNotification(kind: .aurora, title: "Aurora alert: \(status.level.rawValue) · clear at \(site.name) now",
-                                     body: "\(said) Cloud \(hour.cloudTotal)% this hour.")
+        let level = L10n.text(status.level.rawValue)
+        let said = status.source == .noaa ? L10n.format("NOAA's aurora forecast for here is \(status.percent ?? 0)% (\(level)).")
+                                          : L10n.format("AuroraWatch UK reports \(level).")
+        let note = AlertNotification(kind: .aurora, title: L10n.format("Aurora alert: \(level) · clear at \(site.name) now"),
+                                     body: L10n.format("\(said) Cloud \(hour.cloudTotal)% this hour."))
         return (note, AuroraAlertState(nightKey: nightKey, lastLevel: status.level))
     }
 }

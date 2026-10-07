@@ -29,7 +29,7 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     // Priority rather than a fixed size: an event's title can be long ("Partial solar eclipse from …").
-                    Text(title).font(.system(size: TextScale.pt(11.5), weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
+                    Text(L10n.text(title)).font(.system(size: TextScale.pt(11.5), weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
                     if let note { Text(note).font(.system(size: TextScale.pt(11.5))).foregroundStyle(Tokens.textSecondary).lineLimit(1) }
                     Spacer(minLength: 4)
                     if let trailing { Text(trailing).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary).fixedSize() }
@@ -142,7 +142,7 @@ struct SkyPathView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(path.map { "\($0.label) \(Copy.hhmm($0.time, site: site)), \(Geo.compass($0.azimuthDeg)), \(Int($0.altitudeDeg.rounded())) degrees up" }
+        .accessibilityLabel(path.map { L10n.format("\($0.label) \(Copy.hhmm($0.time, site: site)), \(Geo.compass($0.azimuthDeg)), \(Int($0.altitudeDeg.rounded())) degrees up") }
                                 .joined(separator: "; "))
     }
 }
@@ -153,15 +153,15 @@ struct EventChips: View {
     var onPage = false
     var body: some View {
         let chips = Group {
-            if event.atPeak { Chip(text: "At peak", icon: "sparkle") }
-            if let f = event.fits { Chip(text: f ? "Fits frame" : "Too wide", icon: "viewfinder") }
-            if let c = event.clear { Chip(text: onPage ? (c ? "Clear then" : "Cloudy then") : (c ? "Clear" : "Cloudy"), icon: c ? "checkmark" : "cloud.fill", warning: !c) }
+            if event.atPeak { Chip(text: L10n.text("At peak"), icon: "sparkle") }
+            if let f = event.fits { Chip(text: f ? L10n.text("Fits frame") : L10n.text("Too wide"), icon: "viewfinder") }
+            if let c = event.clear { Chip(text: onPage ? (c ? L10n.text("Clear then") : L10n.text("Cloudy then")) : (c ? L10n.text("Clear") : L10n.text("Cloudy")), icon: c ? "checkmark" : "cloud.fill", warning: !c) }
             if event.behindHorizon {
-                Chip(text: event.kind == .meteorShower ? "Radiant behind your horizon" : "Behind your horizon", icon: "eye.slash", warning: true)
+                Chip(text: event.kind == .meteorShower ? L10n.text("Radiant behind your horizon") : L10n.text("Behind your horizon"), icon: "eye.slash", warning: true)
             }
             // #115 mock-up: a bright Moon drowns the fainter stars it covers.
             if onPage, let o = event.occultation, o.moonIllumination >= 0.7 {
-                Chip(text: "Bright Moon, \(Int((o.moonIllumination * 100).rounded()))% lit", icon: "moon.fill", warning: true)
+                Chip(text: L10n.format("Bright Moon, \(Int((o.moonIllumination * 100).rounded()))% lit"), icon: "moon.fill", warning: true)
             }
         }
         if onPage { HStack(spacing: 6) { chips } } else { VStack(alignment: .trailing, spacing: 4) { chips } }
@@ -177,7 +177,7 @@ struct ShootingTipCard: View {
                 Label(tip.title, systemImage: tip.symbol).font(.system(size: TextScale.pt(13), weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if let line = tip.copyLine { CopyButton(text: line, label: "Copy settings", done: "Settings copied") }   // #61
+                if let line = tip.copyLine { CopyButton(text: line, label: L10n.text("Copy settings"), done: L10n.text("Settings copied")) }   // #61
             }
             ForEach(tip.rows, id: \.label) { r in
                 HStack(alignment: .top, spacing: 8) {
@@ -231,7 +231,7 @@ struct HowToShootButton: View {
         Button { shown.toggle() } label: {
             HStack(spacing: 5) {
                 Image(systemName: "camera.aperture").accessibilityHidden(true)
-                Text("How to shoot this")
+                Text(L10n.text("How to shoot this"))
                 Image(systemName: shown ? "chevron.down" : "chevron.up").font(.system(size: TextScale.pt(9), weight: .semibold)).accessibilityHidden(true)
             }
         }
@@ -281,6 +281,6 @@ struct OccultationView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("The Moon and the path of \(ListFormatter.localizedString(byJoining: occultation.contacts.map(\.name))) behind it")
+        .accessibilityLabel(L10n.format("The Moon and the path of \(ListFormatter.localizedString(byJoining: occultation.contacts.map(\.name))) behind it"))
     }
 }

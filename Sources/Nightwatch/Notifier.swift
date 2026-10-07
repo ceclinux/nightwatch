@@ -17,8 +17,8 @@ enum Notifier {
     static func registerActions() {
         UNUserNotificationCenter.current().setNotificationCategories([UNNotificationCategory(
             identifier: headsUpCategory,
-            actions: [UNNotificationAction(identifier: openPlan, title: "Open plan", options: [.foreground]),
-                      UNNotificationAction(identifier: notTonight, title: "Not tonight", options: [])],
+            actions: [UNNotificationAction(identifier: openPlan, title: L10n.text("Open plan"), options: [.foreground]),
+                      UNNotificationAction(identifier: notTonight, title: L10n.text("Not tonight"), options: [])],
             intentIdentifiers: [])])
     }
 

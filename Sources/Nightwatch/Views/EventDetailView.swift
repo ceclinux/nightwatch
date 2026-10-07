@@ -14,7 +14,7 @@ struct EventDetailView: View {
     private static let presets = (try? TelescopePresets.bundled()) ?? []
 
     var body: some View {
-        DetailPage(back: "Events", onBack: onBack) {
+        DetailPage(back: L10n.text("Events"), onBack: onBack) {
             EmptyView()
         } hero: { _ in
             hero
@@ -54,9 +54,9 @@ struct EventDetailView: View {
             EventChips(event: event, onPage: true).padding(.top, 2)
             if let s = store.site {
                 HStack(spacing: 8) {
-                    HowToShootButton(shown: $tipsUI.shown).help("How to photograph this event")
+                    HowToShootButton(shown: $tipsUI.shown).help(L10n.text("How to photograph this event"))
                     Button { addToCalendar(site: s) } label: {
-                        HStack(spacing: 5) { Image(systemName: "calendar.badge.plus").accessibilityHidden(true); Text("Add to Calendar") }
+                        HStack(spacing: 5) { Image(systemName: "calendar.badge.plus").accessibilityHidden(true); Text(L10n.text("Add to Calendar")) }
                     }
                     .captionButton().padding(.top, 4)
                 }

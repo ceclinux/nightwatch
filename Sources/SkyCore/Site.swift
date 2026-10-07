@@ -53,15 +53,15 @@ public struct Site: Codable, Equatable, Sendable {
 public enum Bortle {
     public static func name(_ level: Int) -> String {
         switch level {
-        case ...1: "Pristine"
-        case 2: "Truly dark"
-        case 3: "Rural"
-        case 4: "Rural and suburban edge"
-        case 5: "Suburban"
-        case 6: "Bright suburban"
-        case 7: "Suburban and urban edge"
-        case 8: "City"
-        default: "Inner city"
+        case ...1: L10n.text("Pristine")
+        case 2: L10n.text("Truly dark")
+        case 3: L10n.text("Rural")
+        case 4: L10n.text("Rural and suburban edge")
+        case 5: L10n.text("Suburban")
+        case 6: L10n.text("Bright suburban")
+        case 7: L10n.text("Suburban and urban edge")
+        case 8: L10n.text("City")
+        default: L10n.text("Inner city")
         }
     }
 }

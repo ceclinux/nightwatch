@@ -7,7 +7,10 @@ public struct ScoreBezel: View {
     let slots: [BezelSlot]
     let label: String
 
-    public init(score: Int, slots: [BezelSlot], label: String) { self.score = score; self.slots = slots; self.label = label }
+    let language: AppLanguage?
+    public init(score: Int, slots: [BezelSlot], label: String, language: AppLanguage? = nil) {
+        self.score = score; self.slots = slots; self.label = label; self.language = language
+    }
 
     private func colour(_ s: BezelSlot) -> Color {
         switch s { case .clear: Tokens.accentClear; case .partCloud: Tokens.tickPartCloud; case .cloudy: Tokens.tickCloudy; case .daylight: Tokens.tickDaylight }
@@ -36,7 +39,7 @@ public struct ScoreBezel: View {
             ticks { $0 == .clear }.compositingGroup().shadow(color: Tokens.accentClear.opacity(0.7), radius: 3)   // one glow for all lit ticks
             Text("\(score)").font(.system(size: 27, weight: .light)).foregroundStyle(Tokens.textPrimary)
                 .overlay(alignment: .top) {   // numeral centred in the bezel, caption hung beneath it (handover: caption 11 pt below centre)
-                    Text("SKY SCORE").font(.system(size: 9, weight: .medium)).foregroundStyle(Tokens.textSecondary).fixedSize().offset(y: 28)
+                    Text(L10n.text("SKY SCORE", language: language)).font(.system(size: 9, weight: .medium)).foregroundStyle(Tokens.textSecondary).fixedSize().offset(y: 28)
                 }
         }
         .frame(width: 91, height: 91)

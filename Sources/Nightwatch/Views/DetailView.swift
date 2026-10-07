@@ -22,13 +22,13 @@ struct DetailView: View {
     private var fitted: Bool { target.group == .constellations || target.group == .planets || milkyWay }
     /// A hand-edited config can hold 0.
     /// The night this page describes, in words.
-    private var nightWords: String { plan == nil || plan?.night.key == store.plan?.night.key ? "tonight" : "tomorrow night" }
+    private var nightWords: String { plan == nil || plan?.night.key == store.plan?.night.key ? L10n.text("tonight") : L10n.text("tomorrow night") }
     private var fov: FieldOfView { FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg)) }
 
     var body: some View {
         DetailPage(back: back ?? target.group.displayName, onBack: onBack) {
             if !fitted {
-                Label(showsWholeFieldOfView ? "Shown at your field of view" : "Dashed box = your field of view", systemImage: "viewfinder").captionPill()
+                Label(showsWholeFieldOfView ? L10n.text("Shown at your field of view") : L10n.text("Dashed box = your field of view"), systemImage: "viewfinder").captionPill()
             }
         } hero: { pane in
             if fitted {
@@ -132,25 +132,25 @@ struct DetailView: View {
         return Button { store.config.toggleFavourite(target.id); store.saveConfig() } label: {
             Image(systemName: on ? "heart.fill" : "heart").font(.system(size: TextScale.pt(16), weight: .semibold)).foregroundStyle(on ? Theme.accent : Theme.text)
         }
-        .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
-        .accessibilityLabel(on ? "Remove from favourites" : "Add to favourites")
+        .buttonStyle(.plain).help(on ? L10n.text("Remove from favourites") : L10n.text("Add to favourites"))
+        .accessibilityLabel(on ? L10n.text("Remove from favourites") : L10n.text("Add to favourites"))
     }
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(target.name).font(.system(size: TextScale.pt(24), weight: .semibold)).lineLimit(2)
+                Text(L10n.text(target.name)).font(.system(size: TextScale.pt(24), weight: .semibold)).lineLimit(2)
                 if !milkyWay { heart }
             }
-            Text(target.subtitle + (milkyWay ? "" : target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
+            Text(target.displaySubtitle + (milkyWay ? "" : target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: L10n.text(" · mag %.1f"), $0) } ?? ""))
                 .font(.system(size: TextScale.pt(13))).foregroundStyle(Theme.text.opacity(0.85))
-            Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim)
+            Text(String(format: L10n.text("RA %.2fh · Dec %+.1f°"), target.raHours, target.decDeg)).font(.system(size: TextScale.pt(11))).foregroundStyle(Theme.dim)
             HStack(spacing: 8) {
-                if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help(milkyWay ? "Lens, exposure and ISO for a camera" : "Filter, exposure and frames for your telescope and this target") }
+                if store.site != nil { HowToShootButton(shown: $tipsUI.shown).help(milkyWay ? L10n.text("Lens, exposure and ISO for a camera") : L10n.text("Filter, exposure and frames for your telescope and this target")) }
                 planButton.padding(.top, 4)
             }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
-            if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim) }
+            if !fitted { Text(L10n.text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS")).font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim) }
         }
     }
 
@@ -160,8 +160,8 @@ struct DetailView: View {
         if !milkyWay, let plan, let session = store.session(for: plan), target.viewable != nil, !target.moonWashed {
             let inPlan = session.items.contains { $0.id == target.id }
             let favourite = store.config.favourites.contains(target.id)
-            let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"   // its own `plan`, not `night`
-            let label = inPlan ? (favourite ? "Take off \(night)" : "Remove from \(night)") : (favourite ? "Put back in \(night)" : "Add to \(night)")
+            let night = plan.night.key == store.plan?.night.key ? L10n.text("tonight's plan") : L10n.text("tomorrow night's plan")   // its own `plan`, not `night`
+            let label = inPlan ? (favourite ? L10n.format("Take off \(night)") : L10n.format("Remove from \(night)")) : (favourite ? L10n.format("Put back in \(night)") : L10n.format("Add to \(night)"))
             Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
                 Label(label, systemImage: inPlan ? "minus.circle" : "plus.circle")
             }
@@ -173,12 +173,12 @@ struct DetailView: View {
         if let s = store.site, let plan, let w = plan.primary {
             VStack(alignment: .leading, spacing: 8) {
                 TileRow(spacing: 6) {
-                    StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
-                    StatTile(label: s.horizon == nil ? "Above \(Int(floor))°" : "Clear of your horizon", value: "\(Int(target.visibleFraction * 100))% of window")
+                    StatTile(label: L10n.text("Best"), value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
+                    StatTile(label: s.horizon == nil ? L10n.format("Above \(Int(floor))°") : L10n.text("Clear of your horizon"), value: L10n.format("\(Int(target.visibleFraction * 100))% of window"))
                     // The Moon's own page has no separation to give: it says how much of it is lit instead.
-                    if target.id == "moon" { StatTile(label: "Illuminated", value: target.typeName.components(separatedBy: " ").first) }
-                    else { StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°") }
-                    if !milkyWay { StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60)) }
+                    if target.id == "moon" { StatTile(label: L10n.text("Illuminated"), value: target.typeName.components(separatedBy: " ").first) }
+                    else { StatTile(label: L10n.text("Moon sep."), value: "\(Int(target.moonSepDeg))°") }
+                    if !milkyWay { StatTile(label: L10n.text("Suggested"), value: String(format: L10n.text("%.0f min stack"), min(w.hours, 3) * 60)) }
                 }
                 AltitudeChart(target: target, night: plan.night, window: w, minAltitude: floor, site: s, nightWords: nightWords)
             }
@@ -226,7 +226,7 @@ struct AltitudeChart: View {
     let minAltitude: Double
     let site: Site
     /// "tonight" or "tomorrow night", for the heading.
-    var nightWords = "tonight"
+    var nightWords = L10n.text("tonight")
 
     private var span: TimeInterval { night.sunrise.timeIntervalSince(night.sunset) }
     private func frac(_ t: Date) -> Double { t.timeIntervalSince(night.sunset) / span }
@@ -235,7 +235,7 @@ struct AltitudeChart: View {
         // Shared with Tonight's plan's chart (#92), so the two always agree.
         let samples = AltitudeTrack.samples(raHours: target.raHours, decDeg: target.decDeg, night: night, window: window, site: site, minAlt: minAltitude)
         VStack(alignment: .leading, spacing: 3) {
-            Text("Altitude \(nightWords)").font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim)
+            Text(L10n.format("Altitude \(nightWords)")).font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim)
             GeometryReader { g in
                 let x = { (f: Double) in g.size.width * max(0, min(1, f)) }
                 let y = { (alt: Double) in g.size.height * (1 - max(0, min(90, alt)) / 90) }
@@ -253,7 +253,7 @@ struct AltitudeChart: View {
                         p.addLine(to: CGPoint(x: x(samples.last?.fraction ?? 1), y: g.size.height)); p.closeSubpath()
                     }
                     .fill(Color.white.opacity(0.14))
-                    Text("Horizon").font(.system(size: TextScale.pt(9))).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
+                    Text(L10n.text("Horizon")).font(.system(size: TextScale.pt(9))).foregroundStyle(Theme.dim).position(x: g.size.width - 18, y: g.size.height - 7)
                 }
                 Path { p in for (i, s) in samples.enumerated() { let pt = CGPoint(x: x(s.fraction), y: y(s.alt)); i == 0 ? p.move(to: pt) : p.addLine(to: pt) } }
                     .stroke(Color.white.opacity(0.55), lineWidth: 1.5)
@@ -269,14 +269,14 @@ struct AltitudeChart: View {
             }
             .frame(height: 44)
             HStack {
-                Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
-                Text("Clear \(Copy.hhmm(window.start, site: site))–\(Copy.hhmm(window.end, site: site))"); Spacer()
-                Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
+                Text(L10n.format("Sunset \(Copy.hhmm(night.sunset, site: site))")); Spacer()
+                Text(L10n.format("Clear \(Copy.hhmm(window.start, site: site))–\(Copy.hhmm(window.end, site: site))")); Spacer()
+                Text(L10n.format("Sunrise \(Copy.hhmm(night.sunrise, site: site))"))
             }
             .font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees.")
+        .accessibilityLabel(L10n.format("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees."))
     }
 }
 

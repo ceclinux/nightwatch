@@ -9,10 +9,12 @@ public struct ClearSkyBars: View {
     var trackHeight: CGFloat
     var labels: Bool
     var caption: Bool
+    let language: AppLanguage?
 
     /// `caption`: the "Clear sky by hour" line under the hour labels. The source is named once, in the footer (owner, 28 September 2026).
-    public init(bars: [ClearSkyBar], label: String, trackHeight: CGFloat = 37, labels: Bool = true, caption: Bool = true) {
+    public init(bars: [ClearSkyBar], label: String, trackHeight: CGFloat = 37, labels: Bool = true, caption: Bool = true, language: AppLanguage? = nil) {
         self.bars = bars; self.label = label; self.trackHeight = trackHeight; self.labels = labels; self.caption = caption
+        self.language = language
     }
 
     @ViewBuilder public var body: some View {
@@ -27,7 +29,7 @@ public struct ClearSkyBars: View {
                     VStack(spacing: 2) {
                         if labels, b.peak {
                             // "80%" alone read as visibility, or a clear night (owner's UAT, 30 September 2026).
-                            Text("\(b.clearPct)% clear").font(.system(size: TextScale.pt(8), weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
+                            Text(L10n.format("\(b.clearPct)% clear", language: language)).font(.system(size: TextScale.pt(8), weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
                         }
                         ZStack(alignment: .bottom) {
                             RoundedRectangle(cornerRadius: 2.5).fill(Tokens.surfaceTrack)
@@ -44,7 +46,7 @@ public struct ClearSkyBars: View {
                 }
             }
             if labels, caption {
-                Text("Clear sky by hour").font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary)
+                Text(L10n.text("Clear sky by hour", language: language)).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textSecondary)
             }
         }
         .accessibilityElement(children: .ignore)

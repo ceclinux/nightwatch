@@ -4,11 +4,11 @@ public enum DarknessBand: String, Codable, CaseIterable, Sendable {
     case veryDark, dark, rural, suburban, bright
     public var displayName: String {
         switch self {
-        case .veryDark: "Very dark"
-        case .dark: "Dark"
-        case .rural: "Rural"
-        case .suburban: "Suburban"
-        case .bright: "Bright"
+        case .veryDark: L10n.text("Very dark")
+        case .dark: L10n.text("Dark sky")
+        case .rural: L10n.text("Rural")
+        case .suburban: L10n.text("Suburban")
+        case .bright: L10n.text("Bright")
         }
     }
     /// The Bortle class a band most resembles, for a site whose darkness is only known from the grid.

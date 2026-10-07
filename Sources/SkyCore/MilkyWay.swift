@@ -21,12 +21,12 @@ public enum MilkyWay {
             return Planner.described(RankedTarget(id: id, name: name, subtitle: subtitle, group: .nebulae, raHours: ra, decDeg: dec,
                                                   sizeArcmin: sizeArcmin, magnitude: nil, fit: .mosaic, peakAltDeg: tr.peakAlt,
                                                   peakTime: tr.peakTime, moonSepDeg: 90, moonWashed: moonWashed, visibleFraction: tr.fraction),
-                                     viewable: tr.viewable, site: site, typeName: "Milky Way", catalogueID: card)
+                                     viewable: tr.viewable, site: site, typeName: L10n.text("Milky Way"), catalogueID: card)
         }
-        return [make("milky-way-core", "The Milky Way's core", card: "The Milky Way's core", subtitle: "Galactic centre in Sgr",
+        return [make("milky-way-core", L10n.text("The Milky Way's core"), card: L10n.text("The Milky Way's core"), subtitle: L10n.text("Galactic centre in Sgr"),
                      ra: coreRA, dec: coreDec),
-                make("milky-way-cygnus", site.latitude >= 0 ? "The summer Milky Way through Cygnus" : "The Milky Way through Cygnus",
-                     card: "The Milky Way in Cygnus", subtitle: "Milky Way in Cyg", ra: cygnusRA, dec: cygnusDec)]
+                make("milky-way-cygnus", site.latitude >= 0 ? L10n.text("The summer Milky Way through Cygnus") : L10n.text("The Milky Way through Cygnus"),
+                     card: L10n.text("The Milky Way in Cygnus"), subtitle: L10n.text("Milky Way in Cyg"), ra: cygnusRA, dec: cygnusDec)]
     }
 
     /// Why the core is missing from a site where it never clears the floor on any night, for its card, shown dimmed in its
@@ -36,11 +36,11 @@ public enum MilkyWay {
         let top = 90 - abs(site.latitude - coreDec)   // at its highest, due south (or north, south of 29° S)
         let south = site.latitude > coreDec
         guard top < site.floorDeg(azimuthDeg: south ? 180 : 0, minAlt: floorDeg) else { return nil }
-        if top < 0.5 { return "Never rises from here. It climbs higher further south: about 21° at 40° N, 31° at 30° N." }
+        if top < 0.5 { return L10n.text("Never rises from here. It climbs higher further south: about 21° at 40° N, 31° at 30° N.") }
         if top < floorDeg {
-            return "Never above \(Int(top.rounded()))° from here: too low even for a landscape shot, which needs it about 10° up. "
-                + "It climbs higher further south: about 21° at 40° N, 31° at 30° N."
+            return L10n.format("Never above \(Int(top.rounded()))° from here: too low even for a landscape shot, which needs it about 10° up. ")
+                + L10n.text("It climbs higher further south: about 21° at 40° N, 31° at 30° N.")
         }
-        return "Never clears your horizon from here: at its highest it is \(Int(top.rounded()))° up, behind your horizon in the \(south ? "south" : "north")."
+        return L10n.format("Never clears your horizon from here: at its highest it is \(Int(top.rounded()))° up, behind your horizon in the \(south ? L10n.text("south") : L10n.text("north")).")
     }
 }

@@ -10,24 +10,24 @@ struct AboutView: View {
         VStack(spacing: 14) {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 72, height: 72).accessibilityHidden(true)   // the app's own icon, not a star (owner, 6 October 2026)
             Text("Nightwatch").font(Font.scaled(.title2).weight(.semibold))
-            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") · MIT licence").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: ReleaseCheck.latestPage).font(Font.scaled(.caption)) }
+            Text(L10n.format("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") · MIT licence")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+            if let u = store.availableUpdate { Link(L10n.format("Nightwatch \(u.version) is available ↗"), destination: ReleaseCheck.latestPage).font(Font.scaled(.caption)) }
             // The only way the project hears from the people using it (v0.6.7).
             HStack(spacing: 14) {
-                Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
-                Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
-                Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
-                Link("Privacy ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
+                Link(L10n.text("Website ↗"), destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
+                Link(L10n.text("Send feedback ↗"), destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
+                Link(L10n.text("Report a problem ↗"), destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
+                Link(L10n.text("Privacy ↗"), destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
             }
             .font(Font.scaled(.callout))
-            Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
-            ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(Font.scaled(.caption)).frame(maxWidth: .infinity, alignment: .leading) }
+            Text(L10n.text("Feedback goes to GitHub Discussions; problems to GitHub Issues.")).font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
+            ScrollView { Text(notice.isEmpty ? L10n.text("See NOTICE in the repository for data attributions.") : notice).font(Font.scaled(.caption)).frame(maxWidth: .infinity, alignment: .leading) }
                 .frame(minHeight: TextScale.pt(110))   // squeezed to an empty box before: the window opened shorter than its contents
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
-            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
-            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
-            Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
+            Text(L10n.text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.")).wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+            Link(L10n.text("Aurora alert status from AuroraWatch UK, Lancaster University ↗"), destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
+            Link(L10n.text("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗"), destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
+            Text(L10n.text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.")).wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }
         .padding(20).frame(width: TextScale.pt(420)).background(Theme.bg).foregroundStyle(Theme.text).preferredColorScheme(.dark)

@@ -35,7 +35,7 @@ struct PlanChart: View {
     let window: ClearWindow
     let minAltitude: Double
     let site: Site
-    var nightWords = "tonight"
+    var nightWords = L10n.text("tonight")
     /// Each target's line style (ChartLayout.styles), shared with the rows' keys.
     let styles: [String: Int]
 
@@ -46,7 +46,7 @@ struct PlanChart: View {
         let tracks = items.map { AltitudeTrack.samples(raHours: $0.target.raHours, decDeg: $0.target.decDeg, night: night, window: window,
                                                        site: site, minAlt: minAltitude) }
         VStack(alignment: .leading, spacing: 6) {
-            Text("Altitude \(nightWords)").font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
+            Text(L10n.format("Altitude \(nightWords)")).font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
                 GeometryReader { g in
                     let w = g.size.width, h = g.size.height
                     let x: (Double) -> CGFloat = { f in w * CGFloat(max(0, min(1, f))) }
@@ -68,9 +68,9 @@ struct PlanChart: View {
                 }
                 .frame(height: 170)
             HStack {
-                Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
-                Text("Clear \(Copy.span(window.start, window.end, site: site))"); Spacer()
-                Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
+                Text(L10n.format("Sunset \(Copy.hhmm(night.sunset, site: site))")); Spacer()
+                Text(L10n.format("Clear \(Copy.span(window.start, window.end, site: site))")); Spacer()
+                Text(L10n.format("Sunrise \(Copy.hhmm(night.sunrise, site: site))"))
             }
             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
         }
@@ -78,8 +78,8 @@ struct PlanChart: View {
         .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
         .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Altitude \(nightWords)")
-        .accessibilityValue(items.map { "\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees" }
+        .accessibilityLabel(L10n.format("Altitude \(nightWords)"))
+        .accessibilityValue(items.map { L10n.format("\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees") }
             .joined(separator: "; "))
     }
 
