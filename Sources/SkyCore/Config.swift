@@ -8,7 +8,16 @@ public struct TelescopePreset: Codable, Equatable, Sendable, Identifiable {
     public let source: String
     /// The maker's battery life in hours, for Tonight's plan's power-bank note (#57); nil for a camera, which swaps batteries.
     public var batteryHours: Double? = nil
+    /// Who makes it, for the Preset menu's headings (owner-approved mock-up A, 7 October 2026). "Camera and lens" for a
+    /// camera, which has no one maker.
+    public var maker: String? = nil
     public var fov: FieldOfView { FieldOfView(widthDeg: widthDeg, heightDeg: heightDeg) }
+    /// The name under its maker's heading: "Seestar S50 Pro" for "ZWO Seestar S50 Pro". The full name stays for sentences
+    /// ("How to shoot this with your ZWO Seestar S50 Pro").
+    public var model: String {
+        guard let maker, name.hasPrefix(maker + " ") else { return name }
+        return String(name.dropFirst(maker.count + 1))
+    }
 }
 
 public enum TelescopePresets {
@@ -19,6 +28,23 @@ public enum TelescopePresets {
             throw CatalogError.missingResource("telescopes")
         }
         return try JSONDecoder().decode([TelescopePreset].self, from: Data(contentsOf: url))
+    }
+
+    public struct MakerGroup: Identifiable, Equatable, Sendable {
+        public let maker: String
+        public let presets: [TelescopePreset]
+        public var id: String { maker }
+    }
+
+    /// The presets under their makers, each maker where its first preset stands in the file, and each preset in file order.
+    public static func byMaker(_ presets: [TelescopePreset]) -> [MakerGroup] {
+        var order: [String] = [], groups: [String: [TelescopePreset]] = [:]
+        for p in presets {
+            let maker = p.maker ?? "Other"
+            if groups[maker] == nil { order.append(maker) }
+            groups[maker, default: []].append(p)
+        }
+        return order.map { MakerGroup(maker: $0, presets: groups[$0] ?? []) }
     }
 }
 
