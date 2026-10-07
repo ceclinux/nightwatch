@@ -5,25 +5,12 @@
 # binary that works natively on both. The .app is signed ad hoc (no Apple Developer
 # identity in CI), so the widget is omitted and the app falls back to Open-Meteo.
 #
-# Trigger manually with: gh workflow run build-intel.yml
-# Or push to the intel-build branch.
+# Trigger: push to the intel-build or intel branch.
 name: Build Intel / Universal
 
 on:
   push:
     branches: [intel-build, intel]
-  pull_request:
-    branches: [intel-build, intel]
-  workflow_dispatch:
-    inputs:
-      arch:
-        description: "Architecture(s) to build"
-        required: false
-        default: "universal"
-        type: choice
-        options:
-          - universal
-          - intel
 
 permissions:
   contents: read
