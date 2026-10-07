@@ -47,11 +47,10 @@ jobs:
           mkdir -p "$PINS" && cp Package.resolved "$PINS/"
       - name: Build universal binary
         run: |
-          ARCHS="-arch arm64 -arch x86_64"
           xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release \
             -derivedDataPath build/xcode \
             -onlyUsePackageVersionsFromResolvedFile \
-            "$ARCHS" \
+            -arch arm64 -arch x86_64 \
             CODE_SIGNING_ALLOWED=NO \
             build -quiet
       - name: Verify universal binary
