@@ -20,10 +20,10 @@ on:
         description: "Architecture(s) to build"
         required: false
         default: "universal"
-        type: choice:
-          options:
-            - universal
-            - intel
+        type: choice
+        options:
+          - universal
+          - intel
 
 permissions:
   contents: read
