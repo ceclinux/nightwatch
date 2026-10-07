@@ -152,7 +152,7 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(galaxy.rows.first { $0.label == "Filter" }?.text.hasPrefix("Light-pollution filter off") == true)
     #expect(!galaxy.rows.contains { $0.label == "Frames" })
     let moon = ShootingTips.tip(for: target("moon", .planets, "Moon"), presetID: "seestar-s30-pro", presetName: "ZWO Seestar S30 Pro", stackMinutes: 60, site: site)
-    #expect(moon.rows.first { $0.label == "Mode" }?.text.hasPrefix("Use Lunar mode") == true)
+    #expect(moon.rows.first { $0.label == "Mode" }?.text == "Use Solar System mode and choose the Moon.")
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "seestar-s30-pro") == "Light-pollution filter on")
     #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "seestar-s30-pro") == "Light-pollution filter off")
     #expect(ShootingTips.planKit(target("NGC1999", .nebulae, "Nebula"), presetID: "seestar-s30-pro") == nil)

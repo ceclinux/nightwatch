@@ -150,7 +150,9 @@ public enum ShootingTips {
             // only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon), as for the Draco.
             switch k {
             case .moon:
-                rows.append(.init("Mode", "Use Lunar mode: it finds and tracks the Moon for you."))
+                // ZWO names it Solar System mode for this model (its S30 Pro FAQ and shooting-modes tutorial, read
+                // 7 October 2026); "Lunar mode" is the S50's.
+                rows.append(.init("Mode", "Use Solar System mode and choose the Moon."))
             case .planet:
                 rows.append(.init("Expect", "A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points."))
             case .constellation:
