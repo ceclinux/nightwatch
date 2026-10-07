@@ -1,0 +1,85 @@
+# Builds Nightwatch as a universal binary (arm64 + x86_64) on a GitHub Actions runner,
+# attaches the .app to a workflow artifact, and can be used to publish a release.
+#
+# This workflow runs on both Intel and Apple Silicon runners and produces a universal
+# binary that works natively on both. The .app is signed ad hoc (no Apple Developer
+# identity in CI), so the widget is omitted and the app falls back to Open-Meteo.
+#
+# Trigger manually with: gh workflow run build-intel.yml
+# Or push to the intel-build branch.
+name: Build Intel / Universal
+
+on:
+  push:
+    branches: [intel-build, intel]
+  pull_request:
+    branches: [intel-build, intel]
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Architecture(s) to build"
+        required: false
+        default: "universal"
+        type: choice:
+          options:
+            - universal
+            - intel
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate --quiet
+      - name: Pin SwiftPM dependencies
+        run: |
+          PINS=Nightwatch.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+          mkdir -p "$PINS" && cp Package.resolved "$PINS/"
+      - name: Build universal binary
+        run: |
+          ARCHS="-arch arm64 -arch x86_64"
+          xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release \
+            -derivedDataPath build/xcode \
+            -onlyUsePackageVersionsFromResolvedFile \
+            "$ARCHS" \
+            CODE_SIGNING_ALLOWED=NO \
+            build -quiet
+      - name: Verify universal binary
+        run: |
+          BIN=build/xcode/Build/Products/Release/Nightwatch.app/Contents/MacOS/Nightwatch
+          lipo -info "$BIN" || true
+          file "$BIN"
+      - name: Ad-hoc sign the .app
+        run: |
+          APP=build/xcode/Build/Products/Release/Nightwatch.app
+          rm -rf "$APP/Contents/PlugIns" "$APP/Contents/XPCServices"
+          cat > Nightwatch.entitlements <<ENT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
+</dict></plist>
+ENT
+          /usr/libexec/PlistBuddy -c "Delete :NightwatchAppGroup" "$APP/Contents/Info.plist"
+          codesign --force --sign - --entitlements Nightwatch.entitlements "$APP"
+          codesign -v --verify "$APP" && echo "Ad-hoc signature OK"
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nightwatch-Universal
+          path: build/xcode/Build/Products/Release/Nightwatch.app
+          retention-days: 30
