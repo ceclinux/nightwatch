@@ -53,6 +53,8 @@ public enum ShootingTips {
         case "seestar-s50":
             let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
             return filter + "1,000 × 10 s"
+        case "seestar-s30-pro":   // filter only: ZWO has published no frame length for it
+            return k == .emission ? "Light-pollution filter on" : (k == .broadband ? "Light-pollution filter off" : nil)
         default:
             return nil
         }
@@ -142,6 +144,22 @@ public enum ShootingTips {
                 } else {
                     rows.append(.init("Frames", "Let it stack for as long as you can."))
                 }
+            }
+        case "seestar-s30-pro":
+            // ZWO's S30 Pro FAQ (7 October 2026) names the same light-pollution filter as the S50's but gives no frame length,
+            // only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon), as for the Draco.
+            switch k {
+            case .moon:
+                rows.append(.init("Mode", "Use Lunar mode: it finds and tracks the Moon for you."))
+            case .planet:
+                rows.append(.init("Expect", "A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points."))
+            case .constellation:
+                rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
+            default:
+                source = "Filter and EQ-mode limit from ZWO's Seestar S30 Pro FAQ; it publishes no frame length."
+                rows.append(.init("Filter", filterText(k, dualBand: "Light-pollution filter on", broadband: "Light-pollution filter off (UV/IR cut)")))
+                rows.append(.init("Exposure", "Short frames in alt-az mode, up to 60 s in EQ mode; the Seestar stacks them as it goes."))
+                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }
             }
         case "dslr-apsc-200":
             source = "The untracked limit comes from the 500 and NPF rules; tracked times are typical ranges, not a maker's figure."

@@ -4,10 +4,12 @@ import Foundation
 
 @Test func presetsLoad() throws {
     let p = try TelescopePresets.bundled()
-    #expect(p.count == 5)
+    #expect(p.count == 6)
     let draco = try #require(p.first { $0.id == "draco" })
     #expect(draco.widthDeg == 1.65 && draco.heightDeg == 1.24)
     #expect(p.first { $0.id == "dwarf-mini" }?.widthDeg == 2.1)
+    let s30 = try #require(p.first { $0.id == "seestar-s30-pro" })
+    #expect(s30.widthDeg == 3.99 && s30.heightDeg == 2.24)
 }
 
 @Test func defaultConfigIsSane() {

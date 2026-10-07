@@ -43,7 +43,7 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(noWindow.rows.first { $0.label == "Frames" }?.text == "200–400 recommended.")
     let custom = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: nil, presetName: nil, stackMinutes: 120, site: site)
     // The EQ line is the same for every telescope and names none (owner, 2 October 2026).
-    for preset in [nil, "dwarf-mini", "dwarf-3", "draco", "seestar-s50", "dslr-apsc-200"] {
+    for preset in [nil, "dwarf-mini", "dwarf-3", "draco", "seestar-s50", "seestar-s30-pro", "dslr-apsc-200"] {
         let eq = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: preset, presetName: nil, stackMinutes: 120, site: site)
             .rows.first { $0.label == "EQ mode" }?.text
         #expect(eq?.hasPrefix("Long frames and stacks over several nights") == true && eq?.contains("DWARF") == false)
@@ -95,7 +95,7 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let kinds: [(TargetGroup, String, String)] = [(.nebulae, "Emission nebula", "NGC7000"), (.galaxies, "Galaxy", "NGC0224"),
                                                   (.nebulae, "Nebula", "NGC1999"), (.planets, "Moon", "moon"), (.planets, "Planet", "planet-mars"),
                                                   (.constellations, "Constellation", "Cyg"), (.stars, "Star", "HIP1")]
-    let presets: [(String?, String?)] = [("dwarf-mini", "DwarfLab DWARF Mini"), ("dwarf-3", "DwarfLab DWARF 3"), ("seestar-s50", "ZWO Seestar S50"),
+    let presets: [(String?, String?)] = [("dwarf-mini", "DwarfLab DWARF Mini"), ("dwarf-3", "DwarfLab DWARF 3"), ("seestar-s50", "ZWO Seestar S50"), ("seestar-s30-pro", "ZWO Seestar S30 Pro"),
                                          ("dslr-apsc-200", "APS-C camera, 200 mm lens"), (nil, nil)]
     for (preset, name) in presets {
         for (group, type, id) in kinds {
@@ -137,6 +137,25 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let planet = ShootingTips.tip(for: target("planet-saturn", .planets, "Planet"), presetID: "draco", presetName: "DwarfLab Draco", stackMinutes: 60, site: site)
     #expect(planet.source == nil && !planet.rows.contains { $0.label == "Exposure" })
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "draco") == "Hα + O III")
+}
+
+// The S30 Pro shares the S50's filter but ZWO publishes no frame length for it, only EQ mode's 60 s cap: no copy icon.
+@Test func seestarS30ProNamesItsFilterAndOnlyTheEQCap() {
+    let em = ShootingTips.tip(for: target("NGC7000", .nebulae, "Emission nebula"), presetID: "seestar-s30-pro", presetName: "ZWO Seestar S30 Pro", stackMinutes: 120, site: site)
+    #expect(em.title == "How to shoot this with your ZWO Seestar S30 Pro")
+    #expect(em.rows.first { $0.label == "Filter" }?.text.hasPrefix("Light-pollution filter on") == true)
+    #expect(em.rows.first { $0.label == "Exposure" }?.text.contains("up to 60 s in EQ mode") == true)
+    #expect(em.rows.first { $0.label == "Frames" }?.text == "It is up and clear for 2 h tonight.")
+    #expect(em.source == "Filter and EQ-mode limit from ZWO's Seestar S30 Pro FAQ; it publishes no frame length.")
+    #expect(em.copyLine == nil)
+    let galaxy = ShootingTips.tip(for: target("NGC0224", .galaxies, "Galaxy"), presetID: "seestar-s30-pro", presetName: "ZWO Seestar S30 Pro", stackMinutes: nil, site: site)
+    #expect(galaxy.rows.first { $0.label == "Filter" }?.text.hasPrefix("Light-pollution filter off") == true)
+    #expect(!galaxy.rows.contains { $0.label == "Frames" })
+    let moon = ShootingTips.tip(for: target("moon", .planets, "Moon"), presetID: "seestar-s30-pro", presetName: "ZWO Seestar S30 Pro", stackMinutes: 60, site: site)
+    #expect(moon.rows.first { $0.label == "Mode" }?.text.hasPrefix("Use Lunar mode") == true)
+    #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "seestar-s30-pro") == "Light-pollution filter on")
+    #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "seestar-s30-pro") == "Light-pollution filter off")
+    #expect(ShootingTips.planKit(target("NGC1999", .nebulae, "Nebula"), presetID: "seestar-s30-pro") == nil)
 }
 
 // Planets, the Moon, stars and constellations get no deep-sky kit in a plan row (owner's UAT: Saturn read "Duo-Band or Astro").

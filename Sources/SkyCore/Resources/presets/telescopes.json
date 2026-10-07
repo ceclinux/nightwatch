@@ -3,5 +3,6 @@
   {"id":"dwarf-3","name":"DwarfLab DWARF 3","widthDeg":2.93,"heightDeg":1.65,"source":"skiesandscopes.com","batteryHours":5.5},
   {"id":"draco","name":"DwarfLab Draco","widthDeg":1.65,"heightDeg":1.24,"source":"dwarflab.com FAQ, 90 mm f/3.8, 340 mm, OV50Q40 (1.649 x 1.238 deg)","batteryHours":5},
   {"id":"seestar-s50","name":"ZWO Seestar S50","widthDeg":1.29,"heightDeg":0.73,"source":"seestar.com FAQ, 250 mm f/5, IMX462","batteryHours":6},
+  {"id":"seestar-s30-pro","name":"ZWO Seestar S30 Pro","widthDeg":3.99,"heightDeg":2.24,"source":"seestar.com specs, 160 mm f/5.3, IMX585 (computed from 11.14 x 6.26 mm)","batteryHours":6},
   {"id":"dslr-apsc-200","name":"APS-C camera, 200 mm lens","widthDeg":6.7,"heightDeg":4.5,"source":"computed from 23.5 x 15.6 mm sensor"}
 ]
