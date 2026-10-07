@@ -5,6 +5,22 @@ opens on anyone's Mac without a security warning. `scripts/release.sh` does the 
 first. Nightwatch is not sandboxed, so it cannot go on the Mac App Store as it stands; this is the route for a download
 from a website or a GitHub release.
 
+## Automated Intel / Universal builds
+
+The **Build Intel / Universal** GitHub Actions workflow publishes a prerelease after every successful push build on
+`main`, `intel-build` or `intel`, and after a manual **Run workflow** build. Manual runs can select `universal` (the default,
+Apple Silicon and Intel) or `intel` (x86_64 only). Pull requests build and upload artifacts but never publish releases.
+
+Each run attempt gets a unique tag, `build-<run-id>-<attempt>`, pointing at the built commit. The release includes
+`Nightwatch-macOS-Universal.zip` or `Nightwatch-macOS-Intel-x86_64.zip`; its link also appears in the release job's summary.
+Rerunning a workflow creates a separate prerelease rather than overwriting an earlier build. These prereleases do not
+replace the latest stable release.
+
+Publishing uses the built-in `GITHUB_TOKEN` with `contents: write` only in the release job; no additional secret is needed.
+Repository or organisation policies must allow that permission and creation of the `build-*` tags.
+These apps are ad-hoc signed, **not notarised**, and omit the desktop widget and helper. macOS may block them on first
+launch. For the signed and notarised DMG, use the local release process below.
+
 ## One-off setup (the account holder, about 15 minutes)
 
 1. **Developer ID Application certificate.** In Xcode: Settings › Accounts › your team › Manage Certificates › + ›

@@ -31,6 +31,8 @@ jobs:
   build:
     runs-on: macos-26
     timeout-minutes: 30
+    outputs:
+      package_name: ${{ steps.arch.outputs.package_name }}
 
     steps:
       - name: Checkout repository
@@ -192,7 +194,8 @@ jobs:
 
           echo
           echo "Package contents:"
-          unzip -l "$PACKAGE" | head -50
+          unzip -l "$PACKAGE" > package-contents.txt
+          head -50 package-contents.txt
 
       - name: Upload packaged app
         uses: actions/upload-artifact@v4
@@ -200,3 +203,53 @@ jobs:
           name: ${{ steps.arch.outputs.package_name }}
           path: ${{ steps.arch.outputs.package_name }}.zip
           retention-days: 30
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download packaged app
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.package_name }}
+          path: release
+
+      - name: Create release and upload app
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
+          PACKAGE_NAME: ${{ needs.build.outputs.package_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          PACKAGE="release/${PACKAGE_NAME}.zip"
+          test -s "$PACKAGE"
+
+          cat > release-notes.md <<EOF
+          Automated build from \`${SOURCE_REF}\` (\`${COMMIT_SHA}\`).
+
+          Download \`${PACKAGE_NAME}.zip\` below and extract Nightwatch.app.
+
+          This build is ad-hoc signed, not notarised by Apple. macOS may block it on first launch.
+          The desktop widget and helper are not included.
+
+          [Build logs](${RUN_URL})
+          EOF
+
+          RELEASE_URL=$(gh release create "$RELEASE_TAG" "$PACKAGE" \
+            --target "$COMMIT_SHA" \
+            --title "Nightwatch ${RELEASE_TAG}" \
+            --notes-file release-notes.md \
+            --prerelease \
+            --latest=false)
+
+          printf '### GitHub Release\n\n[%s](%s)\n' "$RELEASE_TAG" "$RELEASE_URL" >> "$GITHUB_STEP_SUMMARY"
