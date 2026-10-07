@@ -21,7 +21,8 @@ mkdir -p "$PINS" && cp Package.resolved "$PINS/"
 XCB=(xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release -derivedDataPath build/xcode
      -onlyUsePackageVersionsFromResolvedFile "SWIFT_ACTIVE_COMPILATION_CONDITIONS=$CONDITIONS"
      MARKETING_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
-     CURRENT_PROJECT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")")
+     CURRENT_PROJECT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")"
+     -arch arm64 -arch x86_64)
 PRODUCT=build/xcode/Build/Products/Release/Nightwatch.app
 
 # Signed build when an Apple Development identity and a provisioning profile for this bundle id exist: WeatherKit and the
