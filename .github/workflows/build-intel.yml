@@ -2,62 +2,165 @@ name: Build Intel / Universal
 
 on:
   push:
-    branches: [intel-build, intel]
+    branches:
+      - intel-build
+      - intel
+
+  pull_request:
+    branches:
+      - intel-build
+      - intel
+
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Architecture(s) to build"
+        required: false
+        default: "universal"
+        type: choice
+        options:
+          - universal
+          - intel
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   build:
     runs-on: macos-26
     timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Toolchain
-        run: swift --version
-      - name: Install xcodegen
-        run: brew install xcodegen
-      - name: Generate project
-        run: xcodegen generate --quiet
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+          uname -a
+
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        run: |
+          xcodegen generate --quiet
+
       - name: Pin SwiftPM dependencies
         run: |
           PINS=Nightwatch.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
-          mkdir -p "$PINS" && cp Package.resolved "$PINS/"
-      - name: Build universal binary
+
+          mkdir -p "$PINS"
+          cp Package.resolved "$PINS/"
+
+      - name: Build Nightwatch
         run: |
-          xcodebuild -project Nightwatch.xcodeproj -scheme Nightwatch -configuration Release \
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.arch }}" == "intel" ]]; then
+            BUILD_ARCHS="x86_64"
+          else
+            BUILD_ARCHS="arm64 x86_64"
+          fi
+
+          echo "Building architectures: $BUILD_ARCHS"
+
+          xcodebuild \
+            -project Nightwatch.xcodeproj \
+            -scheme Nightwatch \
+            -configuration Release \
             -derivedDataPath build/xcode \
             -onlyUsePackageVersionsFromResolvedFile \
-            -arch arm64 -arch x86_64 \
+            ARCHS="$BUILD_ARCHS" \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
-            build -quiet
-      - name: Verify universal binary
+            build
+
+      - name: Verify binary architectures
         run: |
-          BIN=build/xcode/Build/Products/Release/Nightwatch.app/Contents/MacOS/Nightwatch
-          lipo -info "$BIN" || true
+          BIN="build/xcode/Build/Products/Release/Nightwatch.app/Contents/MacOS/Nightwatch"
+
+          echo "Binary:"
           file "$BIN"
-      - name: Ad-hoc sign the .app
+
+          echo
+          echo "Architectures:"
+          lipo -info "$BIN"
+
+      - name: Ad-hoc sign Nightwatch
         run: |
-          APP=build/xcode/Build/Products/Release/Nightwatch.app
-          rm -rf "$APP/Contents/PlugIns" "$APP/Contents/XPCServices"
+          APP="build/xcode/Build/Products/Release/Nightwatch.app"
+
+          rm -rf "$APP/Contents/PlugIns"
+          rm -rf "$APP/Contents/XPCServices"
+
           cat > Nightwatch.entitlements <<'ENT'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>com.apple.security.personal-information.location</key><true/>
-  <key>com.apple.security.app-sandbox</key><true/>
-  <key>com.apple.security.network.client</key><true/>
-  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
-  <key>com.apple.security.files.user-selected.read-only</key><true/>
-</dict></plist>
-ENT
-          /usr/libexec/PlistBuddy -c "Delete :NightwatchAppGroup" "$APP/Contents/Info.plist"
-          codesign --force --sign - --entitlements Nightwatch.entitlements "$APP"
-          codesign -v --verify "$APP" && echo "Ad-hoc signature OK"
-      - name: Upload .app artifact
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>com.apple.security.personal-information.location</key>
+            <true/>
+
+            <key>com.apple.security.app-sandbox</key>
+            <true/>
+
+            <key>com.apple.security.network.client</key>
+            <true/>
+
+            <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+            <array>
+              <string>/Library/Application Support/Nightwatch/</string>
+              <string>/Library/Caches/Nightwatch/</string>
+            </array>
+
+            <key>com.apple.security.files.user-selected.read-only</key>
+            <true/>
+          </dict>
+          </plist>
+          ENT
+
+          /usr/libexec/PlistBuddy \
+            -c "Delete :NightwatchAppGroup" \
+            "$APP/Contents/Info.plist" || true
+
+          codesign \
+            --force \
+            --sign - \
+            --entitlements Nightwatch.entitlements \
+            "$APP"
+
+          codesign \
+            --verify \
+            --verbose \
+            "$APP"
+
+          echo "Ad-hoc signature OK"
+
+      - name: Verify final app
+        run: |
+          APP="build/xcode/Build/Products/Release/Nightwatch.app"
+          BIN="$APP/Contents/MacOS/Nightwatch"
+
+          echo "Checking code signature..."
+          codesign \
+            --verify \
+            --deep \
+            --strict \
+            --verbose=2 \
+            "$APP"
+
+          echo
+          echo "Checking architectures..."
+          lipo -info "$BIN"
+
+          echo
+          echo "Checking binary format..."
+          file "$BIN"
+
+      - name: Upload Nightwatch.app
         uses: actions/upload-artifact@v4
         with:
-          name: Nightwatch-Universal
+          name: Nightwatch
           path: build/xcode/Build/Products/Release/Nightwatch.app
           retention-days: 30
