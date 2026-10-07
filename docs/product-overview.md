@@ -108,8 +108,10 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 | DwarfLab DWARF Mini | 2.1 x 1.2 degrees |
 | DwarfLab DWARF 3 | 2.93 x 1.65 degrees |
 | DwarfLab Draco | 1.65 x 1.24 degrees |
-| ZWO Seestar S50 | 1.29 x 0.73 degrees |
+| ZWO Seestar S30 | 2.13 x 1.20 degrees |
 | ZWO Seestar S30 Pro | 3.99 x 2.24 degrees |
+| ZWO Seestar S50 | 1.29 x 0.73 degrees |
+| ZWO Seestar S50 Pro | 2.45 x 1.38 degrees |
 | APS-C camera, 200 mm lens | 6.7 x 4.5 degrees |
 | Custom | any width and height in degrees |
 

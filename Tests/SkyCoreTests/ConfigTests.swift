@@ -4,12 +4,16 @@ import Foundation
 
 @Test func presetsLoad() throws {
     let p = try TelescopePresets.bundled()
-    #expect(p.count == 6)
+    #expect(p.count == 8)
     let draco = try #require(p.first { $0.id == "draco" })
     #expect(draco.widthDeg == 1.65 && draco.heightDeg == 1.24)
     #expect(p.first { $0.id == "dwarf-mini" }?.widthDeg == 2.1)
     let s30 = try #require(p.first { $0.id == "seestar-s30-pro" })
     #expect(s30.widthDeg == 3.99 && s30.heightDeg == 2.24)
+    // Computed from the sensor and focal length: ZWO publishes only each one's diagonal (2.46 and 2.8 degrees).
+    #expect(p.first { $0.id == "seestar-s30" }?.widthDeg == 2.13 && p.first { $0.id == "seestar-s30" }?.heightDeg == 1.2)
+    #expect(p.first { $0.id == "seestar-s50-pro" }?.widthDeg == 2.45 && p.first { $0.id == "seestar-s50-pro" }?.heightDeg == 1.38)
+    #expect(Set(p.map(\.id)).count == p.count)   // no id twice
 }
 
 @Test func defaultConfigIsSane() {

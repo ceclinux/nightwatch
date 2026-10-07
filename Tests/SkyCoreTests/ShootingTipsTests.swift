@@ -43,7 +43,7 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(noWindow.rows.first { $0.label == "Frames" }?.text == "200–400 recommended.")
     let custom = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: nil, presetName: nil, stackMinutes: 120, site: site)
     // The EQ line is the same for every telescope and names none (owner, 2 October 2026).
-    for preset in [nil, "dwarf-mini", "dwarf-3", "draco", "seestar-s50", "seestar-s30-pro", "dslr-apsc-200"] {
+    for preset in [nil, "dwarf-mini", "dwarf-3", "draco", "seestar-s50", "seestar-s30-pro", "seestar-s30", "seestar-s50-pro", "dslr-apsc-200"] {
         let eq = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: preset, presetName: nil, stackMinutes: 120, site: site)
             .rows.first { $0.label == "EQ mode" }?.text
         #expect(eq?.hasPrefix("Long frames and stacks over several nights") == true && eq?.contains("DWARF") == false)
@@ -156,6 +156,21 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(ShootingTips.planKit(target("NGC7000", .nebulae, "Emission nebula"), presetID: "seestar-s30-pro") == "Light-pollution filter on")
     #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "seestar-s30-pro") == "Light-pollution filter off")
     #expect(ShootingTips.planKit(target("NGC1999", .nebulae, "Nebula"), presetID: "seestar-s30-pro") == nil)
+}
+
+// The S30 and S50 Pro take the same tip as the S30 Pro, each naming its own ZWO page as the source.
+@Test func seestarS30AndS50ProShareTheS30ProsTip() {
+    for (id, name, page) in [("seestar-s30", "ZWO Seestar S30", "Seestar S30 page"), ("seestar-s50-pro", "ZWO Seestar S50 Pro", "Seestar S50 Pro page")] {
+        let em = ShootingTips.tip(for: target("NGC7000", .nebulae, "Emission nebula"), presetID: id, presetName: name, stackMinutes: 120, site: site)
+        #expect(em.title == "How to shoot this with your \(name)")
+        #expect(em.rows.first { $0.label == "Filter" }?.text.hasPrefix("Light-pollution filter on") == true)
+        #expect(em.rows.first { $0.label == "Exposure" }?.text.contains("up to 60 s in EQ mode") == true)
+        #expect(em.source == "Filter and EQ-mode limit from ZWO's \(page); it publishes no frame length.")
+        #expect(em.copyLine == nil)
+        let moon = ShootingTips.tip(for: target("moon", .planets, "Moon"), presetID: id, presetName: name, stackMinutes: 60, site: site)
+        #expect(moon.rows.first { $0.label == "Mode" }?.text == "Use Solar System mode and choose the Moon.")
+        #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: id) == "Light-pollution filter off")
+    }
 }
 
 // Planets, the Moon, stars and constellations get no deep-sky kit in a plan row (owner's UAT: Saturn read "Duo-Band or Astro").

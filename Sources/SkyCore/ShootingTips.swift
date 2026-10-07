@@ -53,7 +53,7 @@ public enum ShootingTips {
         case "seestar-s50":
             let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
             return filter + "1,000 × 10 s"
-        case "seestar-s30-pro":   // filter only: ZWO has published no frame length for it
+        case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // filter only: ZWO has published no frame length for them
             return k == .emission ? "Light-pollution filter on" : (k == .broadband ? "Light-pollution filter off" : nil)
         default:
             return nil
@@ -145,20 +145,22 @@ public enum ShootingTips {
                     rows.append(.init("Frames", "Let it stack for as long as you can."))
                 }
             }
-        case "seestar-s30-pro":
-            // ZWO's S30 Pro FAQ (7 October 2026) names the same light-pollution filter as the S50's but gives no frame length,
-            // only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon), as for the Draco.
+        case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":
+            // ZWO's pages for these three (read 7 October 2026) name the same light-pollution filter as the S50's but give no
+            // alt-az frame length, only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon),
+            // as for the Draco.
             switch k {
             case .moon:
-                // ZWO names it Solar System mode for this model (its S30 Pro FAQ and shooting-modes tutorial, read
-                // 7 October 2026); "Lunar mode" is the S50's.
+                // ZWO names it Solar System mode for these models (the S30's page, the S30 Pro's FAQ and its
+                // shooting-modes tutorial); "Lunar mode" is the original S50's.
                 rows.append(.init("Mode", "Use Solar System mode and choose the Moon."))
             case .planet:
                 rows.append(.init("Expect", "A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points."))
             case .constellation:
                 rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
             default:
-                source = "Filter and EQ-mode limit from ZWO's Seestar S30 Pro FAQ; it publishes no frame length."
+                let page = ["seestar-s30": "Seestar S30 page", "seestar-s50-pro": "Seestar S50 Pro page"][presetID ?? ""] ?? "Seestar S30 Pro FAQ"
+                source = "Filter and EQ-mode limit from ZWO's \(page); it publishes no frame length."
                 rows.append(.init("Filter", filterText(k, dualBand: "Light-pollution filter on", broadband: "Light-pollution filter off (UV/IR cut)")))
                 rows.append(.init("Exposure", "Short frames in alt-az mode, up to 60 s in EQ mode; the Seestar stacks them as it goes."))
                 if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }

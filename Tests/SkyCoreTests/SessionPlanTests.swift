@@ -179,6 +179,7 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
 @Test func thePresetsCarryTheMakersBatteryFigures() throws {
     let b = Dictionary(uniqueKeysWithValues: try TelescopePresets.bundled().map { ($0.id, $0.batteryHours) })
     #expect(b["dwarf-mini"] == 4 && b["dwarf-3"] == 5.5 && b["draco"] == 5 && b["seestar-s50"] == 6 && b["seestar-s30-pro"] == 6)
+    #expect(b["seestar-s30"] == 6 && b["seestar-s50-pro"] == 9)
     #expect(b["dslr-apsc-200"] == .some(nil))
 }
 
