@@ -53,16 +53,24 @@ jobs:
       - name: Pin SwiftPM dependencies
         run: |
           PINS="Nightwatch.xcodeproj/project.xcworkspace/xcshareddata/swiftpm"
+
           mkdir -p "$PINS"
           cp Package.resolved "$PINS/"
 
-      - name: Build Nightwatch
+      - name: Select build architecture
+        id: arch
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.arch }}" == "intel" ]]; then
-            BUILD_ARCHS="x86_64"
+            echo "build_archs=x86_64" >> "$GITHUB_OUTPUT"
+            echo "package_name=Nightwatch-macOS-Intel-x86_64" >> "$GITHUB_OUTPUT"
           else
-            BUILD_ARCHS="arm64 x86_64"
+            echo "build_archs=arm64 x86_64" >> "$GITHUB_OUTPUT"
+            echo "package_name=Nightwatch-macOS-Universal" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build Nightwatch
+        run: |
+          BUILD_ARCHS="${{ steps.arch.outputs.build_archs }}"
 
           echo "Building architectures: $BUILD_ARCHS"
 
@@ -87,6 +95,10 @@ jobs:
           echo
           echo "Architectures:"
           lipo -info "$BIN"
+
+          echo
+          echo "Expected architectures:"
+          echo "${{ steps.arch.outputs.build_archs }}"
 
       - name: Ad-hoc sign Nightwatch
         run: |
@@ -159,9 +171,32 @@ jobs:
           echo "Checking binary format..."
           file "$BIN"
 
-      - name: Upload Nightwatch.app
+      - name: Package Nightwatch
+        run: |
+          APP="build/xcode/Build/Products/Release/Nightwatch.app"
+          PACKAGE="${{ steps.arch.outputs.package_name }}.zip"
+
+          echo "Creating package: $PACKAGE"
+
+          ditto \
+            -c \
+            -k \
+            --sequesterRsrc \
+            --keepParent \
+            "$APP" \
+            "$PACKAGE"
+
+          echo
+          echo "Package created:"
+          ls -lh "$PACKAGE"
+
+          echo
+          echo "Package contents:"
+          unzip -l "$PACKAGE" | head -50
+
+      - name: Upload packaged app
         uses: actions/upload-artifact@v4
         with:
-          name: Nightwatch-Universal
-          path: build/xcode/Build/Products/Release/Nightwatch.app
+          name: ${{ steps.arch.outputs.package_name }}
+          path: ${{ steps.arch.outputs.package_name }}.zip
           retention-days: 30
