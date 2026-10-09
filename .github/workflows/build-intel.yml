@@ -163,7 +163,8 @@ jobs:
 
           echo
           echo "Checking architecture..."
-          lipo -verify_arch "$BUILD_ARCH" "$BIN"
+          # -verify_arch consumes all following arguments as architecture names.
+          lipo "$BIN" -verify_arch "$BUILD_ARCH"
 
           echo
           echo "Checking binary format..."
