@@ -5,16 +5,22 @@ opens on anyone's Mac without a security warning. `scripts/release.sh` does the 
 first. Nightwatch is not sandboxed, so it cannot go on the Mac App Store as it stands; this is the route for a download
 from a website or a GitHub release.
 
-## Automated Intel / Universal builds
+## Automated ARM / Intel builds
 
-The **Build Intel / Universal** GitHub Actions workflow publishes a prerelease after every successful push build on
-`main`, `intel-build` or `intel`, and after a manual **Run workflow** build. Manual runs can select `universal` (the default,
-Apple Silicon and Intel) or `intel` (x86_64 only). Pull requests build and upload artifacts but never publish releases.
+The **Build macOS ARM / Intel** GitHub Actions workflow (`.github/workflows/build-intel.yml`) publishes a prerelease after
+successful push builds on `main`, `intel-build`, `intel` or `chinese-translation`, and after a manual **Run workflow** build.
+Every run builds Apple Silicon and Intel separately in a two-job matrix and checks each binary's architecture. Both builds
+must succeed before a single release is published with both ZIPs. Pull requests targeting `main`, `intel-build` or `intel`
+build and upload artifacts but never publish releases. Manual runs also build both architectures; no architecture selection
+is needed.
 
-Each run attempt gets a unique tag, `build-<run-id>-<attempt>`, pointing at the built commit. The release includes
-`Nightwatch-macOS-Universal.zip` or `Nightwatch-macOS-Intel-x86_64.zip`; its link also appears in the release job's summary.
-Rerunning a workflow creates a separate prerelease rather than overwriting an earlier build. These prereleases do not
-replace the latest stable release.
+Each run attempt gets a unique tag, `build-<run-id>-<attempt>`, pointing at the built commit. Both assets are required:
+
+- `Nightwatch-macOS-AppleSilicon-arm64.zip` — Apple Silicon (M-series) Macs.
+- `Nightwatch-macOS-Intel-x86_64.zip` — Intel Macs.
+
+The release link also appears in the release job's summary. Rerunning a workflow creates a separate prerelease rather than
+overwriting an earlier build. These prereleases do not replace the latest stable release.
 
 Publishing uses the built-in `GITHUB_TOKEN` with `contents: write` only in the release job; no additional secret is needed.
 Repository or organisation policies must allow that permission and creation of the `build-*` tags.

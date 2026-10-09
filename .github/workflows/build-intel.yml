@@ -1,4 +1,4 @@
-name: Build Intel / Universal
+name: Build macOS ARM / Intel
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
       - intel-build
       - intel
+      - chinese-translation
 
   pull_request:
     branches:
@@ -14,25 +15,26 @@ on:
       - intel
 
   workflow_dispatch:
-    inputs:
-      arch:
-        description: "Architecture(s) to build"
-        required: false
-        default: "universal"
-        type: choice
-        options:
-          - universal
-          - intel
 
 permissions:
   contents: read
 
 jobs:
   build:
+    name: Build ${{ matrix.arch }}
     runs-on: macos-26
     timeout-minutes: 30
-    outputs:
-      package_name: ${{ steps.arch.outputs.package_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            package_name: Nightwatch-macOS-AppleSilicon-arm64
+          - arch: x86_64
+            package_name: Nightwatch-macOS-Intel-x86_64
+    env:
+      BUILD_ARCH: ${{ matrix.arch }}
+      PACKAGE_NAME: ${{ matrix.package_name }}
 
     steps:
       - name: Checkout repository
@@ -59,22 +61,12 @@ jobs:
           mkdir -p "$PINS"
           cp Package.resolved "$PINS/"
 
-      - name: Select build architecture
-        id: arch
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.arch }}" == "intel" ]]; then
-            echo "build_archs=x86_64" >> "$GITHUB_OUTPUT"
-            echo "package_name=Nightwatch-macOS-Intel-x86_64" >> "$GITHUB_OUTPUT"
-          else
-            echo "build_archs=arm64 x86_64" >> "$GITHUB_OUTPUT"
-            echo "package_name=Nightwatch-macOS-Universal" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Check localization resources
+        run: node scripts/check-localization.mjs
 
       - name: Build Nightwatch
         run: |
-          BUILD_ARCHS="${{ steps.arch.outputs.build_archs }}"
-
-          echo "Building architectures: $BUILD_ARCHS"
+          echo "Building architecture: $BUILD_ARCH"
 
           xcodebuild \
             -project Nightwatch.xcodeproj \
@@ -82,7 +74,7 @@ jobs:
             -configuration Release \
             -derivedDataPath build/xcode \
             -onlyUsePackageVersionsFromResolvedFile \
-            ARCHS="$BUILD_ARCHS" \
+            ARCHS="$BUILD_ARCH" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
@@ -99,8 +91,12 @@ jobs:
           lipo -info "$BIN"
 
           echo
-          echo "Expected architectures:"
-          echo "${{ steps.arch.outputs.build_archs }}"
+          echo "Expected architecture: $BUILD_ARCH"
+          ACTUAL_ARCHS="$(lipo -archs "$BIN")"
+          if [[ "$ACTUAL_ARCHS" != "$BUILD_ARCH" ]]; then
+            echo "::error::Expected $BUILD_ARCH, got $ACTUAL_ARCHS"
+            exit 1
+          fi
 
       - name: Ad-hoc sign Nightwatch
         run: |
@@ -166,8 +162,8 @@ jobs:
             "$APP"
 
           echo
-          echo "Checking architectures..."
-          lipo -info "$BIN"
+          echo "Checking architecture..."
+          lipo -verify_arch "$BUILD_ARCH" "$BIN"
 
           echo
           echo "Checking binary format..."
@@ -176,7 +172,7 @@ jobs:
       - name: Package Nightwatch
         run: |
           APP="build/xcode/Build/Products/Release/Nightwatch.app"
-          PACKAGE="${{ steps.arch.outputs.package_name }}.zip"
+          PACKAGE="${PACKAGE_NAME}.zip"
 
           echo "Creating package: $PACKAGE"
 
@@ -200,8 +196,8 @@ jobs:
       - name: Upload packaged app
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.arch.outputs.package_name }}
-          path: ${{ steps.arch.outputs.package_name }}.zip
+          name: ${{ matrix.package_name }}
+          path: ${{ matrix.package_name }}.zip
           retention-days: 30
           if-no-files-found: error
 
@@ -215,29 +211,40 @@ jobs:
       contents: write
 
     steps:
-      - name: Download packaged app
+      - name: Download both packaged apps
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.package_name }}
+          pattern: Nightwatch-macOS-*
+          merge-multiple: true
           path: release
 
-      - name: Create release and upload app
+      - name: Create release and upload both apps
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
-          PACKAGE_NAME: ${{ needs.build.outputs.package_name }}
           COMMIT_SHA: ${{ github.sha }}
           SOURCE_REF: ${{ github.ref_name }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          PACKAGE="release/${PACKAGE_NAME}.zip"
-          test -s "$PACKAGE"
+          PACKAGES=(
+            release/Nightwatch-macOS-AppleSilicon-arm64.zip
+            release/Nightwatch-macOS-Intel-x86_64.zip
+          )
+          for package in "${PACKAGES[@]}"; do
+            if [[ ! -s "$package" ]]; then
+              echo "::error::Missing release package: $package"
+              exit 1
+            fi
+          done
 
           cat > release-notes.md <<EOF
           Automated build from \`${SOURCE_REF}\` (\`${COMMIT_SHA}\`).
 
-          Download \`${PACKAGE_NAME}.zip\` below and extract Nightwatch.app.
+          Download the ZIP for your Mac and extract Nightwatch.app:
+
+          - Apple Silicon (M-series): \`Nightwatch-macOS-AppleSilicon-arm64.zip\`
+          - Intel: \`Nightwatch-macOS-Intel-x86_64.zip\`
 
           This build is ad-hoc signed, not notarised by Apple. macOS may block it on first launch.
           The desktop widget and helper are not included.
@@ -245,7 +252,7 @@ jobs:
           [Build logs](${RUN_URL})
           EOF
 
-          RELEASE_URL=$(gh release create "$RELEASE_TAG" "$PACKAGE" \
+          RELEASE_URL=$(gh release create "$RELEASE_TAG" "${PACKAGES[@]}" \
             --target "$COMMIT_SHA" \
             --title "Nightwatch ${RELEASE_TAG}" \
             --notes-file release-notes.md \
