@@ -42,7 +42,7 @@ struct EventDetailView: View {
     @ViewBuilder private var tips: some View {
         if tipsUI.shown, let s = store.site {
             let preset = Self.presets.first { $0.id == store.config.fovPresetID }
-            ShootingTipCard(tip: ShootingTips.tip(for: event, fov: store.config.fov, presetName: preset?.name, site: s))
+            ShootingTipCard(tip: ShootingTips.tip(for: event, fov: store.config.fov, presetName: preset.map { L10n.text($0.name) }, site: s))
         }
     }
 

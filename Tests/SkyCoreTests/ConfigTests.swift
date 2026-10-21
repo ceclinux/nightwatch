@@ -4,7 +4,7 @@ import Foundation
 
 @Test func presetsLoad() throws {
     let p = try TelescopePresets.bundled()
-    #expect(p.count == 8)
+    #expect(p.count == 11)
     let draco = try #require(p.first { $0.id == "draco" })
     #expect(draco.widthDeg == 1.65 && draco.heightDeg == 1.24)
     #expect(p.first { $0.id == "dwarf-mini" }?.widthDeg == 2.1)
@@ -16,11 +16,37 @@ import Foundation
     #expect(Set(p.map(\.id)).count == p.count)   // no id twice
     // The Preset menu's headings and the names under them (owner-approved mock-up A, 7 October 2026).
     let groups = TelescopePresets.byMaker(p)
-    #expect(groups.map(\.maker) == ["DwarfLab", "ZWO", "Camera and lens"])
+    #expect(groups.map(\.maker) == ["DwarfLab", "ZWO", "Camera and lens", "Nikon"])
     #expect(groups[0].presets.map(\.model) == ["DWARF Mini", "DWARF 3", "Draco"])
     #expect(groups[1].presets.map(\.model) == ["Seestar S30", "Seestar S30 Pro", "Seestar S50", "Seestar S50 Pro"])
     #expect(groups[2].presets.map(\.model) == ["APS-C camera, 200 mm lens"])   // no maker to drop
     #expect(p.allSatisfy { $0.maker != nil } && p.first { $0.id == "seestar-s50" }?.name == "ZWO Seestar S50")
+}
+
+@Test func nikonZoomPresetsUseFullFrameAtEachFocalLength() throws {
+    let presets = try TelescopePresets.bundled()
+    let nikon = try #require(TelescopePresets.byMaker(presets).first { $0.maker == "Nikon" })
+    #expect(nikon.presets.map(\.id) == [200, 300, 400].map { "nikon-z-28-400-fx-\($0)" })
+    for focalLength in [200, 300, 400] {
+        let id = "nikon-z-28-400-fx-\(focalLength)"
+        let p = try #require(presets.first { $0.id == id })
+        let width = 2 * atan(36.0 / (2 * Double(focalLength))) * 180 / Double.pi
+        let height = 2 * atan(24.0 / (2 * Double(focalLength))) * 180 / Double.pi
+        #expect(abs(p.widthDeg - width) < 0.00005)
+        #expect(abs(p.heightDeg - height) < 0.00005)
+        #expect(p.fov == FieldOfView(widthDeg: p.widthDeg, heightDeg: p.heightDeg))
+        #expect(p.batteryHours == nil)
+        #expect(p.model == "NIKKOR Z 28-400mm f/4-8 VR (full frame, \(focalLength) mm)")
+        #expect(L10n.text(p.name, language: .english) == p.name)
+        #expect(L10n.text(p.name, language: .simplifiedChinese) == "Nikon NIKKOR Z 28-400mm f/4-8 VR（全画幅，\(focalLength) mm）")
+        #expect(L10n.text(p.model, language: .simplifiedChinese) == "NIKKOR Z 28-400mm f/4-8 VR（全画幅，\(focalLength) mm）")
+        // The three zoom positions remain separate choices when settings are saved.
+        var config = Config.default
+        config.fovPresetID = p.id
+        config.fov = p.fov
+        let restored = try JSONDecoder().decode(Config.self, from: JSONEncoder().encode(config))
+        #expect(restored.fovPresetID == id && restored.fov == p.fov)
+    }
 }
 
 @Test func defaultConfigIsSane() {

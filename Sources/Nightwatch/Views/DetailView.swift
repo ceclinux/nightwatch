@@ -207,7 +207,7 @@ extension DetailView {
     /// target, sized to tonight's window, with where the numbers come from.
     func tipsCard(site: Site) -> some View {
         let preset = TelescopePresets.shared.first { $0.id == store.config.fovPresetID }
-        let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset?.name,
+        let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset.map { L10n.text($0.name) },
                                    // The time it is really up, not the 3 h suggested stack: "up and clear for 3 h" read as fact
                                    // beside a 5 h window (owner's UAT, 30 September 2026).
                                    stackMinutes: target.viewable.map { $0.hours * 60 }, site: site, night: nightWords)

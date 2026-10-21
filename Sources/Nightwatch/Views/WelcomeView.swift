@@ -45,7 +45,7 @@ struct WelcomeView: View {
             }
             step(L10n.text("1  What do you image with?")) {
                 ForEach(state.presets) { p in
-                    choice(p.name, detail: String(format: "%g × %g°", p.fov.widthDeg, p.fov.heightDeg), on: store.config.fovPresetID == p.id) {
+                    choice(L10n.text(p.name), detail: String(format: "%g × %g°", p.fov.widthDeg, p.fov.heightDeg), on: store.config.fovPresetID == p.id) {
                         store.config.fovPresetID = p.id; store.config.fov = p.fov; store.saveConfig()
                     }
                 }
