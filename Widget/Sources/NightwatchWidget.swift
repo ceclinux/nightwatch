@@ -69,7 +69,7 @@ struct NoteLine: View {
         HStack(spacing: 5) {
             if warns { WarningDot(size: 4.5) }
             else if tick { Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true) }
-            Text(text).lineLimit(lines)
+            Text(text.plainDashes).lineLimit(lines)
         }
         .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
     }
@@ -88,15 +88,15 @@ struct Headline: View {
         VStack(alignment: .leading, spacing: 3) {
             // Aurora (v0.6.6) at the end of the header line, where it costs no height.
             HStack(spacing: 6) {
-                Text(L10n.format("TONIGHT · \(s.siteName.uppercased())", language: s.interfaceLanguage)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                Text(L10n.format("TONIGHT · \(s.siteName.uppercased())", language: s.interfaceLanguage)).capsLabel().lineLimit(1)
                 if let a = s.auroraLine(now: now) {
                     Spacer(minLength: 0)
                     AuroraMark(text: a.text.uppercased(), hex: a.hex, size: 9.5)
                 }
             }
-            Text(s.headline).font(.system(size: 15, weight: .medium)).foregroundStyle(Tokens.textPrimary)
+            TwoWeight.headline(s.headline.plainDashes, size: 15).foregroundStyle(Tokens.lit)
                 .lineLimit(compact ? 1 : 2).minimumScaleFactor(compact ? 0.7 : 0.8)
-            if let w = s.window { Text(w).font(.system(size: 13)).foregroundStyle(Tokens.textPrimary) }
+            if let w = s.window { Text(w.plainDashes).font(.system(size: compact ? 17 : 20, weight: .thin)).foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.7) }
             // No dot on the reason line, as in the popover (owner, 28 September 2026).
             if let r = s.reason { NoteLine(text: r, warns: false, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
             // A disagreement is the popover's plain line; agreement keeps its tick (owner, 28 September 2026).
@@ -160,8 +160,8 @@ struct SmallView: View {
         VStack(spacing: 6) {
             ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
             // The small size has room for one short line: the first sentence of the headline ("Nothing to see here").
-            Text(s.windowShort ?? (s.headline.components(separatedBy: ". ").first ?? s.headline).trimmingCharacters(in: CharacterSet(charactersIn: ".")))
-                .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Tokens.textPrimary)
+            Text((s.windowShort ?? (s.headline.components(separatedBy: ". ").first ?? s.headline).trimmingCharacters(in: CharacterSet(charactersIn: "."))).plainDashes)
+                .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Tokens.lit)
                 .lineLimit(1).minimumScaleFactor(0.7).multilineTextAlignment(.center)
             if let a = s.auroraLine(now: now) {
                 AuroraMark(text: a.text, hex: a.hex, size: 10)
@@ -180,15 +180,25 @@ struct SmallView: View {
 struct MediumView: View {
     let s: WidgetSnapshot
     let now: Date
+    /// The night arc under the headline, in a smaller dial; where the widget is too short for it (a long reason and an aurora line),
+    /// the earlier layout with the bars, so nothing is ever cut off.
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
+        ViewThatFits(in: .vertical) {
+            layout(arc: true)
+            layout(arc: false)
+        }
+    }
+
+    private func layout(arc: Bool) -> some View {
+        VStack(alignment: .leading, spacing: arc ? 6 : 8) {
+            HStack(alignment: .top, spacing: arc ? 12 : 14) {
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: arc ? 76 : 91, language: s.interfaceLanguage)
                 Headline(s: s, now: now, compact: true)
                 Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false, language: s.interfaceLanguage)
+            if arc { NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: false, height: 30, lineWidth: 3) }
+            else { ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false, language: s.interfaceLanguage) }
             HStack { Spacer(minLength: 0); WeatherAttribution(s: s) }
         }
     }
@@ -200,18 +210,27 @@ struct LargeView: View {
     /// In macOS's see-through style (another app in front, or Monochrome) only lightness survives: the dark tile drew as a
     /// solid white square hiding its symbol, so it becomes a faint tint there (0.7.0).
     @Environment(\.widgetRenderingMode) private var renderingMode
+    /// The night arc and a smaller dial where they fit; the earlier layout with the bars where they do not, so nothing is ever cut off.
     var body: some View {
+        ViewThatFits(in: .vertical) {
+            layout(arc: true)
+            layout(arc: false)
+        }
+    }
+
+    private func layout(arc: Bool) -> some View {
         // Measured at the real 344 × 344 pt size, content about 312 pt: 9 pt gaps, 28 pt bars and 34 pt icons ran to 348 pt on
         // a clear night with three targets and cut off the footer (25 September 2026).
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, language: s.interfaceLanguage)
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: arc ? 76 : 91, language: s.interfaceLanguage)
                 Headline(s: s, now: now, showStale: false)
                 Spacer(minLength: 0)
             }
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false, language: s.interfaceLanguage)
-            Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
-            Text(L10n.text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT", language: s.interfaceLanguage)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+            if arc { NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: true, height: 58, lineWidth: 3.5) }
+            else { ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false, language: s.interfaceLanguage) }
+            Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
+            Text(s.targets.isEmpty ? L10n.text("UP TONIGHT", language: s.interfaceLanguage) : L10n.text("BEST TONIGHT", language: s.interfaceLanguage)).capsLabel()
             if s.targets.isEmpty {
                 Text(L10n.text(s.windowShort == nil ? "No clear window, so nothing is recommended."
                      : s.mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window.", language: s.interfaceLanguage))
@@ -222,11 +241,11 @@ struct LargeView: View {
                     HStack(spacing: 10) {
                         Image(systemName: t.group.symbolName).font(.system(size: 14)).foregroundStyle(Tokens.textSecondary)
                             .frame(width: 26, height: 26)
-                            .background(renderingMode == .fullColor ? Color(hex: 0x0E1018) : Color.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+                            .background(renderingMode == .fullColor ? Color.white.opacity(0.1) : Color.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7))
                         VStack(alignment: .leading, spacing: 1) {
-                            (Text(t.catalogueID).fontWeight(.bold) + Text("  " + t.name).foregroundColor(Tokens.textSecondary))
-                                .font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).lineLimit(1)
-                            Text(t.best).font(.system(size: 9.5, weight: .medium)).foregroundStyle(Tokens.bestLine)
+                            (Text(t.catalogueID).fontWeight(.heavy) + Text("  " + t.name).foregroundColor(Tokens.textSecondary))
+                                .font(.system(size: 11)).foregroundStyle(Tokens.lit).lineLimit(1)
+                            Text(t.best.plainDashes).font(.system(size: 9.5, weight: .medium)).foregroundStyle(Tokens.lit)
                         }
                     }
                 }

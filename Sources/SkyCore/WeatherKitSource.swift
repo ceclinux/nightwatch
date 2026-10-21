@@ -14,7 +14,7 @@ public enum WeatherKitSource {
         let forecast = try await WeatherService.shared.weather(for: location, including: .hourly(startDate: start, endDate: end))
         let hours = forecast.map { h -> HourlyConditions in
             var low: Int? = nil, mid: Int? = nil, high: Int? = nil
-            if #available(macOS 15, *) {
+            if #available(macOS 15, iOS 18, *) {
                 let a = h.cloudCoverByAltitude
                 low = pct(a.low); mid = pct(a.medium); high = pct(a.high)
             }

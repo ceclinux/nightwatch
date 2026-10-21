@@ -20,7 +20,17 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    name: Test and check translations
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-localization.mjs
+      - run: swift test
+
   build:
+    needs: test
     name: Build ${{ matrix.arch }}
     runs-on: macos-26
     timeout-minutes: 30

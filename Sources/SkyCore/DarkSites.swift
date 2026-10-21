@@ -40,6 +40,19 @@ public struct DarkSite: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
+/// When a dark site's forecast may be fetched. The free forecast service allows a fixed number of calls a day, so these are
+/// fetched only while the Dark sites page is open, for the nearest few, and not at all for ten minutes after any failure.
+public enum DarkSiteFetch {
+    public static let nearest = 3
+    public static let pause: TimeInterval = 10 * 60
+    public static let maxAge: TimeInterval = 30 * 60
+    public static func shouldFetch(pageOpen: Bool, rank: Int, cachedAt: Date?, pausedUntil: Date?, now: Date) -> Bool {
+        guard pageOpen, rank < nearest else { return false }
+        if let p = pausedUntil, now < p { return false }
+        return cachedAt.map { now.timeIntervalSince($0) > maxAge } ?? true
+    }
+}
+
 public enum DarkSites {
     public static func bundledCertified() throws -> [CertifiedSite] {
         guard let url = Bundle.module.url(forResource: "certified", withExtension: "json", subdirectory: "Resources/darksky") else {

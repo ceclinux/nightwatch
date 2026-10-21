@@ -28,12 +28,12 @@ extension NSColor {
 public enum Tokens {
     public static let textPrimary = Color(hex: 0xE8EAEF)                 // text.primary
     public static let textSecondary = Color.contrast(NSColor(hex: 0xA8AEBE), NSColor(hex: 0xCDD2DC))   // text.secondary; brighter under Increase contrast
-    // The accent follows the colour chosen in System Settings, and Nightwatch sets none of its own, so Multicolour gives
-    // macOS blue (owner, 28 September 2026: the red and the orange clashed, and glare at the telescope mattered less than
-    // expected). Warnings keep a colour of their own that sits with any accent.
-    public static let accentClear = Color.accentColor                    // accent.clear: the System Settings accent
-    public static let accentClearLow = Color.accentColor.opacity(0.35)   // accent.clear.low
-    public static let statusWarning = Color(hex: 0xEDB40D)               // status.warning (owner, 28 September 2026)
+    // What is lit is warm white, and a warning is amber (the Photographic design language, owner, 18 October 2026; before that the
+    // accent followed System Settings and warnings were yellow, 28 September 2026). The system accent still colours the controls
+    // macOS draws itself.
+    public static let accentClear = lit                                  // accent.clear: warm white
+    public static let accentClearLow = lit.opacity(0.35)                 // accent.clear.low
+    public static let statusWarning = ember                              // status.warning: amber
     public static let controlOn = Color(hex: 0x0A84FF)                   // control.on: system blue, never green
     public static let glassTint = Color(hex: 0x0C0E16, opacity: 0.62)    // glass.tint
     public static let glassHairline = Color.contrast(NSColor(white: 1, alpha: 0.12), NSColor(white: 1, alpha: 0.45))   // glass.hairline
@@ -52,8 +52,15 @@ public enum Tokens {
     public static let cardOutline = Color.contrast(NSColor(hex: 0x272A34), NSColor(white: 1, alpha: 0.45))
     public static let bestLine = Color(hex: 0xCDD2DC)                    // handover type table: the target "Best" line
 
-    /// accent.clear.low towards accent.clear by u (0…1): the accent's opacity, since the accent is only known at run time.
+    // The Photographic design language (owner, 18 October 2026), applied to the Mac in stages.
+    public static let lit = Color(hex: 0xF4F1EA)                         // lit: what is lit (clear hours, lit ticks, links, best times)
+    public static let ember = Color(hex: 0xE8A04A)                       // ember: the one call to action, the "now" dot, a heart, a pin
+    public static let onEmber = Color(hex: 0x1A1206)                     // text on ember
+    public static let glassFill = Color.white.opacity(0.09)              // glass.fill: a card over the picture
+    public static let glassEdge = Color.contrast(NSColor(white: 1, alpha: 0.16), NSColor(white: 1, alpha: 0.45))   // glass.edge: its hairline
+
+    /// accent.clear.low towards accent.clear by u (0…1).
     public static func clearBlend(_ u: Double) -> Color {
-        Color.accentColor.opacity(0.35 + 0.65 * min(1, max(0, u)))
+        lit.opacity(0.35 + 0.65 * min(1, max(0, u)))
     }
 }

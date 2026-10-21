@@ -201,3 +201,17 @@ final class RecordingURLFetcher: Fetcher, @unchecked Sendable {
         return d
     }
 }
+
+@Test func primaryPauseLeavesAppleWeatherAloneForFiveMinutesAndRetriesSoonOnceItHasAnswered() {
+    var p = PrimaryPause()
+    let t = Date(timeIntervalSince1970: 0)
+    #expect(!p.paused(now: t))
+    p.record(answered: false, now: t)
+    #expect(p.paused(now: t.addingTimeInterval(299)))
+    #expect(!p.paused(now: t.addingTimeInterval(300)))
+    #expect(p.maxAge(fromPrimary: false) == 30 * 60)   // never answered: a build with no Apple Weather keeps its cache
+    p.record(answered: true, now: t.addingTimeInterval(300))
+    #expect(!p.paused(now: t.addingTimeInterval(301)))
+    #expect(p.maxAge(fromPrimary: true) == 30 * 60)
+    #expect(p.maxAge(fromPrimary: false) == 5 * 60)    // it has answered here: a fallback forecast is replaced soon
+}

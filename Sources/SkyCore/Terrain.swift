@@ -54,7 +54,8 @@ public enum Terrain {
                     break
                 } catch {
                     attempt += 1
-                    if attempt > 2 || error is CancellationError { throw error }
+                    // A daily limit does not lift in twenty seconds.
+                    if attempt > 2 || error is CancellationError || (error as? HTTPFailure)?.isRateLimit == true { throw error }
                     try await Task.sleep(for: retryWait)
                 }
             }

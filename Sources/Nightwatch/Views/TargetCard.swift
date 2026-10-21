@@ -41,8 +41,8 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             footer()
         }
         .padding(10)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.cardOutline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
+        .cardSurface(radius: 16)
+        .overlay { if highlighted { RoundedRectangle(cornerRadius: 16).stroke(Tokens.lit, lineWidth: 1.5) } }   // in Tonight's plan
     }
 }
 

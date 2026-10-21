@@ -10,6 +10,10 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
     var onSite: ((Site) -> Void)?
 
     private var allowed: Bool { [.authorizedAlways, .authorized].contains(manager.authorizationStatus) }
+    /// macOS has not asked about this app yet, so the next `requestOnce` brings up its prompt.
+    var neverAsked: Bool { manager.authorizationStatus == .notDetermined }
+    /// Location Services is switched off for the whole Mac: macOS then shows no prompt, and no app can be allowed.
+    var servicesOff: Bool { !CLLocationManager.locationServicesEnabled() }
 
     /// One fix, or nil when denied, restricted or timed out. Never prompts more than macOS itself does.
     /// When macOS has not asked yet, this asks and waits for the answer (up to a minute, time to read the prompt) before
@@ -17,6 +21,7 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
     /// was still on screen (v0.6.10).
     @MainActor func requestOnce() async -> Site? {   // on main, with the delegate calls and the timeout
         guard continuation == nil else { return nil }   // one request in flight; a second would leak its continuation
+        guard !servicesOff else { return nil }          // nothing to ask: the caller says so at once, not after a minute
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         let asking = manager.authorizationStatus == .notDetermined

@@ -9,8 +9,8 @@
   <key>CFBundleExecutable</key><string>Nightwatch</string>
   <key>CFBundleIdentifier</key><string>io.github.rsutcliffe.nightwatch</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.5.6</string>
-  <key>CFBundleVersion</key><string>43</string>
+  <key>CFBundleShortVersionString</key><string>1.6.4</string>
+  <key>CFBundleVersion</key><string>48</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.weather</string>
@@ -20,8 +20,8 @@
     <key>CFBundleURLName</key><string>io.github.rsutcliffe.nightwatch</string>
     <key>CFBundleURLSchemes</key><array><string>nightwatch</string></array>
   </dict></array>
-  <key>NSLocationUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
-  <key>NSLocationWhenInUseUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
+  <key>NSLocationUsageDescription</key><string>Nightwatch uses your location to get tonight's weather forecast for where you are, and to work out sunset, darkness and what is above your horizon.</string>
+  <key>NSLocationWhenInUseUsageDescription</key><string>Nightwatch uses your location to get tonight's weather forecast for where you are, and to work out sunset, darkness and what is above your horizon.</string>
   <!-- The widget's shared container: the same value as the widget's NightwatchAppGroup (project.yml). -->
   <key>NightwatchAppGroup</key><string>$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch</string>
   <key>NSHumanReadableCopyright</key><string>MIT licence. Data attributions in About.</string>

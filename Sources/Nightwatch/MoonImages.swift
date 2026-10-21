@@ -29,11 +29,13 @@ enum MoonImages {
 
 final class MoonLoader: ObservableObject { @Published var image: NSImage? }
 
-/// The popover's Moon tile: the rendered Moon (32 pt, dark rim) beside "{n}%" and "Sets 06:10" (or "Down tonight" alone).
+/// The popover's Moon tile: the rendered Moon (32 pt, dark rim) beside "{n}%" and "Sets 06:10" (or "Down" and "tonight").
 struct MoonTile: View {
     let value: String
     let line: String?
     let at: Date
+    /// No tile behind it and no padding: the popover sets the Moon straight on the picture.
+    var plain = false
     @StateObject private var loader = MoonLoader()
 
     var body: some View {
@@ -55,11 +57,11 @@ struct MoonTile: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, maxHeight: .infinity, alignment: .leading)   // fills its TileRow
+        .padding(plain ? 0 : 9).frame(maxWidth: .infinity, minHeight: plain ? 0 : 49.5, maxHeight: plain ? nil : .infinity, alignment: .leading)   // fills its TileRow
         .accessibilityElement(children: .combine).accessibilityLabel(L10n.format("Moon, \(value)\(line.map { ", \($0)" } ?? "")"))
         // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
         // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).
-        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
+        .background(plain ? Color.clear : Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
     }
 }

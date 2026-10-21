@@ -75,8 +75,7 @@ struct PlanChart: View {
             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
         }
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
-        .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
+        .cardSurface(radius: 14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L10n.format("Altitude \(nightWords)"))
         .accessibilityValue(items.map { L10n.format("\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees") }

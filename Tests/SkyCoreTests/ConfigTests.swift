@@ -14,6 +14,13 @@ import Foundation
     #expect(p.first { $0.id == "seestar-s30" }?.widthDeg == 2.13 && p.first { $0.id == "seestar-s30" }?.heightDeg == 1.2)
     #expect(p.first { $0.id == "seestar-s50-pro" }?.widthDeg == 2.45 && p.first { $0.id == "seestar-s50-pro" }?.heightDeg == 1.38)
     #expect(Set(p.map(\.id)).count == p.count)   // no id twice
+    // The Preset menu's headings and the names under them (owner-approved mock-up A, 7 October 2026).
+    let groups = TelescopePresets.byMaker(p)
+    #expect(groups.map(\.maker) == ["DwarfLab", "ZWO", "Camera and lens"])
+    #expect(groups[0].presets.map(\.model) == ["DWARF Mini", "DWARF 3", "Draco"])
+    #expect(groups[1].presets.map(\.model) == ["Seestar S30", "Seestar S30 Pro", "Seestar S50", "Seestar S50 Pro"])
+    #expect(groups[2].presets.map(\.model) == ["APS-C camera, 200 mm lens"])   // no maker to drop
+    #expect(p.allSatisfy { $0.maker != nil } && p.first { $0.id == "seestar-s50" }?.name == "ZWO Seestar S50")
 }
 
 @Test func defaultConfigIsSane() {

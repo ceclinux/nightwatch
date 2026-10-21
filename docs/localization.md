@@ -39,6 +39,14 @@ The tests cover catalogue identity, target classification, event identity, searc
 `InfoPlist.strings` under `Sources/Nightwatch/Resources/{en,zh-Hans}.lproj` supplies system-language location-permission copy.
 These resources are included by the app's existing XcodeGen source folder.
 
+## Upstream refresh (October 2026)
+
+The photographic interface, forecast refusal/fallback messages, network-use panel, revised location/privacy copy,
+Moon facts, warning chips and switch accessibility values are translated. Telescope maker/model identifiers and network
+endpoint names stay canonical; generic camera headings are translated only for display. Widget score dials keep the app's
+language in both the compact and full layouts. The English and Chinese location-permission resources match the revised
+purpose statement in `Info.plist`.
+
 ## Verification
 
 ```sh

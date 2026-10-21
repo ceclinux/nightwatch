@@ -25,12 +25,12 @@ struct SettingsView: View {
         Form {
             // Plain wording: "Beats" lost people (owner, 25 September 2026). One list: click a site to observe from it, the star
             // marks home, a visited dark site sits apart until kept, and adding a site opens its own sheet.
-            Section(L10n.text("Where you observe")) {
+            Section(header: Text(L10n.text("Where you observe").uppercased()).capsLabel()) {
                 ForEach(store.config.sites, id: \.name) { s in savedSiteRow(s) }
                 HStack(spacing: 12) {
                     siteRow(title: L10n.text("This Mac's location"), detail: automaticStatus,
                             selected: store.config.visiting == nil && store.config.activeSiteName == nil && store.autoSite != nil,
-                            enabled: store.autoSite != nil, home: thisMacIsHome) { store.config.choose(savedName: nil); store.saveConfig() }
+                            enabled: store.autoSite != nil || (store.locationNeverAsked() && !store.locationServicesOff()), home: thisMacIsHome) { useThisMac() }
                     homeStar(isHome: thisMacIsHome, name: L10n.text("This Mac's location")) { store.config.homeIsThisMac = true; store.saveConfig() }
                 }
                 if let v = store.config.visiting {
@@ -53,7 +53,7 @@ struct SettingsView: View {
                         ui.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         ui.latText = ""; ui.lonText = ""; ui.addingSite = true
                     }
-                        .buttonStyle(ScaledButtonStyle(prominent: true))
+                        .buttonStyle(PillButtonStyle())
                         .disabled(!store.config.canAddSite)
                     Spacer()
                 }
@@ -64,13 +64,17 @@ struct SettingsView: View {
                 Text(L10n.text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(L10n.text("Telescope")) {
+            Section(header: Text(L10n.text("Telescope").uppercased()).capsLabel()) {
                 Picker(L10n.text("Preset"), selection: Binding(get: { store.config.fovPresetID ?? "custom" }, set: { id in
                     store.config.fovPresetID = id == "custom" ? nil : id
                     if let p = ui.presets.first(where: { $0.id == id }) { store.config.fov = p.fov }
                     store.saveConfig()
                 })) {
-                    ForEach(ui.presets) { Text($0.name).scaledItem.tag($0.id) }
+                    // A heading per maker, the models under it (owner-approved mock-up A, 7 October 2026).
+                    ForEach(TelescopePresets.byMaker(ui.presets)) { group in
+                        Section(L10n.text(group.maker)) { ForEach(group.presets) { Text(L10n.text($0.model)).scaledItem.tag($0.id) } }
+                    }
+                    Divider()
                     Text(L10n.text("Custom")).scaledItem.tag("custom")
                 }
                 .id("Preset \(store.config.textSize)")   // a pop-up keeps the items it was built with: rebuilt when the size changes
@@ -81,7 +85,7 @@ struct SettingsView: View {
             }
             // Tonight's plan's own section: under Telescope, "Stop by" read as a camera setting rather than bedtime (owner's
             // UAT, 29 September 2026).
-            Section(L10n.text("Tonight's plan")) {
+            Section(header: Text(L10n.text("Tonight's plan").uppercased()).capsLabel()) {
                 Toggle(L10n.text("Show Tonight's plan in Targets and the heads-up"), isOn: bind(\.showPlan))
                 Toggle(L10n.text("Finish by a set time"), isOn: bind(\.stopBy.enabled))
                 if store.config.stopBy.enabled {
@@ -97,7 +101,7 @@ struct SettingsView: View {
                 Text(L10n.text("For bed or an early start: the plan ends at this time, and favourites only up after it are left out."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(L10n.text("Go rule")) {
+            Section(header: Text(L10n.text("Go rule").uppercased()).capsLabel()) {
                 Text(L10n.text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 choiceRow(L10n.text("Clear for at least"), Binding(get: { store.config.goRule.minHours }, set: { store.config.goRule.minHours = $0; store.saveConfig() }),
@@ -107,7 +111,7 @@ struct SettingsView: View {
                 choiceRow(L10n.text("Targets must reach"), Binding(get: { store.config.goRule.minAltitudeDeg }, set: { store.config.goRule.minAltitudeDeg = $0; store.saveConfig() }),
                           Array(stride(from: 10.0, through: 60, by: 5))) { L10n.format("\(Int($0))° altitude") }
             }
-            Section(L10n.text("Alerts")) {
+            Section(header: Text(L10n.text("Alerts").uppercased()).capsLabel()) {
                 // The master switch, moved here from the popover's footer (owner, 27 September 2026): "Notify at 20:30" tonight.
                 Toggle(store.site.map { Copy.notifyLabel(store.plan, site: $0, settings: store.config.alerts) } ?? L10n.text("Notify when clear"),
                        isOn: bind(\.notifyEnabled))
@@ -123,28 +127,39 @@ struct SettingsView: View {
                 Toggle(L10n.text("Alert only when Open-Meteo agrees"), isOn: bind(\.alerts.requireAgreement))
                     .disabled(!signed && !store.config.alerts.requireAgreement)
                 if !signed {
-                    Text(L10n.text("Needs Apple Weather (signed build)")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                    Text(L10n.text("Needs Apple Weather, which is not answering at the moment")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
                 choiceRow(L10n.text("Quiet hours start"), bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 choiceRow(L10n.text("Quiet hours end"), bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 Text(L10n.text("No banners between those hours; the popover still shows what was missed.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(L10n.text("Dark sites")) {
+            Section(header: Text(L10n.text("Dark sites").uppercased()).capsLabel()) {
                 Toggle(L10n.text("Look for darker skies nearby"), isOn: bind(\.darkSites.enabled))
                 Picker(L10n.text("Distance unit"), selection: bind(\.darkSites.unit)) { Text(L10n.text("Kilometres")).scaledItem.tag(DistanceUnit.km); Text(L10n.text("Miles")).scaledItem.tag(DistanceUnit.mi) }
                     .id("Distance unit \(store.config.textSize)")
                 choiceRow(L10n.text("Search radius"), bind(\.darkSites.radiusKm), [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300]) {
                     Geo.format(km: $0, unit: store.config.darkSites.unit)
                 }
-                Text(L10n.text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                Text(L10n.text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest three, while the Dark sites page is open.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(L10n.text("Bright nights")) {
+            Section(header: Text(L10n.text("Network use today").uppercased()).capsLabel()) {
+                let tally = RequestTally.today()
+                if tally.requests.isEmpty {
+                    Text(L10n.text("No requests yet today.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                } else {
+                    ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
+                        LabeledContent(k) { Text("\(n)").monospacedDigit() }.font(Font.scaled(.caption))
+                    }
+                }
+                Text(L10n.text("Counted on this Mac only, from midnight UTC. The free forecast service refuses a connection after a fixed number of requests a day; this shows where they went.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+            }
+            Section(header: Text(L10n.text("Bright nights").uppercased()).capsLabel()) {
                 Toggle(L10n.text("Moon and planets when there is no proper darkness"), isOn: bind(\.brightNights.enabled))
                 choiceRow(L10n.text("Minimum clear run"), bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }
                 Text(L10n.text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if Distribution.checksForUpdates {   // the App Store build has no update check
-                Section(L10n.text("Updates")) {
+                Section(header: Text(L10n.text("Updates").uppercased()).capsLabel()) {
                     Toggle(L10n.text("Check for a new version once a day"), isOn: Binding(get: { store.config.checkForUpdates }, set: {
                         store.config.checkForUpdates = $0
                         if !$0 { store.availableUpdate = nil }   // off means the line goes now, not at the next patrol
@@ -154,7 +169,7 @@ struct SettingsView: View {
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
             }
-            Section(L10n.text("Aurora")) {
+            Section(header: Text(L10n.text("Aurora").uppercased()).capsLabel()) {
                 Toggle(L10n.text("Alert me to aurora when the sky is clear"), isOn: bind(\.aurora.enabled))
                 Picker(L10n.text("Alert from"), selection: bind(\.aurora.threshold)) {
                     ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).scaledItem.tag($0) }
@@ -162,7 +177,7 @@ struct SettingsView: View {
                 .id("Alert from \(store.config.textSize)")
                 Text(L10n.format("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(L10n.text("App")) {
+            Section(header: Text(L10n.text("App").uppercased()).capsLabel()) {
                 LanguagePicker()
                 Text(L10n.text("Changes immediately. Language is saved only on this Mac."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
@@ -199,9 +214,13 @@ struct SettingsView: View {
                 // The only way in: a menu-bar app never shows its own menus, so Window › About Nightwatch cannot be
                 // reached, and nothing else opened this window (owner, 6 October 2026).
                 Button(L10n.text("About Nightwatch")) { openWindow(id: "about") }
+                Link(L10n.text("Privacy policy ↗"), destination: AboutView.privacyPolicy).buttonStyle(.link).linkCursor()   // here and in the welcome, not in About as well (1.6.3)
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background { NightBackdrop(calm: true) }
+        .toggleStyle(WarmSwitchStyle())
         .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store).scaledText() }
         .sheet(isPresented: Binding(get: { ui.horizonFor != nil }, set: { if !$0 { ui.horizonFor = nil } })) {
             if let name = ui.horizonFor { HorizonSheet(siteName: name).environmentObject(store).scaledText() }
@@ -281,7 +300,19 @@ struct SettingsView: View {
 
     private var automaticStatus: String {
         if let a = store.autoSite { return String(format: L10n.text("%.3f, %.3f · from Location Services"), a.latitude, a.longitude) }
+        if store.locationServicesOff() { return L10n.text("Location Services is switched off on this Mac: turn it on in System Settings › Privacy & Security › Location Services") }
+        if store.locationNeverAsked() { return L10n.text("Click to observe from here. macOS asks whether Nightwatch may use this Mac's location first.") }
         return L10n.text("Not available: allow Nightwatch in System Settings › Privacy & Security › Location Services")
+    }
+
+    /// Observes from this Mac. Where macOS has not asked about location yet, this is what asks (1.6.2): the fix arrives,
+    /// or the row says how to allow it.
+    private func useThisMac() {
+        if store.autoSite != nil { store.config.choose(savedName: nil); store.saveConfig(); return }
+        Task { @MainActor in
+            if let fix = await store.requestLocationFix?() { store.autoSite = fix; store.config.choose(savedName: nil); store.saveConfig() }
+            store.objectWillChange.send()   // refused: the row now says where to allow it
+        }
     }
 
     private func bind<T>(_ path: WritableKeyPath<Config, T>) -> Binding<T> {
@@ -343,7 +374,7 @@ struct AddSiteSheet: View {
                     }
                     .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.surfaceTile))
                 }
-                Text(L10n.text("Places from Apple Maps. Only what you type is sent, never where you are."))
+                Text(L10n.text("Places from Apple Maps: what you type is sent to find them."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if let c = coordinate { SiteMapView(coordinate: c) }

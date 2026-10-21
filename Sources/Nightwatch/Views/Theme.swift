@@ -8,7 +8,7 @@ enum Theme {
     static let line = Tokens.targetsTrack
     static let text = Tokens.textPrimary
     static let dim = Tokens.textSecondary
-    // Red accent by owner decision: preserves dark adaptation at the telescope. Never green.
+    // Warm white for what is lit (the Photographic design language); never green.
     static let accent = Tokens.accentClear
     static let warn = Tokens.statusWarning
 

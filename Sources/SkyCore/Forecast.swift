@@ -97,6 +97,20 @@ public protocol Fetcher: Sendable {
     func get(_ url: URL) async throws -> Data
 }
 
+/// The service answered, and said no. Keeps the status, and the service's own reason when it gives one, so a daily request limit
+/// reads as that and not as a missing connection.
+public struct HTTPFailure: Error, Equatable, Sendable, LocalizedError {
+    public let status: Int
+    public let reason: String?
+    public init(status: Int, reason: String?) { self.status = status; self.reason = reason }
+    /// Too many requests from this address (Open-Meteo says "Daily API request limit exceeded" with a 429).
+    public var isRateLimit: Bool { status == 429 }
+    public var errorDescription: String? {
+        if isRateLimit { return L10n.text("The forecast service has refused more requests from this connection today. It usually resets overnight; Nightwatch will try again in 30 minutes.") }
+        return L10n.format("The forecast service answered with an error (\(status))") + (reason.map { ": \($0)" } ?? ".")
+    }
+}
+
 public struct URLSessionFetcher: Fetcher {
     /// Names the app and its real version, as AuroraWatch UK's API terms ask ("set the HTTP User-Agent header to match the
     /// name of your app"), so every service can see who is calling.
@@ -106,9 +120,11 @@ public struct URLSessionFetcher: Fetcher {
     public func get(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url, timeoutInterval: timeout)
         req.setValue(URLSessionFetcher.userAgent, forHTTPHeaderField: "User-Agent")
+        RequestTally.record(url)
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            throw URLError(.badServerResponse)
+            let reason = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["reason"] as? String
+            throw HTTPFailure(status: http.statusCode, reason: reason)
         }
         return data
     }
@@ -250,4 +266,26 @@ public enum ForecastService {
         return Forecast(fetchedAt: now, latitude: site.latitude, longitude: site.longitude, hours: hours, seeingSource: seeingSource,
                         cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL, secondOpinion: second)
     }
+}
+
+/// Apple Weather can refuse a Mac for a while: HTTP 429 for three hours on 7 October 2026, to Apple's own Weather menu as
+/// well. Asking again for each dark site only collects more refusals, so after one failure the primary is left alone for
+/// five minutes and those fetches go straight to Open-Meteo. And once Apple Weather has answered on this Mac, a forecast
+/// that had to come from Open-Meteo is replaced after five minutes, not thirty, so Apple Weather is back soon after it
+/// answers again. A build not signed for Apple Weather never has an answer, and keeps the thirty-minute cache.
+public struct PrimaryPause {
+    public static let length: TimeInterval = 5 * 60
+    private var failedAt: Date?
+    private var hasAnswered = false
+    public init() {}
+
+    public func paused(now: Date) -> Bool { failedAt.map { now.timeIntervalSince($0) < Self.length } ?? false }
+
+    /// What a fetch that asked the primary came back with.
+    public mutating func record(answered: Bool, now: Date) {
+        if answered { hasAnswered = true; failedAt = nil } else { failedAt = now }
+    }
+
+    /// How old the active site's forecast may grow before it is fetched again.
+    public func maxAge(fromPrimary: Bool) -> TimeInterval { hasAnswered && !fromPrimary ? Self.length : 30 * 60 }
 }

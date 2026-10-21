@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Nightwatch",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "SkyCore", targets: ["SkyCore"]),
         .library(name: "NightwatchUI", targets: ["NightwatchUI"])

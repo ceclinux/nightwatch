@@ -118,10 +118,14 @@ struct NightwatchApp: App {
         // A first launch asks for notifications as the welcome closes, after it has said what they are for.
         if store.config.welcomed { await Notifier.requestAuthorisation() }
         store.requestLocationFix = { [location] in await location.requestOnce() }
+        store.locationNeverAsked = { [location] in location.neverAsked }
+        store.locationServicesOff = { [location] in location.servicesOff }
         // A first launch asks for location from the welcome's own button, with the reason beside it, not at once.
         // Not awaited: while macOS asks, this can wait a minute, and the scheduler must not. Observing from this Mac, the
         // first refresh waits for the fix instead, so it never forecasts (or alerts) for a saved site in the meantime.
-        let fixPending = store.config.activeSiteName == nil && store.config.welcomed
+        // Never uninvited (1.6.2): where macOS has not asked yet, nothing here brings up its prompt. The welcome's button
+        // and the row in Settings ask, each beside the reason.
+        let fixPending = store.config.activeSiteName == nil && store.config.welcomed && !location.neverAsked
         if fixPending {
             store.awaitingFix = true   // a popover opened meanwhile must not refresh for a saved site either
             Task { @MainActor in
@@ -129,12 +133,14 @@ struct NightwatchApp: App {
                 await store.refresh(force: false)
             }
         }
-        else if store.config.welcomed { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
+        // So "This Mac's location" is ready in Settings. Only when macOS has already asked: someone who typed a place in
+        // the welcome is never met by a location prompt at a later launch; the row in Settings asks when it is clicked.
+        else if store.config.welcomed, !location.neverAsked { Task { @MainActor in store.autoSite = await location.requestOnce() } }
         if !fixPending { await store.refresh(force: false) }
         let s = Scheduler { [location] in
             Task { @MainActor in
                 // Retry location until there is a site, but never before the welcome has explained why it is asked for.
-                if store.site == nil, store.config.welcomed, let fix = await location.requestOnce() { store.autoSite = fix }
+                if store.site == nil, store.config.welcomed, !location.neverAsked, let fix = await location.requestOnce() { store.autoSite = fix }
                 await store.refresh(force: false)
                 await store.checkForUpdate()   // at most once a day; attemptDue gates it
             }

@@ -74,6 +74,44 @@ import Foundation
     }
 }
 
+@Test func upstreamForecastErrorsAndPhotographicLabelsAreLocalized() {
+    L10n.$languageOverride.withValue(.simplifiedChinese) {
+        let refusal = HTTPFailure(status: 429, reason: "Daily API request limit exceeded")
+        #expect(refusal.isRateLimit)
+        #expect(refusal.localizedDescription.contains("30 分钟"))
+        #expect(!refusal.localizedDescription.contains("Daily API"))
+        let failure = HTTPFailure(status: 503, reason: "Service {0} unavailable")
+        #expect(failure.localizedDescription == "预报服务返回错误（503）: Service {0} unavailable")
+        #expect(L10n.text("Down") == "地平线下")
+        #expect(L10n.text("High dew risk") == "结露风险高")
+        #expect(L10n.text("Clash") == "时间冲突")
+        #expect(L10n.text("Network use today") == "今日网络用量")
+        #expect(L10n.text("On") == "开启")
+        #expect(L10n.text("Off") == "关闭")
+        // The redesigned warning chip separates this prefix from the generated advice.
+        let sees = "sees cloud"
+        let advice = L10n.format("Less certain: a second forecast \(sees).")
+        #expect(advice.hasPrefix(L10n.text("Less certain: ")))
+    }
+    L10n.$languageOverride.withValue(.english) {
+        #expect(HTTPFailure(status: 503, reason: nil).localizedDescription == "The forecast service answered with an error (503).")
+        #expect(L10n.text("Network use today") == "Network use today")
+    }
+}
+
+@Test func telescopeGroupsKeepTheirIdentityInChinese() throws {
+    let presets = try TelescopePresets.bundled()
+    let en = L10n.$languageOverride.withValue(.english) { TelescopePresets.byMaker(presets) }
+    L10n.$languageOverride.withValue(.simplifiedChinese) {
+        let zh = TelescopePresets.byMaker(presets)
+        #expect(en.map(\.maker) == zh.map(\.maker))
+        #expect(en.flatMap(\.presets).map(\.id) == zh.flatMap(\.presets).map(\.id))
+        #expect(L10n.text("Camera and lens") == "相机与镜头")
+        #expect(L10n.text("ZWO") == "ZWO")
+        #expect(presets.first { $0.id == "seestar-s30-pro" }?.model == "Seestar S30 Pro")
+    }
+}
+
 @Test func chineseKeepsCatalogueIdentifiersAndClassification() throws {
     let english = try L10n.$languageOverride.withValue(.english) { try Catalog.bundled() }
     let chinese = try L10n.$languageOverride.withValue(.simplifiedChinese) { try Catalog.bundled() }

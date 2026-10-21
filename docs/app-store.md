@@ -247,11 +247,26 @@ in the name, subtitle and keywords.
 > • Two forecasts compared: Apple Weather, with Open-Meteo as a second opinion, and 7Timer for seeing
 > • Targets chosen for your field of view, with presets for popular smart telescopes and cameras
 > • "How to shoot this" on every target: filter, exposure and frames for your telescope
+> • Tonight's plan: your favourites in the order of their best time
 > • Darker skies nearby, scored for tonight against home
-> • Aurora alerts from AuroraWatch UK
-> • Small, medium and large desktop widgets
+> • Aurora alerts for your site, wherever you observe from
+> • Tonight's events: the Moon passing in front of a star, comets and the space station
+> • Spotlight and Shortcuts actions, so a shortcut can act on tonight's sky
+> • A Text size setting, and small, medium and large desktop widgets
 >
-> Free, with no accounts, no advertising and no tracking. Nightwatch is open source.
+> No accounts, no advertising and no tracking. Nightwatch is open source.
+
+**For the next submission** (owner, 8 October 2026: say more about the horizon; neither line is in the 1.6.4 listing).
+Add after "Targets chosen for your field of view":
+
+> • Your own horizon: mark the houses, trees or hills that block your sky, or measure them from a phone photo, and
+>   Nightwatch only suggests what clears them
+
+And, once the build has the rain line (#180), after "Two forecasts compared":
+
+> • A warning when rain is forecast after the clear window, for a telescope left running outside
+
+One screenshot of the horizon dial would back the first line: `docs/images/screenshot-horizon.png` is the README's.
 
 ## App privacy answers
 
@@ -273,35 +288,77 @@ the questions before they are asked: what the app is for, how to set it up, the 
 entitlement with the steps that show it in use**. App Review asks about any entitlement it cannot see working (guideline
 2.4.5(i): on 1 October 2026 it asked about location, because the reviewer had not pressed "Use this Mac's location").
 
+*On 7 October 2026 build 24 was rejected a third time, under 5.1.1(ii): "The app requests access to location data but did
+not prompt users with a macOS permission request", with advice to include `NSLocationUsageDescription` and that
+`NSLocationWhenInUseUsageDescription` "is only for iOS apps". The build had both keys. 1.6.1 dropped the iOS key, and the prompt
+still appeared on macOS 27 from a clean copy of the app. But CoreLocation's header says `requestWhenInUseAuthorization`
+(macOS 10.15 and later) "will do nothing" without `NSLocationWhenInUseUsageDescription`, and earlier macOS versions could
+not be tested, so 1.6.2 carries both keys again with one specific sentence, and says why in the Notes. The likelier
+reason the reviewer saw no prompt: macOS asks once per app and nothing resets it (`tccutil` has no Location service), so
+a review Mac that answered in an earlier round never asks again. From 1.6.2 location is asked only from a button (the
+welcome's, or "This Mac's location" in Settings), never at launch. Build 24 also had no Quit control and no way to open About, where the privacy link is (5.1.1(i)
+asks for that link "within the app in an easily accessible manner"), so the store version moved to the current code
+instead of patching 1.0.0. Attach a recording that shows the prompt appearing.*
+
+*On 8 October 2026 the fourth submission went in: 1.6.4 (build 48), tested through TestFlight first, as 1.6.3 (build 47)
+was. The version page was saved as 1.6.4 with build 48, the description below, these Notes with a recording of the
+location prompt appearing, and five new screenshots. The reply in App Review's message thread carried four attachments
+(two recordings and two stills). Then **Update Review** on the version page and **Resubmit to App Review**: the status
+read "Waiting for Review" at about 15:19 BST.*
+
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
-whenever an entitlement or a setup step changes.
+whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,952, as saved for the
+1.6.4 resubmission on 13 October 2026, so any addition means cutting something.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
-photograph the sky, and suggests what to point a telescope at. No account or login.
+photograph the sky, and suggests targets. No account or login. It has no Dock icon: click its
+icon in the menu bar. To quit, click the power button at the top of the popover (Command-Q).
 
-Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" choose
-"Use this Mac's location" and Allow (or "Add a site..." and search for a town). The menu-bar popover then shows
-tonight's forecast. Alerts fire only on nights that pass the go rule; to see one sooner, lower
-Settings > Go rule > "Clear for at least" to 1 h on a partly clear night.
+Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" click
+"Use this Mac's location". macOS then asks "Nightwatch would like to use your current location": choose Allow.
+(Or click "Add a site..." and search for a town: the app works the same without location.) Click "Start watching".
+The menu-bar popover then shows tonight's forecast. macOS asks to allow notifications as the Welcome window closes.
 
-Outside services (read only, no user data except the site's coordinates for forecasts): Apple WeatherKit,
-Open-Meteo and 7Timer (forecasts), AuroraWatch UK (aurora status), CDS hips2fits (sky-survey images), NASA SVS
-(Moon image), Minor Planet Center and CelesTrak (comets, space station), Apple Maps (place search and maps).
+Location is requested only when a button is pressed: the Welcome button above, or Settings > Where you observe >
+"This Mac's location". Nothing asks at launch. If no prompt appears, Location Services is off on that Mac (the app
+says so), or that Mac has already answered: macOS asks once per app. The attachments show the prompt.
+
+Info.plist has NSLocationUsageDescription and also NSLocationWhenInUseUsageDescription (same sentence): CoreLocation's
+header says requestWhenInUseAuthorization does nothing without it.
+
+Alerts are local notifications: a heads-up an hour before sunset on a night that passes the go rule, and a nudge
+just before the clear spell (the attached screenshot shows them).
+
+Privacy policy: in the Welcome window (step 2) and at the foot of Settings.
+
+Outside services (read only): Apple WeatherKit, Open-Meteo and 7Timer (forecasts; sent the site's coordinates),
+Apple Maps (place search, sent what is typed; maps and place names, sent coordinates), AuroraWatch UK and the NOAA
+Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
+Center and CelesTrak (comets, space station). Nothing identifies the user.
+
+Apple Weather attribution (5.2.5): wherever the app shows a forecast from Apple Weather it shows the Apple Weather
+mark, which is itself the link to Apple's legal source page: popover footer (review-1.6.4-location.mp4 at 0:09, and the
+stills sent in the reply), foot of the Targets sidebar, desktop widget, Siri and Spotlight cards. If Apple Weather does not
+answer, the forecast comes from Open-Meteo, which the footer names; the mark is then absent because no Apple data is shown.
+
+Also in the app: Spotlight and Shortcuts actions (Sky Score, Best Targets Tonight, Events Tonight, Clear Window
+Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications) that read the forecast the app
+already holds; on macOS 27, Siri can search Nightwatch's targets. "Add to Calendar" on an event page writes a calendar
+file and needs no calendar access. "Start at login" (Settings > App) is off until the user turns it on.
 
 Entitlements and where to see each one:
-- App Sandbox: required for the Mac App Store.
-- Location (personal-information.location): Welcome step 2 "Use this Mac's location"; Settings > Where you observe >
-  "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". One fix at
-  kilometre accuracy, used to work out sunset, darkness and what is visible.
-- Outgoing network connections (network.client): the forecasts, images and data above.
-- WeatherKit: the forecast in the popover; the Apple Weather mark under it links to the legal attribution.
-- iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
-  other Macs". Change a setting on one Mac and it appears on another signed in to the same Apple Account.
-- App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
-  Edit Widgets; it shows the same sky score as the popover.
-- User-selected files, read only (files.user-selected.read-only): Settings > Where you observe > Horizon... >
-  "Measure from a photo..." opens a photo the user chooses, reads its direction, lens and tilt, and is not kept.
+- App Sandbox: Mac App Store requirement.
+- Location (personal-information.location): the two buttons above; used for the forecast, sunset, darkness and horizon
+  for that place.
+- Outgoing network connections (network.client): the services above.
+- WeatherKit: the forecast in the popover and Targets window, with the Apple Weather mark (see above).
+- iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your other
+  Macs"; signed out it reads "Not signed in to iCloud: settings stay on this Mac." Only the user's own settings sync, in
+  their own iCloud account; nothing goes to the developer. Syncing needs a second Mac, so a reviewer can see only the caption.
+- App Groups: forecast shared with the desktop widget (Edit Widgets > Nightwatch).
+- User-selected files, read only: add a site (Settings > Where you observe > Add a site...), click Horizon..., then
+  "Measure from a photo...": opens a photo the user chooses, reads its direction, lens and tilt, and does not keep it.
 ```
 
 The table behind it, for checking against the build (`codesign -d --entitlements - --xml` on the store app):
@@ -330,9 +387,46 @@ Notes say so. From 1.1 it also has a visible use (Measure from a photo). Check t
 
 - The Notes above are current, and list every entitlement the build carries.
 - A short screen recording (launch, Welcome with "Use this Mac's location", popover, Targets, Settings, widget)
-  is in App Review Information › **Attachment**, not only in a reply.
+  is in App Review Information › **Attachment**, not only in a reply. It must also show the Apple Weather mark in
+  the popover footer, the Targets sidebar and the widget, and the legal page opening from the mark (5.2.5), the iCloud
+  caption in Settings › App, Siri or Shortcuts answering, and Measure from a photo. The 1.6.4 submission carried two
+  whole-desktop recordings: `review-1.6.4-location.mp4` (3 minutes, in the Notes attachment, read in App Store
+  Connect on 13 October 2026) and `review-1.6.4-widget-shortcut.mp4` (90 seconds, in the reply thread). Between them
+  they show the popover, Targets, Settings, the widget and Shortcuts, so the Apple Weather mark is on screen, but only
+  a few pixels tall and never pointed at, and the legal page is never opened. The store screenshots also show the
+  mark, and the app already carried it everywhere Apple lists. Apple's 13 October message is a request to confirm
+  ("appears to support WeatherKit but we need to confirm"), so why the reviewer did not see the mark is not known;
+  one possibility is that Apple Weather did not answer on their Mac. Add close-up clips of each thing a reviewer must
+  see, in one walkthrough covering every entitlement, kept for every later submission.
 - After **Submit** (or **Resubmit to App Review**), the status reads **Waiting for Review**. "Ready for Review"
   means not submitted.
+
+### Guideline pre-flight (13 October 2026)
+
+Written after the fourth rejection (1.6.4, guideline 5.2.5, Apple Weather attribution), against the live App Review
+Guidelines text and what App Store Connect holds for 1.6.4. Rule of the audit: for each guideline a reviewer could use
+to ask "where do I see this?", the answer is in the Notes AND on the recording. Re-run it before each submission.
+
+| Guideline | A reviewer could ask | Evidence today | Status |
+|---|---|---|---|
+| 2.1 completeness | How do I use it? Any login? Is every feature reachable? | No sign-in (box unticked in App Store Connect); Notes give setup and every entitlement; contact details filled in | OK: two recordings (3 min and 90 s) cover the main flow. **Gap:** nothing points at the small things (the Apple Weather mark, the iCloud caption), so add close-ups to one walkthrough |
+| 2.3.3, 2.3.10 metadata | Do screenshots show the app in use? Any other platform or marketplace named? | Screenshots of the running app; description has no web address and the download is not mentioned | OK |
+| 2.3.6 age rating | Honest answers? | None throughout, 4+ | OK |
+| 2.4.5(i) sandbox | Entitlements justified? | Seven listed with where each is seen; the temporary exceptions are stripped by `scripts/appstore.sh` | OK, once the recording shows each one |
+| 2.4.5(iii) no login launch without consent | Does it start by itself? | "Start at login" is off until switched on; no Dock icon; Quit in the popover | OK |
+| 2.4.5(vii) updates only through the store | Does it update itself? | The update check is gated by `Distribution.checksForUpdates`, off in the store build | OK |
+| 2.5.11 Shortcuts and Siri | Do the actions fit the app? | Seven actions, all about the forecast and targets; phrases name Nightwatch first | OK; show one on the recording |
+| 2.5.16 widgets | Related to the app? | Widget shows tonight's sky score | OK; show it on the recording |
+| 4.2 minimum functionality | Is it more than a web page? | Native forecast, planner, charts, widget, Shortcuts | OK |
+| 5.1.1(i) privacy policy | Link in metadata and in the app? | App Store Connect holds `PRIVACY.md` on GitHub; in the app at Welcome step 2 and the foot of Settings | OK. `PRIVACY.md` also changes in PR 182, so that PR waits until 1.6.4 is approved |
+| 5.1.1(ii), (iv) consent | Does it ask before location? Does it work without? | Asked only from a button; "Add a site..." works without it; the 1.6.4 recording shows the prompt | OK |
+| 5.1.2 data sharing, privacy labels | Where do coordinates go? Do the labels match? | Coordinates go to Apple WeatherKit, Open-Meteo and 7Timer; label says Precise Location, not linked to you, app functionality | OK |
+| 5.1.5 location | Is it needed? | Forecast, sunset, darkness and horizon for where you are | OK |
+| 5.2.1 trademarks | Third-party names? | No Discworld or Pratchett names in the listing; telescope makers are described, not named | OK |
+| 5.2.2 third-party services | Permission for the data? | Open-Meteo (CC BY 4.0), 7Timer, NOAA, AuroraWatch UK, CDS and DSS (non-profit use), NASA SVS, Minor Planet Center, CelesTrak; credited in About and `NOTICE` | OK **while the app stays free with no ads**, which several terms require |
+| **5.2.5 Apple products** | **Does it show the Apple Weather mark and legal link?** | Mark and link in the popover footer, Targets sidebar, widget and Siri cards (code); the recordings show it only in passing, a few pixels tall | **Rejected 13 October** (a request to confirm). Reply with a close-up recording, add the Notes paragraph above |
+| Export compliance | Encryption? | `ITSAppUsesNonExemptEncryption` is false | OK |
+| Privacy manifest | Required-reason APIs declared? | `PrivacyInfo.xcprivacy` is in the app | OK |
 
 ## Screenshots
 

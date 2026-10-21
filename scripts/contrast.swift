@@ -9,7 +9,7 @@
 import AppKit
 import CoreGraphics
 
-let tokens: [(name: String, hex: UInt32)] = [("text.primary", 0xE8EAEF), ("text.secondary", 0xA8AEBE), ("status.warning", 0xEDB40D)]
+let tokens: [(name: String, hex: UInt32)] = [("text.primary", 0xE8EAEF), ("text.secondary", 0xA8AEBE), ("status.warning", 0xEDB40D), ("text.lit", 0xF4F1EA), ("ember", 0xE8A04A)]
 
 func lin(_ v: Double) -> Double { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
 func lum(_ r: Double, _ g: Double, _ b: Double) -> Double { 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) }

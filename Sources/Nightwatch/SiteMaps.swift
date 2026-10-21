@@ -13,19 +13,44 @@ enum SiteMaps {
 
     static func file(for s: DarkSite) -> URL { Thumbnails.dir.appendingPathComponent("map-\(s.id).jpg") }
 
-    /// The map around a point, not saved: the add-site preview changes with every search or typed coordinate.
+    /// The picture's brightness on a coarse grid, for `MapSnapshot.isBlank`.
+    private static func brightness(of img: NSImage) -> [Double] {
+        guard let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return [] }
+        let w = 32, h = 12
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return [] }
+        ctx.interpolationQuality = .high
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var out: [Double] = []
+        for i in stride(from: 0, to: px.count, by: 4) {
+            let r = Double(px[i]), g = Double(px[i + 1]), b = Double(px[i + 2])
+            out.append((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255)
+        }
+        return out
+    }
+    static func isBlank(_ img: NSImage) -> Bool { MapSnapshot.isBlank(brightness: brightness(of: img)) }
+
+    /// The map around a point, not saved: the add-site preview changes with every search or typed coordinate. Nil when Apple Maps
+    /// could not load its tiles and drew its blank grid instead: the card shows its placeholder and asks again next time.
     static func snapshot(at c: Coordinate) async -> NSImage? {
         let o = MKMapSnapshotter.Options()
         o.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: c.latitude, longitude: c.longitude),
                                       latitudinalMeters: widthMetres * size.height / size.width, longitudinalMeters: widthMetres)
         o.size = size
         o.appearance = NSAppearance(named: .darkAqua)
-        return try? await MKMapSnapshotter(options: o).start().image
+        guard let img = try? await MKMapSnapshotter(options: o).start().image, !isBlank(img) else { return nil }
+        return img
     }
 
     static func image(for s: DarkSite) async -> NSImage? {
         let f = file(for: s)
-        if let img = Thumbnails.cached(f) { return img }
+        if let img = Thumbnails.cached(f) {
+            if !isBlank(img) { return img }
+            // A blank kept from a time Apple Maps could not load its tiles: forget it and ask again.
+            try? FileManager.default.removeItem(at: f)
+            ImageMemory.remove(f)
+        }
         guard let img = await snapshot(at: s.coordinate) else { return nil }
         if let tiff = img.tiffRepresentation, let jpg = NSBitmapImageRep(data: tiff)?.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
             try? FileManager.default.createDirectory(at: Thumbnails.dir, withIntermediateDirectories: true)
@@ -61,7 +86,7 @@ struct SiteMapView: View {
             RoundedRectangle(cornerRadius: 8).fill(Tokens.surfaceTile)
             if let image {
                 Color.clear.overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
-                Circle().fill(Tokens.controlOn).frame(width: 16, height: 16).overlay(Circle().stroke(.white, lineWidth: 2.5))
+                Circle().fill(Tokens.ember).frame(width: 16, height: 16).overlay(Circle().stroke(.white, lineWidth: 2.5))
             } else {
                 Image(systemName: "moon.stars").font(Font.scaled(.title2)).foregroundStyle(Theme.dim)
             }

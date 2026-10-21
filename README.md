@@ -4,6 +4,8 @@
 
 Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. See the [product page](https://delphi-dolphin.com/nightwatch).
 
+**Trees, houses or a balcony roof in the way?** Tell Nightwatch how much sky you can actually see, direction by direction or from a phone photo, and it only suggests targets that clear it. See [Your horizon](#your-horizon).
+
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
@@ -46,7 +48,7 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 <img src="docs/images/screenshot-dark-sites-madrid.png" width="728" alt="Dark sites within 50 km of Madrid: two car parks near Rascafría, 47 and 50 km to the north-north-west, each with a map, Very dark against home at Bortle 8, and a note that it was found from light-pollution data">
 
-**Your horizon:** how high houses, trees or hills block the sky in each direction, with the hills found from terrain data.
+**Your horizon:** mark how high houses, trees or hills block the sky in each direction, or measure it from a phone photo, and every target, best time and plan follows it. The hills are found from terrain data.
 
 <img src="docs/images/screenshot-horizon.png" width="600" alt="The horizon at the Malham National Park car park: a dial of the sky seen from above with the hills as a thin brown band, each direction at open sky with the hills' height noted, and Hills reach 7 degrees to the N, NE and NW, 6 to the W, so nothing changes">
 
@@ -64,7 +66,7 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 ## Download
 
-**[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
+**[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised, for Apple silicon Macs on macOS 14 or later. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch asks for location only when you press that button, or This Mac's location in Settings › Where you observe: it never asks by itself, and it works the same from a site you add by name. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
 
 ## Language / 界面语言
 
@@ -112,8 +114,8 @@ killall chronod
 
 ## What it does
 
-- Every 30 minutes it fetches cloud, dew point, wind and visibility for your site from Apple Weather (WeatherKit) when the app is signed for it, or from Open-Meteo otherwise, plus 7Timer for seeing and transparency. The popover footer says which one drove tonight's verdict.
-- It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, sky-survey thumbnails from CDS, the Moon image from NASA, comet/ISS element downloads, Apple Maps place names for dark spots, the aurora status after dark when aurora alerts are on (AuroraWatch UK's, or NOAA's forecast outside the UK and Ireland), and the download's once-a-day update check. [PRIVACY.md](PRIVACY.md) says what each one receives.
+- Every 30 minutes it fetches cloud, dew point, wind and visibility for your site from Apple Weather (WeatherKit) when the app is signed for it, or from Open-Meteo when it is not or when Apple Weather does not answer, plus 7Timer for seeing and transparency. The popover footer says which one drove tonight's verdict. When Apple Weather does not answer, Nightwatch leaves it alone for five minutes, then tries it again.
+- It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, sky-survey thumbnails from CDS, the Moon image from NASA, comet/ISS element downloads, Apple Maps place names for dark spots, the aurora status after dark when aurora alerts are on (AuroraWatch UK's, or NOAA's forecast outside the UK and Ireland), the download's once-a-day update check, and your settings, which go to your own iCloud account when the Mac is signed in to iCloud so your other Macs share them. [PRIVACY.md](PRIVACY.md) says what each one receives.
 - A night qualifies when there is a contiguous run of at least 3 hours inside astronomical darkness with cloud at or under 25 %. Thin high cloud counts for half, since stacking and noise reduction work through it; low and middle cloud count in full. When a night misses, the popover says by how much ("Longest clear run is 1 h from 22:00; the rule needs 3 h").
 - The go rule is yours to set, in Settings › Go rule:
 
@@ -145,7 +147,7 @@ killall chronod
   - six tiles, with the dew tile turning yellow when a heater is advised
   - the best three targets
   - the Apple Weather mark (a link to its legal attribution), the update time and Refresh, on one line
-  - Settings (the gear) and Quit (the power button, or ⌘Q) at the top
+  - Settings (the gear) and Quit (the power button, or ⌘Q) at the top. Settings ends with What the numbers mean, About Nightwatch and the privacy policy
 - The target browser groups what is up during the window into nebulae, galaxies, star clusters, stars (the 49 named stars of magnitude 2 or brighter, for focusing and alignment), planets and Moon, events (meteor showers, eclipses, conjunctions, comets, ISS passes) and constellations, with DSS2 thumbnails. Every card has:
   - a timeline of the clear window, lit where the target is viewable and brighter where it is higher, with its best moment marked
   - a chip saying how much of your field of view it fills
@@ -163,15 +165,26 @@ killall chronod
 
 Any. Pick a preset (DWARF Mini, DWARF 3, Draco, Seestar S30, S30 Pro, S50 and S50 Pro, APS-C at 200 mm) or type your field of view in degrees.
 
-Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off. On macOS 27, Siri can search Nightwatch: "Find the Crescent Nebula in Nightwatch" opens the Targets window with that search.
+Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
 
-The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness, with the Milky Way for a camera and wide lens: its core in Sagittarius when it clears 10° in darkness (shown dimmed in summer, with the reason, where it never does, as from Yorkshire) and the band through Cygnus; the next run of moonless nights in its header; and **What the numbers mean**, a window explaining every figure the app shows.
+In Shortcuts, Sky Score, Best Targets Tonight and Events Tonight pass their answer on as text, and **Clear Window Tonight** answers yes or no by your go rule, so a shortcut can act on tonight's sky. Two to build in the Shortcuts app:
+
+- *Text me when tonight is clear:* Clear Window Tonight → If it is true → Sky Score → Send Message with that text. Run it each evening from the Shortcuts app's Automation tab.
+- *Say tonight's verdict aloud:* Sky Score → Speak Text.
+
+Untick **Show When Run** on each Nightwatch step. With it ticked the shortcut shows that step's card and waits for Done before it carries on, so nothing is spoken or sent until you click.
+
+Nightwatch has to be running on the Mac, and the answers come from the forecast it already holds. On macOS 27, Siri can search Nightwatch: "Find the Crescent Nebula in Nightwatch" opens the Targets window with that search.
+
+The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness, with the Milky Way for a camera and wide lens: its core in Sagittarius when it clears 10° in darkness (shown dimmed in summer, with the reason, where it never does, as from Yorkshire) and the band through Cygnus; and the next run of moonless nights in its header. **What the numbers mean**, opened from the foot of Settings, is a window explaining every figure the app shows.
 
 **Tonight's plan** is the first page of the Targets window: your favourites that are up in the clear window, in order of their best time, each with when it is up, its height at best, and your telescope's filter and frames where the maker publishes them. Two favourites best within half an hour of each other are marked, so you can choose. Not tonight takes one off for that night, Put back returns it, and Add to plan on a target's page adds any other target for one night. Your choices are kept for each night, sync between your Macs, and still apply when the night you planned as "tomorrow" comes. Favourites that cannot be in the plan are listed with the reason, and the plan ends with the clear window, or earlier if you set a finish time in Settings › Tonight's plan (for bed or an early start).
 
 **The week ahead**, second in the Targets sidebar, lists tonight and the next nights, as far as the forecast reaches (up to ten), one row per night in date order: the clear sky by hour, the clear window or the longest clear run, darkness, the Moon, and seeing for the first three nights. It makes the best night of the week easy to pick. Moon and darkness are exact; cloud from three days out is marked "Less certain", with how many days ahead it is. Tonight and tomorrow have an Open plan button.
 
 ## Your horizon
+
+If you observe from a garden, a yard or a balcony, a target can be well up and still behind the house. Nightwatch plans around the sky you actually have.
 
 Houses, trees and hills hide part of the sky. Settings › Where you observe › **Horizon…** on a saved site sets how high the sky is blocked towards N, NE, E, SE, S, SW, W and NW, drawn on a dial of the sky seen from above. Nightwatch then counts a target as up only once it clears the horizon in its direction: the target lists, the popover's best three, Tonight's plan ("Clear of your horizon 22:50–00:20"), each target's best time and the altitude chart all follow it, and events hidden by it are marked. The horizon only ever raises the bar: the go rule's "Targets must reach" still sets the lowest height worth imaging through, since below about 20° a target's light crosses three times the air or more, so a direction below it changes nothing and reads "below your Go rule".
 
@@ -217,12 +230,18 @@ The download and the Mac App Store version use Apple Weather. A build of your ow
 
 Settings sync between Macs signed in to the same iCloud account, through iCloud key-value storage: sites and home, telescope, go rule, alerts and quiet hours, dark sites, bright nights, aurora, favourites and Tonight's plan. Home is shared whole: star a saved site and it is home on every Mac; star This Mac's location and each Mac uses its own. Start at login, text size, where each Mac is observing from and the first-run welcome stay on each Mac. At launch the newer copy wins; while Nightwatch runs, a change on one Mac reaches the others. A Mac new to sync takes the shared settings first and keeps the sites and favourites it already had; until it has, nothing it sends can replace another Mac's settings (from 1.5.3: earlier versions could, so update every Mac). Not signed in to iCloud, settings stay on the Mac, and Settings › App says so. Reset config in Settings resets every Mac, and its confirmation says so.
 
-Settings are kept in the app's sandbox folder, `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library/Application Support/Nightwatch/config.json`; settings from 0.6.x are copied there on first launch.
+Settings are kept in the app's sandbox folder, `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library/Application Support/Nightwatch/config.json`; the download copies settings from 0.6.x there on first launch.
 
 ## Data sources and licences
 
-See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non-commercial use. OpenNGC is CC BY-SA 4.0. Sky-survey images are the Digitized Sky Survey (STScI/NASA), coloured by CDS under ODbL 1.0 and used under STScI's terms for non-profit use; the plates are copyright AAO, SERC, Caltech and AURA. Nightwatch is free and has no ads, which every non-commercial term above requires. The constellation artwork is original to Nightwatch, created for it with ChatGPT image generation; only the star positions and lines under it come from d3-celestial (BSD-3-Clause). Dark-sky site attributions are in "Dark-sky sites" above.
+See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0), and by MET Norway (CC BY 4.0) when the others cannot be read. 7Timer data is for non-commercial use. The night-sky backdrop pictures were created by Richard Sutcliffe in Google Stitch. OpenNGC is CC BY-SA 4.0. Sky-survey images are the Digitized Sky Survey (STScI/NASA), coloured by CDS under ODbL 1.0 and used under STScI's terms for non-profit use; the plates are copyright AAO, SERC, Caltech and AURA. Nightwatch is free and has no ads, which every non-commercial term above requires. The constellation artwork is original to Nightwatch, created for it with ChatGPT image generation; only the star positions and lines under it come from d3-celestial (BSD-3-Clause). Dark-sky site attributions are in "Dark-sky sites" above.
+
+## Thanks
+
+Stelios Petrakis ([@stelabouras](https://github.com/stelabouras)) contributed the ZWO Seestar S30 Pro telescope preset (1.6.0), the first contribution from outside the project.
+
+John Munsch ([@JohnMunsch](https://github.com/JohnMunsch)) reported the flipped chip text on macOS 27 ([#179](https://github.com/rsutcliffe/nightwatch/issues/179)), with a screenshot and the versions involved.
 
 ## Release names
 
-Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff. After the Watch novels come other Discworld names: 1.1 Pseudopolis Yard, the Watch's headquarters; 1.2 Great A'Tuin, the star turtle; 1.3 Twoflower, the Disc's first tourist; 1.4 Shepherd's Crown; 1.5 Rincewind.
+Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff. After the Watch novels come other Discworld names: 1.1 Pseudopolis Yard, the Watch's headquarters; 1.2 Great A'Tuin, the star turtle; 1.3 Twoflower, the Disc's first tourist; 1.4 Shepherd's Crown; 1.5 Rincewind; 1.6 Hex, the thinking engine of Unseen University.

@@ -89,7 +89,6 @@ struct WeekView: View {
             }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
-        .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
+        .cardSurface(radius: 14)
     }
 }

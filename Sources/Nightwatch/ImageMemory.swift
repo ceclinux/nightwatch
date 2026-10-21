@@ -18,6 +18,9 @@ enum ImageMemory {
         return img
     }
 
+    /// Forgets the picture kept under `file`.
+    static func remove(_ file: URL) { cache.removeObject(forKey: file.path as NSString) }
+
     /// Remembers a picture just downloaded, under the file it was saved to.
     static func store(_ img: NSImage, for file: URL) {
         let rep = img.representations.first

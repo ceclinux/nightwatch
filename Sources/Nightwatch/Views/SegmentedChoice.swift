@@ -3,9 +3,9 @@ import NightwatchUI
 import SkyCore
 
 /// A segmented control that follows Settings › App › Text size (owner-approved mock-up A, 6 October 2026). macOS's own
-/// ignores any font: a control size grows its bezel, but its text stays at 13 pt (measured the same day). At Standard
-/// this is macOS's own control, so nothing changes there. At Large and Extra large it is drawn here in the same shape,
-/// with the text at the chosen size, and VoiceOver still meets the system's picker.
+/// ignores any font: a control size grows its bezel, but its text stays at 13 pt (measured the same day), and it takes its colour
+/// from the system accent. So it is drawn here at every size, in the Photographic look (the chosen option a warm-white pill with
+/// dark heavy text), and VoiceOver still meets the system's picker.
 struct SegmentedChoice<Value: Hashable>: View {
     let title: String
     /// False where the control needs no word beside it ("Tonight | Tomorrow night"); the title still names it for VoiceOver.
@@ -17,31 +17,27 @@ struct SegmentedChoice<Value: Hashable>: View {
     @Environment(\.controlActiveState) private var windowState
 
     var body: some View {
-        if TextScale.factor == 1 {
-            native
-        } else {
-            HStack(spacing: 8) {
-                if showsTitle { Text(title).font(Font.scaled(.body)) }
-                HStack(spacing: 0) {
-                    ForEach(options, id: \.value) { option in
-                        let chosen = option.value == selection
-                        Button { selection = option.value } label: {
-                            Text(L10n.text(option.label)).font(Font.scaled(.body)).lineLimit(1)
-                                .foregroundStyle(chosen && windowState != .inactive ? Color.white : Tokens.textPrimary)
-                                .padding(.horizontal, TextScale.pt(13)).frame(minHeight: TextScale.pt(20))
-                                .background(chosen ? (windowState == .inactive ? Color.white.opacity(0.14) : Color.accentColor) : Color.clear,
-                                            in: RoundedRectangle(cornerRadius: 6))
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+        HStack(spacing: 8) {
+            if showsTitle { Text(title).font(Font.scaled(.body)) }
+            HStack(spacing: 0) {
+                ForEach(options, id: \.value) { option in
+                    let chosen = option.value == selection
+                    Button { selection = option.value } label: {
+                        Text(L10n.text(option.label)).font(Font.scaled(.body)).lineLimit(1)
+                            .fontWeight(chosen ? .heavy : .regular)
+                            .foregroundStyle(chosen && windowState != .inactive ? Tokens.targetsBackground : Tokens.textPrimary)
+                            .padding(.horizontal, TextScale.pt(13)).frame(minHeight: TextScale.pt(20))
+                            .background(chosen ? (windowState == .inactive ? Color.white.opacity(0.14) : Tokens.lit) : Color.clear, in: Capsule())
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(2)
-                .background(Tokens.targetsTrack, in: RoundedRectangle(cornerRadius: 8))
             }
-            .fixedSize()
-            .accessibilityRepresentation { native }
+            .padding(2)
+            .background(Color.white.opacity(0.08), in: Capsule())
         }
+        .fixedSize()
+        .accessibilityRepresentation { native }
     }
 
     @ViewBuilder private var native: some View {

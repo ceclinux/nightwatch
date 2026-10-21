@@ -5,7 +5,7 @@ import Foundation
 let sheffield = Site(name: "Sheffield", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
 let sydney = Site(name: "Sydney", latitude: -33.87, longitude: 151.21, elevationM: 20, timeZoneID: "Australia/Sydney", bortle: 7)
 
-func utc(_ y: Int, _ mo: Int, _ d: Int, _ h: Int, _ mi: Int) -> Date {
+func utc(_ y: Int, _ mo: Int, _ d: Int, _ h: Int, _ mi: Int = 0) -> Date {
     var c = DateComponents(); c.year = y; c.month = mo; c.day = d; c.hour = h; c.minute = mi
     var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
     return cal.date(from: c)!

@@ -6,10 +6,12 @@ public struct ScoreBezel: View {
     let score: Int
     let slots: [BezelSlot]
     let label: String
+    /// The dial's size before the text size scales it; the widgets' medium and large layouts use a smaller one to make room for the arc.
+    let diameter: CGFloat
 
     let language: AppLanguage?
-    public init(score: Int, slots: [BezelSlot], label: String, language: AppLanguage? = nil) {
-        self.score = score; self.slots = slots; self.label = label; self.language = language
+    public init(score: Int, slots: [BezelSlot], label: String, diameter: CGFloat = 91, language: AppLanguage? = nil) {
+        self.score = score; self.slots = slots; self.label = label; self.diameter = diameter; self.language = language
     }
 
     private func colour(_ s: BezelSlot) -> Color {
@@ -37,14 +39,14 @@ public struct ScoreBezel: View {
             Circle().stroke(Color.white.opacity(0.09), lineWidth: 0.75).frame(width: 66, height: 66)
             ticks { $0 != .clear }
             ticks { $0 == .clear }.compositingGroup().shadow(color: Tokens.accentClear.opacity(0.7), radius: 3)   // one glow for all lit ticks
-            Text("\(score)").font(.system(size: 27, weight: .light)).foregroundStyle(Tokens.textPrimary)
+            Text("\(score)").font(.system(size: 27, weight: .bold)).foregroundStyle(Tokens.textPrimary)
                 .overlay(alignment: .top) {   // numeral centred in the bezel, caption hung beneath it (handover: caption 11 pt below centre)
                     Text(L10n.text("SKY SCORE", language: language)).font(.system(size: 9, weight: .medium)).foregroundStyle(Tokens.textSecondary).fixedSize().offset(y: 28)
                 }
         }
         .frame(width: 91, height: 91)
         // The whole dial grows with the app's text size, numeral and ticks together, so nothing inside it has to be refitted.
-        .scaleEffect(TextScale.factor).frame(width: TextScale.pt(91), height: TextScale.pt(91))
+        .scaleEffect(TextScale.factor * diameter / 91).frame(width: TextScale.pt(diameter), height: TextScale.pt(diameter))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }

@@ -21,8 +21,9 @@ struct TonightView: View {
                 content
             }
         }
-        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassHairline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 13))
+        .background { NightBackdrop() }
+        .clipShape(RoundedRectangle(cornerRadius: 13))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassEdge, lineWidth: 1))
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
@@ -35,7 +36,8 @@ struct TonightView: View {
             if store.isAway { awayBar }
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
-                ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site))
+                NightArcCanvas(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site),
+                               ember: Tokens.ember, nowFraction: nowFraction(plan), height: 96)
                 notice(site)
                 tiles(plan, site)
                 best(plan, site)
@@ -58,13 +60,13 @@ struct TonightView: View {
             Button(L10n.format("Back to \(store.homeLabel)")) { store.goHome() }.buttonStyle(SecondaryButtonStyle())
         }
         .padding(8)
-        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
+        .cardSurface(radius: 10)
     }
 
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.format("TONIGHT · \(store.site?.name.uppercased() ?? L10n.text("NO SITE"))")).font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
+                Text(L10n.format("TONIGHT · \(store.site?.name.uppercased() ?? L10n.text("NO SITE"))")).capsLabel()
                 if let s = store.site, let p = store.plan {
                     Text(L10n.format("\(Copy.dayMonth(p.night.localDate, site: s)) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? L10n.text("true north") : L10n.text("true south"))") + (p.mode == .bright ? L10n.text(" · bright night") : ""))
                         .font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)   // wedge angle = site latitude; the vendor app does the alignment
@@ -97,24 +99,27 @@ struct TonightView: View {
                        label: Copy.bezelLabel(plan, site: site))
             VStack(alignment: .leading, spacing: 4) {
                 if let w = plan.primary {
-                    Text(plan.mode == .bright ? L10n.text("Bright night: Moon and planets") : L10n.text("Clear window tonight")).font(.system(size: TextScale.pt(15), weight: .medium))
-                    Text("\(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").font(.system(size: TextScale.pt(13)))
+                    TwoWeight.headline(plan.mode == .bright ? L10n.text("Bright night: Moon and planets") : L10n.text("Clear window tonight"), size: TextScale.pt(16))
+                    (Text("\(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))".plainDashes).font(.system(size: TextScale.pt(24), weight: .thin))
+                        + Text(" · \(String(format: "%.1f h", w.hours))").font(.system(size: TextScale.pt(13))))
+                        .foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true)
+                    if let warning = dewWarning(plan) { WarningChip(warning) }
                     if plan.mode == .bright {
-                        Text(Copy.brightList(plan.brightTargets)).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
+                        Text(Copy.brightList(plan.brightTargets).plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
                     }
                     if let why = Copy.heldBack(plan.limiting) {
                         // No dot: every line under the verdict reads the same way (owner, 28 September 2026).
-                        Text(why)
+                        Text(why.plainDashes)
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
-                    Text(L10n.text("No astronomical darkness")).font(.system(size: TextScale.pt(15), weight: .medium))
+                    TwoWeight.headline(L10n.text("No astronomical darkness"), size: TextScale.pt(16))
                     Text(L10n.text("Too far north or south for this date.")).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
                 } else {
-                    Text(store.copy.noWindow).font(.system(size: TextScale.pt(15), weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                    TwoWeight.headline(store.copy.noWindow, size: TextScale.pt(16)).fixedSize(horizontal: false, vertical: true)
                     if let why = noWindowReason(plan, site) {
-                        Text(why).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                        Text(why.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     // No "Tomorrow" line: after sunrise the popover shows tomorrow night itself (owner, 28 September 2026).
                     agreementLine(plan, site)
@@ -128,7 +133,15 @@ struct TonightView: View {
     /// (owner, 28 September 2026).
     @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
         if let advice = Copy.advice(plan, site: site, alerts: store.config.alerts) {
-            Text(advice.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+            let lead = L10n.text("Less certain: ")
+            if advice.line.hasPrefix(lead) {
+                VStack(alignment: .leading, spacing: 3) {
+                    WarningChip(L10n.text("Less certain"))
+                    Text(String(advice.line.dropFirst(lead.count)).plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text(advice.line.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+            }
         } else if let a = plan.agreement {
             HStack(spacing: 5) {
                 Image(systemName: "checkmark").font(.system(size: TextScale.pt(7), weight: .bold)).accessibilityHidden(true)
@@ -146,45 +159,82 @@ struct TonightView: View {
         if let a = store.auroraHere, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
             // AuroraWatch UK's terms ask for the source to be named, "ideally with a link or button" to their site.
             Link(destination: a.source.link) {
-                Text(a.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Color(hex: a.level.hex))
+                Text(a.line.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Color(hex: a.level.hex))
             }
-            .buttonStyle(.plain).help(a.source == .noaa ? L10n.text("Open NOAA's aurora forecast") : L10n.text("Open AuroraWatch UK"))
+            .buttonStyle(.plain).linkCursor().help(a.source == .noaa ? L10n.text("Open NOAA's aurora forecast") : L10n.text("Open AuroraWatch UK"))
         } else if let a = store.bestAway, let w = a.primary {
             Button {
                 // The menu-bar label also opens the window on any request; opening a single Window twice is harmless.
                 store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
                 open("targets")
             } label: {
-                Text(L10n.format("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →"))
+                Text((L10n.format("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")).plainDashes)
                     .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textPrimary).multilineTextAlignment(.leading)
             }.buttonStyle(.plain)   // a link, so text.primary: red means clear sky only
         }
     }
 
+    /// One fact on the picture: a small capital label over a heavy value, and an optional hint.
+    private struct Fact: Identifiable {
+        let label: String
+        let value: String?
+        var hint: String? = nil
+        var id: String { label }
+    }
+
     private func tiles(_ plan: NightPlan, _ site: Site) -> some View {
         let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? L10n.text("None")
+        let window = plan.primary.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" }
         let moon = Planner.moonTonight(plan)
         let pct = "\(Int((plan.moonIllumination * 100).rounded()))%"
-        let seeingText = Copy.seeingText(plan.darkHours)
         let wind = plan.darkHours.compactMap(\.windKmh)
         let windText = wind.isEmpty ? nil : String(format: L10n.text("%.0f km/h"), wind.reduce(0, +) / Double(wind.count))
         let dew = Planner.dewRisk(plan.darkHours)
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
-        let transpText = Copy.transparencyText(plan.darkHours)
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
-        return VStack(spacing: 8.5) {
-            TileRow {
-                StatTile(label: L10n.text("Dark"), value: dark)
-                MoonTile(value: moon == .down ? L10n.text("Down tonight") : pct, line: moon.flatMap { $0 == .down ? nil : Copy.moonText($0, site: site) }, at: moonAt)
-                StatTile(label: L10n.text("Seeing"), value: seeingText)
+        // "Dark" is left out when it is the same span as the clear window shown above it; everything else the tiles said stays.
+        let facts = [dark == window ? nil : Fact(label: L10n.text("Dark"), value: dark),
+                     Fact(label: L10n.text("Seeing"), value: Copy.seeingText(plan.darkHours)),
+                     Fact(label: L10n.text("Wind"), value: windText),
+                     Fact(label: L10n.text("Transparency"), value: Copy.transparencyText(plan.darkHours)),
+                     Fact(label: frost ? L10n.text("Frost likely") : L10n.text("Dew risk"), value: dew?.displayName, hint: dew == .high ? L10n.text("Dew heater advised") : nil)].compactMap { $0 }
+        // Three to a row; the last row is what is left of the facts with the Moon filling the rest of it, so no row has an orphan or a gap.
+        let full = facts.count / 3 * 3
+        let rest = Array(facts[full...])
+        func cell(_ f: Fact) -> some View {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(f.label.uppercased()).capsLabel()
+                Text((f.value ?? L10n.text("No data")).plainDashes).font(.system(size: TextScale.pt(14), weight: .heavy))
+                    .foregroundStyle(f.value == nil ? Tokens.textSecondary : Tokens.lit).fixedSize(horizontal: false, vertical: true)
+                if let hint = f.hint { Text(hint).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true) }
             }
-            TileRow {
-                StatTile(label: L10n.text("Wind"), value: windText)
-                StatTile(label: frost ? L10n.text("Frost likely") : L10n.text("Dew risk"), value: dew?.displayName,
-                         hint: dew == .high ? L10n.text("Dew heater advised") : nil)
-                StatTile(label: L10n.text("Transparency"), value: transpText)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .accessibilityElement(children: .combine)
+        }
+        // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line it broke the word, "Down tonig" / "ht" (1.6.4).
+        let moonCell = MoonTile(value: moon == .down ? L10n.text("Down") : pct, line: moon.flatMap { $0 == .down ? L10n.text("tonight") : Copy.moonText($0, site: site) }, at: moonAt, plain: true)
+        return Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 10) {
+            ForEach(0..<(full / 3), id: \.self) { row in
+                GridRow { ForEach(facts[row * 3 ..< row * 3 + 3]) { cell($0) } }
+            }
+            GridRow {
+                ForEach(rest) { cell($0) }
+                moonCell.gridCellColumns(3 - rest.count)
             }
         }
+    }
+
+    /// How far through the night's hours the current time is, for the arc's "now" dot; nil outside them.
+    private func nowFraction(_ plan: NightPlan) -> Double? {
+        guard let first = plan.darkHours.first?.time else { return nil }
+        let span = Double(plan.darkHours.count) * 3600, t = Date().timeIntervalSince(first)
+        return t >= 0 && t <= span ? t / span : nil
+    }
+
+    /// A chip under the times when dew is likely to be a problem or the night drops to freezing; the Dew risk fact keeps the full words.
+    private func dewWarning(_ plan: NightPlan) -> String? {
+        if (plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false) { return L10n.text("Frost likely") }
+        return Planner.dewRisk(plan.darkHours) == .high ? L10n.text("High dew risk") : nil
     }
 
     /// Deep-sky picks on a dark night; the Moon and planets on a bright one.
@@ -193,7 +243,7 @@ struct TonightView: View {
     private func best(_ plan: NightPlan, _ site: Site) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(picks(plan).isEmpty ? L10n.text("UP TONIGHT") : L10n.text("BEST TONIGHT")).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
+                Text(picks(plan).isEmpty ? L10n.text("UP TONIGHT") : L10n.text("BEST TONIGHT")).capsLabel()
                 Spacer()
                 Button(L10n.text("All targets →")) { open("targets") }
                     .buttonStyle(SecondaryButtonStyle())
@@ -207,33 +257,24 @@ struct TonightView: View {
             }
             HStack(alignment: .top, spacing: 8) {
                 ForEach(picks(plan)) { t in
-                    VStack(alignment: .leading, spacing: 3) {
-                        ThumbnailView(target: t).frame(height: 64).clipShape(RoundedRectangle(cornerRadius: 7))
-                        Text(L10n.text(t.catalogueID)).font(.system(size: TextScale.pt(10.5), weight: .bold)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
-                        Text(t.commonName ?? L10n.text(t.typeName)).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).lineLimit(1)
-                        Text(L10n.format("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up")).font(.system(size: TextScale.pt(8.5), weight: .medium)).foregroundStyle(Tokens.bestLine)
+                    VStack(spacing: 0) {
+                        ThumbnailView(target: t).frame(height: 70).clipped()
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.text(t.catalogueID)).font(.system(size: TextScale.pt(12), weight: .heavy)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
+                            Text((t.commonName ?? L10n.text(t.typeName)).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(0.6).foregroundStyle(Tokens.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
+                            Text(L10n.format("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up")).font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
+                                .lineLimit(1).minimumScaleFactor(0.75)
+                        }
+                        .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black.opacity(0.55))
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tokens.glassEdge, lineWidth: 1))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
                 }
             }
         }
-    }
-
-    /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown: the
-    /// mark itself is the link, as on the widgets (owner, 27 September 2026).
-    @ViewBuilder private func sourceBadge(_ f: Forecast) -> some View {
-        let name = Text(f.cloudSource ?? "Open-Meteo").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
-        let badge = Group {
-            if let m = f.attributionMarkURL, let url = URL(string: m) {
-                AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
-            } else { name }
-        }
-        if let l = f.attributionLegalURL, let url = URL(string: l) {
-            Link(destination: url) { badge }
-                .help(L10n.text("Apple Weather's legal attribution and data sources"))
-                .accessibilityLabel(L10n.text("Apple Weather, legal attribution and data sources"))
-        } else { badge }
     }
 
     /// One centre line, evenly spread as on the large widget: the cloud source, the update time, "Refresh". The notify switch
@@ -244,14 +285,14 @@ struct TonightView: View {
                 HStack(spacing: 5) {
                     Circle().fill(Tokens.controlOn).frame(width: 6, height: 6).accessibilityHidden(true)
                     Text(L10n.format("Nightwatch \(u.version) is available")).foregroundStyle(Tokens.textPrimary)
-                    Link(L10n.text("Download ↗"), destination: ReleaseCheck.latestPage)
+                    Link(L10n.text("Download ↗"), destination: ReleaseCheck.latestPage).linkCursor()
                 }
                 .font(.system(size: TextScale.pt(10.5)))
             }
             HStack(alignment: .center, spacing: 0) {
                 if let f = store.forecast, let s = store.site {
                     // The mark on the left: its weight looked odd in the middle (owner, 27 September 2026).
-                    sourceBadge(f)
+                    SourceBadge(forecast: f)
                     Spacer(minLength: 8)
                     HStack(spacing: 6) {
                         if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }

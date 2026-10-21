@@ -29,8 +29,16 @@ final class Store: ObservableObject {
     @Published var homePlan: NightPlan?
     /// A newer release on GitHub, when there is one (v0.6.7).
     @Published var availableUpdate: ReleaseCheck.Latest?
+    /// Apple Weather's mark and legal link as last supplied, and the mark itself from disk: they stay when Apple Weather
+    /// does not answer, so About can still carry them and a failed download never leaves the words where the mark belongs.
+    @Published var appleAttribution: AppleAttribution?
+    @Published var appleMark: NSImage?
     /// Asks Location Services for one fix; set at launch, used by the welcome's "Use this Mac's location".
     var requestLocationFix: (() async -> Site?)?
+    /// Whether macOS has yet to ask about location: then "This Mac's location" asks when it is clicked, not before (1.6.2).
+    var locationNeverAsked: () -> Bool = { false }
+    /// Whether Location Services is off for the whole Mac, which calls for different words than "allow Nightwatch".
+    var locationServicesOff: () -> Bool = { false }
     @Published var events: [SkyEvent] = []
     @Published var forecast: Forecast?
     @Published var alertState: AlertState?
@@ -95,13 +103,17 @@ final class Store: ObservableObject {
         grids = LPGrids.finestFirst(LPGrids.bundled() + (world.map { [$0] } ?? []))
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
-        switch LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) {
+        switch Distribution.copiesEarlierSettings
+            ? LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) : .nothing {
         case .linked(let url): linkedSettings = url        // the welcome offers to import it through a file picker
         case .failed(let path): importError = L10n.format("Could not copy your earlier settings from \(path). Set Nightwatch up again, or copy that file into Settings by hand.")
         case .imported, .nothing: break
         }
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
+        if forecast?.cloudSource == "Apple Weather" { applePause.record(answered: true, now: .distantPast) }
+        appleAttribution = Store.read(Store.appleAttributionName)
+        appleMark = appleAttribution.flatMap(Store.keptAppleMark)
         plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.readFile(StateFiles.url(StateFiles.alerts)) ?? Store.read(StateFiles.alerts)   // Caches only if the move failed
         aurora = Store.read("aurora.json")
@@ -322,12 +334,14 @@ final class Store: ObservableObject {
     /// Saved sites whose check failed in this launch; tried again at the next launch, or from "Try again".
     @Published var terrainFailed: Set<String> = []
     private var terrainBusy = false
+    /// The service refused a day's requests: no more sites are asked until the next launch or "Try again".
+    private var terrainRefused = false
 
     /// Fetches the hills once for each saved site that has none, one site at a time (owner, 1 October 2026: check once,
     /// keep it with the site, sync it). Called after every save and refresh, so a site added, kept or moved here or on
     /// another Mac is checked; a site with terrain is never asked about again until it moves.
     func checkTerrain() {
-        guard !terrainBusy, !configLoadFailed else { return }
+        guard !terrainBusy, !terrainRefused, !configLoadFailed else { return }
         guard let next = config.sites.first(where: { $0.terrain == nil && !terrainFailed.contains($0.name) }) else { return }
         terrainBusy = true
         terrainChecking = next.name
@@ -342,6 +356,7 @@ final class Store: ObservableObject {
                 }
             } catch {
                 terrainFailed.insert(next.name)
+                if (error as? HTTPFailure)?.isRateLimit == true { terrainRefused = true }
             }
             terrainChecking = nil
             try? await Task.sleep(for: .seconds(10))   // a breather between sites: Open-Meteo refuses quick runs
@@ -352,7 +367,52 @@ final class Store: ObservableObject {
 
     func retryTerrain(_ name: String) {
         terrainFailed.remove(name)
+        terrainRefused = false
         checkTerrain()
+    }
+
+    private var applePause = PrimaryPause()
+    /// After the forecast service refuses a day's requests, nothing is asked again for 30 minutes (unless forced).
+    private var forecastRetryAfter: Date?
+    private var darkFetchPausedUntil: Date?
+    /// True while the Dark sites page is showing: only then are dark-site forecasts fetched.
+    var darkSitesPageOpen = false {
+        didSet { if darkSitesPageOpen && !oldValue { Task { await refresh(force: false) } } }
+    }
+
+    /// Every forecast goes through here, so one refusal from Apple Weather spares it the rest of the pass (`PrimaryPause`).
+    private func fetchForecast(_ site: Site, now: Date, secondOpinion: Bool = true) async throws -> Forecast {
+        let ask = !applePause.paused(now: now)
+        let fc = try await ForecastChain.fetch(site: site, fetcher: fetcher, now: now, primary: ask ? WeatherKitSource.provider : nil, secondOpinion: secondOpinion)
+        if ask { applePause.record(answered: fc.cloudSource == "Apple Weather", now: now) }
+        if fc.cloudSource == "Apple Weather", let mark = fc.attributionMarkURL, let legal = fc.attributionLegalURL {
+            await keepAppleAttribution(AppleAttribution(mark: mark, legal: legal))
+        }
+        return fc
+    }
+
+    private static let appleAttributionName = "apple-attribution.json"
+    private static let appleMarkFile = cacheDir.appendingPathComponent("apple-weather-mark-kept.png")
+    private static let appleMarkStamp = cacheDir.appendingPathComponent("apple-weather-mark-kept.url")
+
+    /// The kept mark, only when it is the file for `a`'s mark address: never an out-of-date one.
+    private static func keptAppleMark(_ a: AppleAttribution) -> NSImage? {
+        guard (try? String(contentsOf: appleMarkStamp, encoding: .utf8)) == a.mark else { return nil }
+        return NSImage(contentsOf: appleMarkFile)
+    }
+
+    /// Remembers what Apple Weather supplied and fetches the mark once per address. A failed fetch is tried again at the
+    /// next forecast, and until then the view falls back to loading the mark itself.
+    private func keepAppleAttribution(_ a: AppleAttribution) async {
+        let known = appleAttribution == a
+        if !known { appleAttribution = a; appleMark = nil; Store.write(a, Store.appleAttributionName) }
+        if known, appleMark != nil { return }
+        if let kept = Store.keptAppleMark(a) { appleMark = kept; return }
+        try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
+        guard let url = URL(string: a.mark), let data = try? await fetcher.get(url), NSImage(data: data) != nil,
+              (try? data.write(to: Store.appleMarkFile, options: .atomic)) != nil,
+              (try? a.mark.write(to: Store.appleMarkStamp, atomically: true, encoding: .utf8)) != nil else { return }
+        appleMark = Store.keptAppleMark(a)
     }
 
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
@@ -362,18 +422,21 @@ final class Store: ObservableObject {
         if let m = Store.configModDate(), m > (configModDate ?? .distantPast) { loadConfig() }
         guard !refreshing, !awaitingFix else { return }
         guard let site else {
-            if !configLoadFailed { lastError = L10n.text("No site. Add one in Settings or allow location access.") }
+            if !configLoadFailed { lastError = L10n.text("No site yet. In Settings, choose This Mac's location or add a site.") }
             return
         }
         refreshing = true
         checkTerrain()
         let now = Date()
-        if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > 30 * 60 }) ?? true {
+        let refused = !force && (forecastRetryAfter.map { now < $0 } ?? false)
+        if !refused, force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > applePause.maxAge(fromPrimary: forecast?.cloudSource == "Apple Weather") }) ?? true {
             do {
-                forecast = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now)
+                forecast = try await fetchForecast(site, now: now)
                 Store.write(forecast, "forecast.json")
                 lastError = nil
+                forecastRetryAfter = nil
             } catch {
+                if (error as? HTTPFailure)?.isRateLimit == true { forecastRetryAfter = now.addingTimeInterval(30 * 60) }
                 lastError = L10n.format("Forecast fetch failed: \(error.localizedDescription)")
             }
         }
@@ -566,7 +629,8 @@ final class Store: ObservableObject {
         if let n = r.notification { Notifier.post(n) }
     }
 
-    /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
+    /// Sites within the radius; forecasts for the nearest three, only while the Dark sites page is open (30-minute cache under
+    /// sites/<id>.json; any cache under 24 hours is still shown); plans with the home rule.
     /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
     /// settings change stops fetching and never publishes over the newer one.
     private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
@@ -580,14 +644,14 @@ final class Store: ObservableObject {
         guard gen == darkSitesGeneration else { return }
         let sites = namedSpots(publicSpots(found, home: home, site: site, night: night), now: now)
         var plans: [SitePlan] = []
-        for s in sites.prefix(8) {
+        for (rank, s) in sites.prefix(8).enumerated() {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
             var fc: Forecast? = Store.readFile(cacheURL)
-            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
+            if DarkSiteFetch.shouldFetch(pageOpen: darkSitesPageOpen, rank: rank, cachedAt: fc?.fetchedAt, pausedUntil: darkFetchPausedUntil, now: now) {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
-                let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now, secondOpinion: false)
+                let fresh = try? await fetchForecast(siteAsSite, now: now, secondOpinion: false)
                 guard gen == darkSitesGeneration else { return }
-                if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) }
+                if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) } else { darkFetchPausedUntil = now.addingTimeInterval(DarkSiteFetch.pause) }
             }
             // A cache over 24 h old that could not be refreshed no longer describes tonight: show "no forecast", not a plan.
             if let f = fc, now.timeIntervalSince(f.fetchedAt) > 24 * 3600 { fc = nil }
@@ -752,9 +816,10 @@ final class Store: ObservableObject {
         let url = Store.url("home-forecast.json")
         var fc: Forecast? = Store.readFile(url)
         if let f = fc, abs(f.latitude - home.latitude) > 0.01 || abs(f.longitude - home.longitude) > 0.01 { fc = nil }
-        if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, attemptDue("home-forecast", every: 10 * 60, now: now),
-           let fresh = try? await ForecastService.fetch(site: home, fetcher: fetcher, now: now, secondOpinion: false) {
-            fc = fresh; Store.writeFile(fresh, url)
+        if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, darkFetchPausedUntil.map({ now >= $0 }) ?? true,
+           attemptDue("home-forecast", every: 10 * 60, now: now) {
+            if let fresh = try? await fetchForecast(home, now: now, secondOpinion: false) { fc = fresh; Store.writeFile(fresh, url) }
+            else { darkFetchPausedUntil = now.addingTimeInterval(DarkSiteFetch.pause) }
         }
         guard let fc, now.timeIntervalSince(fc.fetchedAt) <= 24 * 3600,
               let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }

@@ -27,8 +27,16 @@ struct DetailPage<TopTrailing: View, Hero: View, Tips: View, Title: View, Stats:
                     }
                     .zIndex(1)
                     // An overlay takes no layout space, so opening the tips never resizes the picture (owner, 25 Sep 2026).
+                    // Six rows for a smart telescope stand taller than the picture in a window at its opening size: the
+                    // tips then scroll, where they used to run up under the top bar with their title cut off (1.6.2).
                     hero(g.size).frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .overlay(alignment: .bottomTrailing) { tips().zIndex(2) }
+                        .overlay(alignment: .bottomTrailing) {
+                            ViewThatFits(in: .vertical) {
+                                tips()
+                                ScrollView { tips() }.fixedSize(horizontal: true, vertical: false)
+                            }
+                            .zIndex(2)
+                        }
                     ViewThatFits(in: .horizontal) {
                         HStack(alignment: .bottom, spacing: 18) { title().fixedSize(horizontal: true, vertical: false); Spacer(minLength: 12); stats().frame(maxWidth: 470) }
                         VStack(alignment: .leading, spacing: 12) { title(); stats() }

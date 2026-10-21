@@ -42,7 +42,7 @@ struct NumbersView: View {
                     DispatchQueue.main.async { proxy.scroll(to: id, reduceMotion: reduceMotion) }
                 }
             }
-            .background(Theme.bg)
+            .background { NightBackdrop(calm: true) }
         }
         .frame(minWidth: 640, minHeight: 480)
         .foregroundStyle(Tokens.textPrimary)

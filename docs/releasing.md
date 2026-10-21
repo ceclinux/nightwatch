@@ -9,8 +9,9 @@ from a website or a GitHub release.
 
 The **Build macOS ARM / Intel** GitHub Actions workflow (`.github/workflows/build-intel.yml`) publishes a prerelease after
 successful push builds on `main`, `intel-build`, `intel` or `chinese-translation`, and after a manual **Run workflow** build.
-Every run builds Apple Silicon and Intel separately in a two-job matrix and checks each binary's architecture. Both builds
-must succeed before a single release is published with both ZIPs. Pull requests targeting `main`, `intel-build` or `intel`
+Every run first checks the localization resources and runs the Swift test suite, then builds Apple Silicon and Intel
+separately in a two-job matrix and checks each binary's architecture. The tests and both builds must succeed before a
+single release is published with both ZIPs. Pull requests targeting `main`, `intel-build` or `intel`
 build and upload artifacts but never publish releases. Manual runs also build both architectures; no architecture selection
 is needed.
 

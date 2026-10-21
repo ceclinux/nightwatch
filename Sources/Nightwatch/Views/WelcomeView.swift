@@ -34,7 +34,7 @@ struct WelcomeView: View {
                 step(L10n.text("Your earlier settings")) {
                     Text(L10n.format("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices."))
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
-                    Button(L10n.text("Import settings…")) { importLinked(link) }.buttonStyle(ScaledButtonStyle(prominent: true))
+                    Button(L10n.text("Import settings…")) { importLinked(link) }.buttonStyle(PillButtonStyle())
                     if state.importFailed {
                         Text(L10n.text("That file isn't Nightwatch settings. Choose config.json, or set up below.")).font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
                     }
@@ -54,11 +54,12 @@ struct WelcomeView: View {
                 }
             }
             step(L10n.text("2  Where do you observe from?")) {
-                Text(L10n.text("Nightwatch needs a place to forecast for. Your location stays on this Mac; only its coordinates go to the weather services."))
+                Text(L10n.text("Nightwatch needs a place to forecast for. Its coordinates are sent to the weather services to get the forecast, with nothing that says who you are."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                Link(L10n.text("Privacy policy ↗"), destination: AboutView.privacyPolicy).buttonStyle(.link).linkCursor().font(Font.scaled(.caption))
                 HStack(spacing: 8) {
                     Button(store.autoSite == nil ? L10n.text("Use this Mac's location") : L10n.text("Using this Mac's location ✓")) { useThisMac() }
-                        .buttonStyle(ScaledButtonStyle(prominent: true)).disabled(state.locating || store.autoSite != nil)
+                        .buttonStyle(PillButtonStyle()).disabled(state.locating || store.autoSite != nil)
                     Button(L10n.text("Add a site…")) {
                         sites.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         sites.latText = ""; sites.lonText = ""; sites.addingSite = true
@@ -70,7 +71,9 @@ struct WelcomeView: View {
                 }
                 if let s = store.site, store.config.activeSiteName != nil { Text(L10n.format("Observing from \(s.name) ✓")).font(Font.scaled(.caption)) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
-                    Text(L10n.text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site."))
+                    Text(store.locationServicesOff()
+                         ? L10n.text("Location Services is switched off on this Mac. Turn it on in System Settings › Privacy & Security › Location Services, or add a site.")
+                         : L10n.text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site."))
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -84,12 +87,12 @@ struct WelcomeView: View {
                     store.config.welcomed = true; store.saveConfig()
                     dismissWindow(id: "welcome")
                 }
-                .buttonStyle(ScaledButtonStyle(prominent: true)).keyboardShortcut(.defaultAction)
+                .buttonStyle(PillButtonStyle()).keyboardShortcut(.defaultAction)
             }
         }
         .padding(22)
         .frame(width: TextScale.pt(460))
-        .background(Theme.bg)
+        .background { NightBackdrop(calm: true) }
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store).scaledText() }

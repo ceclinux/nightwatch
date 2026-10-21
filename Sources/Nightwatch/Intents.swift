@@ -10,6 +10,9 @@ import SkyCore
 // Phrases name Nightwatch first: "Is tonight clear in …" went to Apple Weather, and "Best targets in …" to a web answer.
 // On macOS 27 Siri answers such questions itself (from Notes and the web) rather than running an app's phrases (owner's
 // tests, 29 September 2026), so these actions are for Spotlight and Shortcuts; the phrases stay for Siri versions that use them.
+// The three answers also hand their sentence on as a value, and Clear Window Tonight a yes or no (1.5.7): they only showed a
+// card before, so a shortcut could do nothing with the answer (two readers on Hacker News asked for a way to use it from
+// other tools, 4 to 5 October 2026).
 
 /// The app's one store, so the actions read the same plan the popover shows, even when run as the app launches.
 @MainActor enum IntentHost { static var store: Store { Store.shared } }
@@ -18,19 +21,30 @@ struct TonightIntent: AppIntent {
     // "Sky Score", not "Is Tonight Clear": a weather question in Spotlight also brings Siri's Apple Weather suggestion.
     static let title: LocalizedStringResource = "Sky Score"
     static let description = IntentDescription("Tonight's sky score and clear window at your site, and tomorrow's outlook.")
-    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        let snap = await IntentHost.store.waitForSnapshot()
-        return .result(dialog: "\(Copy.siriTonight(snap))", view: TonightCard(snapshot: snap, mark: IntentHost.store.weatherMark))
+    @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
+        let snap = await IntentHost.store.waitForSnapshot(), text = Copy.siriTonight(snap)
+        return .result(value: text, dialog: "\(text)", view: TonightCard(snapshot: snap, mark: IntentHost.store.weatherMark))
+    }
+}
+
+/// For a shortcut's If step: "if tonight is clear, text me". Not in Spotlight's list (it is no question to ask there), and
+/// named for the app's own term, since a weather question brings Siri's Apple Weather suggestion (see Sky Score).
+struct ClearTonightIntent: AppIntent {
+    static let title: LocalizedStringResource = "Clear Window Tonight"
+    static let description = IntentDescription("Yes when tonight has a clear window by your go rule, no when it has not. Use it in a shortcut's If step.")
+    @MainActor func perform() async throws -> some IntentResult & ReturnsValue<Bool> & ProvidesDialog {
+        let store = IntentHost.store, snap = await store.waitForSnapshot()
+        return .result(value: store.plan?.primary != nil, dialog: "\(Copy.siriTonight(snap))")
     }
 }
 
 struct BestTargetsIntent: AppIntent {
     static let title: LocalizedStringResource = "Best Targets Tonight"
     static let description = IntentDescription("Tonight's plan, or the best targets for your telescope tonight.")
-    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
         let store = IntentHost.store, snap = await store.waitForSnapshot()
         let text = Copy.siriBest(snap, session: store.session(for: store.plan), site: store.site)
-        return .result(dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap, mark: store.weatherMark))
+        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap, mark: store.weatherMark))
     }
 }
 
@@ -94,10 +108,10 @@ struct SearchTargetsIntent {
 struct EventsTonightIntent: AppIntent {
     static let title: LocalizedStringResource = "Events Tonight"
     static let description = IntentDescription("Meteor showers, space station passes, eclipses and other events tonight.")
-    @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
         let store = IntentHost.store, snap = await store.waitForSnapshot()   // events arrive with the first recompute
         let text = Copy.siriEvents(store.events)
-        return .result(dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap, mark: store.weatherMark))
+        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap, mark: store.weatherMark))
     }
 }
 
