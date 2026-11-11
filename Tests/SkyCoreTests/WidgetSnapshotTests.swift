@@ -222,3 +222,64 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(Copy.menuBarLabel(s, now: november.addingTimeInterval(7 * 3600 + 1200)).hasSuffix(", Forecast 7 h old"))
 }
 
+
+/// The window is drawn in the site's time; the zone is named only when that is not the clock the snapshot is read on.
+@Test func theWindowZoneIsNamedOnlyWhenTheClocksDiffer() throws {
+    let (p, t) = try plans(november, clearMiddle)
+    #expect(snap(p, t).windowZone == nil)   // a London site read on a London clock
+    #expect(snap(p, t, clock: TimeZone(identifier: "America/Los_Angeles")!).windowZone == "GMT")
+    #expect(snap(p, t, clock: TimeZone(identifier: "Europe/London")!).window == snap(p, t, clock: TimeZone(identifier: "America/Los_Angeles")!).window)   // the wording itself is unchanged
+}
+
+@Test func zoneNamesAreAbbreviationsWhereThereAreAndOffsetsWhereThereAreNot() {
+    func site(_ id: String) -> Site { Site(name: "S", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: id, bortle: 3) }
+    let uk = TimeZone(identifier: "Europe/London")!
+    let july = utc(2026, 7, 1, 12, 0), november = utc(2026, 11, 20, 12, 0)
+    #expect(Copy.zoneName(at: july, site: site("America/Los_Angeles"), clock: uk) == "PDT")
+    #expect(Copy.zoneName(at: november, site: site("America/Los_Angeles"), clock: uk) == "PST")
+    #expect(Copy.zoneName(at: july, site: site("Europe/London"), clock: TimeZone(identifier: "America/Los_Angeles")!) == "BST")
+    #expect(Copy.zoneName(at: july, site: site("Europe/London"), clock: uk) == nil)
+    #expect(Copy.zoneName(at: november, site: site("Asia/Kathmandu"), clock: uk) == "UTC+5:45")
+}
+
+/// Both widgets draw the window and the target rows through these, so the Mac and the phone cannot word them differently.
+@Test func theZoneIsNamedAfterTheWindowTimesAndBeforeTheLength() {
+    var s = WidgetSnapshot.sample
+    #expect(s.zoned("23:00–05:32 · 6.5 h") == "23:00–05:32 · 6.5 h")   // no zone: unchanged
+    s.windowZone = "UTC+1"
+    #expect(s.zoned("23:00–05:32 · 6.5 h") == "23:00–05:32 UTC+1 · 6.5 h")
+    #expect(s.zoned("Clear 23:00–05:32") == "Clear 23:00–05:32 UTC+1")   // the small widget's short form
+}
+
+@Test func rowsUnderBestTonightDoNotRepeatBest() {
+    var s = WidgetSnapshot.sample
+    let t = WidgetTarget(id: "M74", catalogueID: "M74", name: "Galaxy", best: "Best 00:00 · 88° up", group: .galaxies)
+    s.mode = .dark
+    #expect(s.rowTime(t) == "00:00 · 88° up")
+    s.mode = .bright   // the Moon and planets list has no "Best tonight" heading
+    #expect(s.rowTime(t) == "Best 00:00 · 88° up")
+}
+
+@Test func theLargeWidgetSaysWhyItListsNoTargets() {
+    var s = WidgetSnapshot.sample
+    s.windowShort = nil
+    #expect(s.emptyPicksNote == "No clear window, so nothing is recommended.")
+    s.windowShort = "Clear 21:10–01:40"; s.mode = .dark
+    #expect(s.emptyPicksNote == "Nothing well placed in the window.")
+    s.mode = .bright
+    #expect(s.emptyPicksNote == "No Moon or planet well placed in the window.")
+}
+
+/// Tonight's second line is one string for both apps: the day, Bortle class, the polar-alignment tilt, and "bright night" when it is one.
+@Test func tonightsDateLineCarriesTheTiltAndTheBrightNote() {
+    let north = Site(name: "N", latitude: 54.04, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 3)
+    let south = Site(name: "S", latitude: -33.9, longitude: 151.2, elevationM: 20, timeZoneID: "Australia/Sydney", bortle: 7)
+    #expect(Copy.nightLine(dayText: "13 Oct", site: north, bright: false) == "13 Oct · Bortle 3 · EQ tilt 54.0° true north")
+    #expect(Copy.nightLine(dayText: "Tue 13 Oct", site: south, bright: true) == "Tue 13 Oct · Bortle 7 · EQ tilt 33.9° true south · bright night")
+}
+
+/// "a 88% moon" was on screen on 28 October 2026.
+@Test func theMoonPercentageGetsTheRightArticle() {
+    for n in [8, 11, 18, 80, 88, 89] { #expect(Planner.article(forPercent: n) == "an", "\(n)") }
+    for n in [1, 7, 9, 10, 12, 17, 19, 40, 62, 79, 90, 95, 100] { #expect(Planner.article(forPercent: n) == "a", "\(n)") }
+}

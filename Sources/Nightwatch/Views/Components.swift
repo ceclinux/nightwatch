@@ -80,8 +80,8 @@ struct Chip: View {
         .font(.system(size: TextScale.pt(9.5), weight: .medium))
         .foregroundStyle(warning ? Tokens.lit : Tokens.textPrimary)
         .padding(.horizontal, 7).padding(.vertical, 3)
-        .background(Color.black.opacity(0.55), in: Capsule())
-        .overlay(Capsule().stroke(warning ? Tokens.ember : Tokens.glassEdge, lineWidth: 1))
+        .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: Tokens.chipCorner))
+        .overlay(RoundedRectangle(cornerRadius: Tokens.chipCorner).stroke(warning ? Tokens.ember : Tokens.glassEdge, lineWidth: 1))
     }
 }
 

@@ -123,9 +123,9 @@ public enum AlertEngine {
             let split: String?
             if let w = tonight.primary {
                 guard settings.requireAgreement, !Planner.agreementHolds(tonight.agreement), let a = tonight.agreement else { return false }
-                split = "Apple Weather still sees clear from \(Copy.hhmm(w.start, site: site)). \(Copy.agreementText(a, site: site))."
+                split = L10n.format("Apple Weather still sees clear from \(Copy.hhmm(w.start, site: site)). \(Copy.agreementText(a, site: site)).")
             } else if let a = tonight.agreement, case .clearRun = a {
-                split = "Apple Weather now sees cloud. \(Copy.agreementText(a, site: site))."
+                split = L10n.format("Apple Weather now sees cloud. \(Copy.agreementText(a, site: site)).")
             } else {
                 split = nil
             }
@@ -135,7 +135,7 @@ public enum AlertEngine {
                 s.doubtSent = true
                 s.stage = .doubted
             } else {
-                let body = tonight.agreement == .agreeNoWindow ? "Apple Weather and Open-Meteo both see cloud." : copy.noWindow
+                let body = tonight.agreement == .agreeNoWindow ? L10n.text("Apple Weather and Open-Meteo both see cloud.") : copy.noWindow
                 note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: body)
                 s.stage = .cancelled
             }
@@ -152,7 +152,7 @@ public enum AlertEngine {
                     let (start, hours) = window(tonight)
                     // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
                     let planText = session.flatMap { Copy.headsUpPlan($0, plan: tonight, site: site) }
-                    let body = firstClear() + (planText.map { $0 + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
+                    let body = firstClear() + (planText.map { $0 + copy.closingLines(plan: tonight, site: site, alerts: settings) }
                         ?? copy.notificationBody(plan: tonight, site: site, alerts: settings))
                         + (Copy.alsoTonight(events, night: tonight.night, site: site).map { " " + $0 } ?? "")
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,

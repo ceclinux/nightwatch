@@ -80,7 +80,16 @@ extension Copy {
         transparencyBand(darkHours).map { $0 <= 3 ? L10n.text("Good") : L10n.text("Average") }
     }
 
-    static func hoursText(_ h: Double) -> String { String(format: "%.1f h", h).replacingOccurrences(of: ".0 h", with: " h") }
+    /// The tile's word for a plan: "Hazy" when smoke or dust will dim the window (#183), whatever 7Timer's band says,
+    /// since 7Timer's transparency does not see aerosols (Niamey, 8 October 2026: "Good" beside the haze line).
+    public static func transparencyText(_ plan: NightPlan) -> String? {
+        plan.hazy ? L10n.text("Hazy") : transparencyText(plan.darkHours)
+    }
+
+    static func hoursText(_ h: Double) -> String {
+        let value = h == h.rounded() ? String(format: "%.0f", h) : String(format: "%.1f", h)
+        return L10n.format("\(value) h")
+    }
 
     /// A clear run that missed the rule, to one decimal place: never rounded up to the rule's own figure, nor down to nothing.
     static func shortRun(_ hours: Double, rule: GoRule) -> Double {

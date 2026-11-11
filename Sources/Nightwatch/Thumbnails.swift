@@ -96,8 +96,9 @@ enum Thumbnails {
         if FileManager.default.fileExists(atPath: f.path) { return true }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         // hips2fits took 12.5 s for a 1600 px image with extra sky (25 Sep 2026), so the large fetch gets more than the usual 20 s.
-        let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)
-        guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), NSImage(data: data) != nil,
+        // The ready-made set first for a card, then CDS (SurveyFetch). With CDS down, a target outside the set shows its icon.
+        guard let data = await SurveyFetch.shared.image(url(for: t, fov: fov, width: width, context: context), timeout: width == cardWidth ? 20 : 45),
+              NSImage(data: data) != nil,
               (try? data.write(to: f, options: .atomic)) != nil else { return false }
         pruneStaleImages()
         return true

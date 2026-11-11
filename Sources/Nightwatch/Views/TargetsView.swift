@@ -26,6 +26,9 @@ final class TargetsViewState: ObservableObject {
     @Published var siteSort: SiteSort = .score
     /// Tonight | Tomorrow night: planning for tomorrow night (owner, 28 September 2026).
     @Published var tomorrow = false
+    /// Tonight's plan shows its suggested targets (owner, 9 October 2026: off until asked for). Kept here so it outlasts
+    /// a visit to another page of the window.
+    @Published var planSuggestions = false
 }
 
 /// A sidebar row's icon in the lit colour. The native sidebar draws a Label's symbol in the system accent whatever its row is set
@@ -54,6 +57,12 @@ struct TargetsView: View {
 
     /// On a bright night only the Moon and planets are suggested, so they stand in for the ranked list.
     private var targets: [RankedTarget] { plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
+
+    /// What the search matches in the catalogue when tonight's list has nothing, so the hint can say it is not up tonight.
+    private var notPlanned: [DeepSkyObject] {
+        guard !ui.search.allSatisfy(\.isWhitespace), !targets.contains(where: { $0.matches(ui.search) }) else { return [] }
+        return store.catalogueMatches(ui.search)
+    }
 
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
@@ -120,9 +129,9 @@ struct TargetsView: View {
     /// "Best now" ranks by height at this moment inside the window. With no window tonight it reads "Highest" (owner,
     /// 28 September 2026), and for tomorrow night, whose hours have not begun, "Best".
     private func sortLabel(_ sort: TargetSort) -> String {
-        guard sort == .bestNow else { return sort.rawValue }
+        guard sort == .bestNow else { return L10n.text(sort.rawValue) }
         if showingTomorrow { return L10n.text("Best") }
-        return plan?.primary == nil ? L10n.text("Highest") : sort.rawValue
+        return plan?.primary == nil ? L10n.text("Highest") : L10n.text("Best now")
     }
 
     private func isFavourite(_ t: RankedTarget) -> Bool { store.config.favourites.contains(t.id) }
@@ -184,7 +193,7 @@ struct TargetsView: View {
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
-                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
+                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow, showSuggestions: $ui.planSuggestions) { ui.selected = $0 }
                 case .week: WeekView { tomorrow in ui.tomorrow = tomorrow; ui.section = .plan }
                 case .group, .favourites, .eyes: grid
                 }
@@ -231,9 +240,9 @@ struct TargetsView: View {
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Text(L10n.text("SHOW")).capsLabel().padding(.top, 2)
-                Toggle(L10n.text("Doesn't fit my frame"), isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
-                Toggle(L10n.text("Washed out by the Moon"), isOn: $ui.includeMoonWashed)
+                Text(L10n.text(SettingsCopy.showHeading)).capsLabel().padding(.top, 2)
+                Toggle(L10n.text(SettingsCopy.showMisfits), isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
+                Toggle(L10n.text(SettingsCopy.showMoonWashed), isOn: $ui.includeMoonWashed)
             }
         }
         .toggleStyle(WarmSwitchStyle(compact: true)).font(.system(size: TextScale.pt(11))).padding(10)
@@ -245,6 +254,7 @@ struct TargetsView: View {
         if let section = r.section {
             ui.tomorrow = false   // a request from the popover or widget is about tonight
             ui.section = section
+            if section == .plan { ui.search = "" }   // the plan has no search, so an earlier one is not left in the box
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
             ui.selectedEvent = nil   // an open event page would hide the requested target
@@ -258,6 +268,8 @@ struct TargetsView: View {
             let found = (targets + favourites.map(\.target)).filter { $0.matches(text) }
             if case .group(let g) = ui.section, found.contains(where: { $0.group == g }) {} else if let first = found.first {
                 ui.section = .group(first.group)
+            } else if let known = store.catalogueMatches(text).first {
+                ui.section = .group(known.group)   // not up tonight: still open its group, where the hint says so, not Tonight's plan with nothing in it (#72)
             }
         }
         store.targetsRequest = nil
@@ -372,7 +384,7 @@ struct TargetsView: View {
                 // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
                 if ui.section != .favourites, ui.section != .eyes, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                              includeMoonWashed: ui.includeMoonWashed) {
+                                              includeMoonWashed: ui.includeMoonWashed, notPlanned: notPlanned) {
                     Text(hint).font(Font.scaled(.callout)).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
                 }
                 if ui.section == .eyes {
@@ -459,7 +471,7 @@ struct TargetsView: View {
         if let s = store.site, !next.isEmpty, ui.search.trimmingCharacters(in: .whitespaces).isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text(L10n.format("Coming up from \(s.name)")).font(Font.scaled(.headline))
-                Text(L10n.text("The Moon covering a planet, a bright star or the Pleiades, seen from here in darkness."))
+                Text(L10n.text(SettingsCopy.comingUpCaption))
                     .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 ForEach(Array(next)) { e in
                     HStack(spacing: 12) {

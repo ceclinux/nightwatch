@@ -45,3 +45,16 @@ jobs:
             echo "The App Store build still contains the update check"; exit 1
           fi
           for b in download appstore; do test -d build/$b/Build/Products/Release/Nightwatch.app/Contents/PlugIns/NightwatchWidget.appex; done
+
+  # The iPhone and iPad app (Phone/), built for the Simulator against the same SkyCore. Its tests already run in the job above
+  # (PhoneCoreTests is a target of the same Swift package). Unsigned: CI has no certificates.
+  phone-build:
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: xcodegen
+        run: brew install xcodegen && xcodegen generate --spec Phone/project.yml --quiet
+      - name: Phone build (Simulator)
+        run: xcodebuild -project Phone/NightwatchPhone.xcodeproj -scheme NightwatchPhone -destination 'generic/platform=iOS Simulator' -configuration Debug -derivedDataPath build/phone CODE_SIGNING_ALLOWED=NO build -quiet

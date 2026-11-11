@@ -1,0 +1,144 @@
+{
+ "entries": [
+  {
+   "date": "2026-11-07",
+   "term": "nightwatch: clear sky alerts",
+   "country": "gb",
+   "platform": "iphone",
+   "position": 1,
+   "searched_depth": null,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "iphone",
+   "position": 4,
+   "searched_depth": null,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 161,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 154,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 170,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 176,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "cloud cover",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 156,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 169,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "astronomy",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 179,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "telescope",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 169,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "stars",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 173,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "seeing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": 60,
+   "searched_depth": null,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "dark",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 159,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-07",
+   "term": "moon",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 186,
+   "source": "other",
+   "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  }
+ ]
+}

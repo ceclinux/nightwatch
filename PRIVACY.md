@@ -1,8 +1,8 @@
 # Nightwatch privacy policy
 
-*Last updated 7 October 2026 (location is asked for only when you press a button; what it is used for, said in one place; keeping, deleting and changing your mind). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 26 October 2026 (the iPhone and iPad app added). Applies to Nightwatch for Mac 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store, and to Nightwatch for iPhone and iPad 1.0.0 and later, from the App Store.*
 
-Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
+Nightwatch is a free, open-source app for Mac, iPhone and iPad by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
 
 ## What stays on your Mac
@@ -39,10 +39,12 @@ nearby dark-sky sites if that feature is on). They go to:
 - **Apple Weather (WeatherKit)**, on builds signed for it. macOS makes these requests on Nightwatch's behalf and
   identifies the app to Apple, as it does for every app using Apple Weather. See
   [Apple's privacy policy](https://www.apple.com/legal/privacy/).
-- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion, and once for each saved site
+- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion; its air-quality service, for
+  how much smoke, dust or haze is in the air at each place forecast; and once for each saved site
   (and again if it moves) the ground's height at points up to 20 km around it, for the hills on its horizon. No name,
   account or device identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
+- **[MET Norway](https://api.met.no)**, for cloud cover, only when Apple Weather and Open-Meteo cannot be read. The same applies.
 - **Apple Maps**, to find a dark car park near each computed dark spot and the name of its town or village, and a small
   map of each dark site on its card, if that feature is on; Open in Maps hands the site's position to the Maps app. In
   Add a site, the place name you type is sent to Apple Maps to suggest places, and the one you choose is drawn on a small
@@ -91,6 +93,35 @@ from Nightwatch that says who you are.
 - The services listed above receive coordinates and your IP address when Nightwatch asks them for data. How long they
   keep their own logs is set by their policies, linked above; Nightwatch sends them no name, account or identifier to
   tie a request to you.
+
+## Nightwatch for iPhone and iPad
+
+Everything above about forecasts, services, permissions and children applies to the iPhone and iPad app too, with "Mac" read as "iPhone or iPad".
+These parts differ.
+
+**What stays on your iPhone or iPad**
+
+- **Your settings:** your saved sites, alert choices and quiet hours. If you are signed in to iCloud they are also kept in your iCloud account,
+  so your Mac, iPhone and iPad share them (Apple's iCloud key-value storage, under [Apple's privacy policy](https://www.apple.com/legal/privacy/));
+  the developer cannot see them. Red night mode and the Lock Screen card choice are kept on each device only.
+- **Your location**, if you let Nightwatch use it. It is asked for only when you press "Use this device's location". It is used once, to make a
+  saved site for where you are, and only the site's coordinates go to the forecast services above.
+- **The last forecast, tonight's plan and a record of which alerts have been sent**, so the app works without a connection and sends no alert twice.
+- **Spotlight and Shortcuts:** tonight's summary is added to this device's Spotlight index, and Nightwatch's actions hand tonight's answer to the
+  Shortcuts app, as on the Mac. What a shortcut of yours then does with it is up to that shortcut.
+
+**The widgets and the Lock Screen card.** The app hands the widgets tonight's answer through an App Group shared only with them on the same device
+(the site's name and Apple Weather's mark are in it). The widgets fetch nothing. The Lock Screen card is a Live Activity the app starts and updates
+on the device; no Nightwatch server and no push service is involved.
+
+**Background refresh.** iOS decides when to let the app read a fresh forecast and re-queue its alerts; it makes the same requests as when the app is open.
+
+**Measure from a photo** uses the system's photo picker, so Nightwatch does not ask for access to your photo library. The photo is read on the
+device, not kept or sent; only the height you set is saved.
+
+**Keeping, deleting and changing your mind.** The developer holds no data about you. Delete the app to remove what it keeps on the device.
+Your settings stay in your iCloud account for your other devices; remove them with Reset in the Mac app, or in iPhone Settings › [your name] ›
+iCloud › Manage Account Storage. To stop Nightwatch using your location or sending alerts, change it in iOS Settings › Nightwatch.
 
 ## Children
 

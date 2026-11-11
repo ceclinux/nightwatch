@@ -58,6 +58,9 @@ public enum Tokens {
     public static let onEmber = Color(hex: 0x1A1206)                     // text on ember
     public static let glassFill = Color.white.opacity(0.09)              // glass.fill: a card over the picture
     public static let glassEdge = Color.contrast(NSColor(white: 1, alpha: 0.16), NSColor(white: 1, alpha: 0.45))   // glass.edge: its hairline
+    /// The corner of a chip: a rounded rectangle, not a capsule, so a chip whose words wrap keeps them inside its corners (owner, 29 October 2026).
+    /// A one-line chip is no taller than twice this, so it still reads as a pill.
+    public static let chipCorner: CGFloat = 10
 
     /// accent.clear.low towards accent.clear by u (0…1).
     public static func clearBlend(_ u: Double) -> Color {

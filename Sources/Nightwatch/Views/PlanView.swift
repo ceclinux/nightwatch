@@ -12,6 +12,8 @@ struct PlanView: View {
     let plan: NightPlan?
     let canPlanTomorrow: Bool
     @Binding var tomorrow: Bool
+    /// The suggested targets are on show: only once asked for, or when there are no favourites to make a plan from.
+    @Binding var showSuggestions: Bool
     let onSelect: (RankedTarget) -> Void
 
     private var isTomorrow: Bool { plan != nil && plan?.night.key != store.plan?.night.key }
@@ -21,9 +23,16 @@ struct PlanView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 Text(isTomorrow ? L10n.text("Tomorrow night's plan") : L10n.text("Tonight's plan")).font(Font.scaled(.title2).weight(.semibold))
-                if canPlanTomorrow {
-                    SegmentedChoice(title: L10n.text("Night"), showsTitle: false, selection: $tomorrow, options: [(false, L10n.text("Tonight")), (true, L10n.text("Tomorrow night"))])
-                        .fixedSize()
+                HStack(spacing: 12) {
+                    if canPlanTomorrow {
+                        SegmentedChoice(title: L10n.text("Night"), showsTitle: false, selection: $tomorrow, options: [(false, L10n.text("Tonight")), (true, L10n.text("Tomorrow night"))])
+                            .fixedSize()
+                    }
+                    // Only on a night with a plan and something to suggest. With no favourites they are shown anyway.
+                    if let session, !session.suggestions.isEmpty, !store.config.favourites.isEmpty {
+                        Button(showSuggestions ? L10n.text("Hide suggestions") : L10n.text("Show suggestions")) { showSuggestions.toggle() }
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
                 }
                 content
             }
@@ -36,22 +45,48 @@ struct PlanView: View {
         if let p = plan, let s = store.site {
             if let session {
                 Text(Copy.planSummary(session, plan: p, site: s)).font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
-                if session.items.isEmpty && session.takenOff.isEmpty && session.omitted.isEmpty {
+                let suggesting = showSuggestions || store.config.favourites.isEmpty
+                let rows = session.rows.filter { if case .suggestion = $0 { suggesting } else { true } }
+                let words = isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight")
+                if rows.isEmpty && session.omitted.isEmpty {
                     empty
                 } else {
-                    Text(L10n.format("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight")): your choices are kept for this night, even if you make them the day before."))
+                    // With no favourites a clear night still has suggestions to review (owner, 9 October 2026).
+                    Text(store.config.favourites.isEmpty && !session.suggestions.isEmpty
+                         ? L10n.format("You have no favourites yet, so these are suggested for \(words): well-placed targets spread across the clear window. Add the ones you want. Heart a target to keep it in every plan.")
+                         : L10n.format("Your favourites that are up in the clear window, in order of their best time. Take off any you'll skip \(words): your choices are kept for this night, even if you make them the day before."))
                         .font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     // Each target keeps its line style from night to night (owner, 1 October 2026).
                     let styles = ChartLayout.styles(for: session.items.map(\.target.id), count: PlanLineStyle.all.count)
-                    if !session.items.isEmpty {
-                        PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
-                                  site: s, nightWords: isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight"), styles: styles)
+                    if !rows.isEmpty {
+                        // Drawn with no lines too, so the rows do not jump up when the last one is taken off.
+                        // The shading and the bold part of each line end with the plan, at a finish time if there is one.
+                        PlanChart(items: session.items, night: p.night, window: session.window, minAltitude: store.config.goRule.minAltitudeDeg,
+                                  site: s, nightWords: words, clear: p.primary.flatMap { $0.end > session.window.end ? $0 : nil }, styles: styles)
                     }
-                    VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s) } }
-                    if session.items.isEmpty {
-                        Text(L10n.text("Nothing left in the plan for this night.")).font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
+                    // One list by best time: a row changes how it looks where it stands, and nothing else moves.
+                    VStack(spacing: 8) {
+                        ForEach(rows) { r in
+                            switch r {
+                            case .item(let item): row(item, index: styles[item.target.id] ?? 0, night: p.night.key, site: s)
+                            case .suggestion(let t):
+                                offRow(r, symbol: "plus", button: L10n.text("Add to plan"), label: L10n.format("Add \(t.name) to the plan"), night: p.night.key, site: s)
+                            case .takenOff(let t):
+                                offRow(r, symbol: "minus", button: L10n.text("Put back"), label: L10n.format("Put \(t.name) back in the plan"), night: p.night.key, site: s)
+                            }
+                        }
                     }
-                    others(session, night: p.night.key, site: s)
+                    if rows.isEmpty {
+                        Text(L10n.text("Nothing for the plan this night.")).font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
+                    }
+                    if !session.omitted.isEmpty {
+                        group(L10n.text("FAVOURITES NOT IN THE PLAN")) {
+                            ForEach(session.omitted) { o in
+                                Text("\(o.target.name) · \(o.reason.prefix(1).lowercased() + o.reason.dropFirst())")
+                                    .font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
                     Text(L10n.text("Heart a target to keep it in every plan, or use Add to plan on its page for one night only."))
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 }
@@ -94,8 +129,8 @@ struct PlanView: View {
                 Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .heavy)).monospacedDigit().frame(width: 58, alignment: .leading)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .heavy))
-                        if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(t.cardName).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
+                        Text(t.catalogueID.isEmpty ? t.name : L10n.text(t.catalogueID)).font(.system(size: TextScale.pt(14), weight: .heavy))
+                        if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(L10n.text(t.cardName)).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
                     }
                     Text(Copy.planDetail(item, presetID: store.config.fovPresetID, site: site))
                         .font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
@@ -120,33 +155,37 @@ struct PlanView: View {
         .cardSurface(radius: 14)
     }
 
-    /// Taken off for this night, and favourites that cannot be in it, side by side.
-    @ViewBuilder private func others(_ session: SessionPlan, night: String, site: Site) -> some View {
-        if !session.takenOff.isEmpty || !session.omitted.isEmpty {
-            HStack(alignment: .top, spacing: 16) {
-                if !session.takenOff.isEmpty {
-                    group(isTomorrow ? L10n.text("TAKEN OFF TOMORROW NIGHT") : L10n.text("TAKEN OFF TONIGHT")) {
-                        ForEach(session.takenOff) { t in
-                            HStack {
-                                Text(L10n.format("\(t.name) · best \(Copy.hhmm(t.peakTime, site: site))")).font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary)
-                                Spacer()
-                                Button(L10n.text("Put back")) { store.setInPlan(t.id, true, night: night) }
-                                    .buttonStyle(.plain).foregroundStyle(Tokens.lit).font(.system(size: TextScale.pt(13), weight: .semibold))
-                                    .accessibilityLabel(L10n.format("Put \(t.name) back in the plan"))
-                            }
-                        }
+    /// A target that is not in the plan and keeps its place in the list: one suggested for a long gap, or one taken off
+    /// for the night (owner, 9 October 2026: the separate "Taken off" box "looks clunky next to the rest of the UI").
+    /// Laid out as a plan row is, but outlined with dashes and without a fill or a chart line, with one button to put it in.
+    private func offRow(_ r: PlanRow, symbol: String, button: String, label: String, night: String, site: Site) -> some View {
+        let t = r.target
+        return HStack(spacing: 16) {
+            HStack(spacing: 16) {
+                Image(systemName: symbol).font(.system(size: TextScale.pt(13), weight: .medium)).foregroundStyle(Tokens.textSecondary)
+                    .frame(width: 26, height: 10).accessibilityHidden(true)
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .heavy)).monospacedDigit()
+                    .foregroundStyle(Tokens.textSecondary).frame(width: 58, alignment: .leading)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(t.catalogueID.isEmpty ? t.name : L10n.text(t.catalogueID)).font(.system(size: TextScale.pt(14), weight: .heavy))
+                        if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(L10n.text(t.cardName)).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
                     }
+                    Text(Copy.planOffDetail(r, nightWords: isTomorrow ? L10n.text("tomorrow night") : L10n.text("tonight"), presetID: store.config.fovPresetID, site: site) ?? "")
+                        .font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                 }
-                if !session.omitted.isEmpty {
-                    group(L10n.text("FAVOURITES NOT IN THE PLAN")) {
-                        ForEach(session.omitted) { o in
-                            Text("\(o.target.name) · \(o.reason.prefix(1).lowercased() + o.reason.dropFirst())")
-                                .font(.system(size: TextScale.pt(13))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .opens { onSelect(t) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onSelect(t) }
+            Button(button) { store.setInPlan(t.id, true, night: night) }
+                .buttonStyle(SecondaryButtonStyle())
+                .accessibilityLabel(label)
         }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tokens.cardOutline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
     private func group<C: View>(_ title: String, @ViewBuilder _ rows: () -> C) -> some View {

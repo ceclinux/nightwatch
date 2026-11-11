@@ -1,12 +1,13 @@
 import Foundation
 
 /// Names of cached survey images. Card images keep the name they have always had (`<id>-<w>x<h>.jpg`), so the existing
-/// cache stays valid; the detail page's larger images add their width, and their extra sky (v0.6.4).
+/// cache stays valid; the detail page's larger images add their width and their extra sky (v0.6.4), and `-v2` (4 November 2026),
+/// so the greyscale stand-ins that 1.7.2 and 1.0.1 saved are never shown.
 public enum ThumbnailFiles {
     public static let cardWidth = 480
 
     public static func name(id: String, fovWidthDeg: Double, fovHeightDeg: Double, width: Int = cardWidth, context: Double = 1) -> String {
-        let size = width == cardWidth ? "" : "-w\(width)", wider = context == 1 ? "" : String(format: "-c%.1f", context)
+        let size = width == cardWidth ? "" : "-w\(width)-v2", wider = context == 1 ? "" : String(format: "-c%.1f", context)
         return "\(id)-\(String(format: "%.2fx%.2f", fovWidthDeg, fovHeightDeg))\(size)\(wider).jpg"
     }
 

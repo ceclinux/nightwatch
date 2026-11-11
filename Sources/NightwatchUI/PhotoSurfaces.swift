@@ -39,8 +39,8 @@ public struct WarningChip: View {
         }
         .foregroundStyle(Tokens.lit)
         .padding(.horizontal, 9).padding(.vertical, 3)
-        .background(Tokens.ember.opacity(0.14), in: Capsule())
-        .overlay(Capsule().stroke(Tokens.ember, lineWidth: 1))
+        .background(Tokens.ember.opacity(0.14), in: RoundedRectangle(cornerRadius: Tokens.chipCorner))
+        .overlay(RoundedRectangle(cornerRadius: Tokens.chipCorner).stroke(Tokens.ember, lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
 }
@@ -103,9 +103,14 @@ public struct NightBackdrop: View {
             GeometryReader { geo in
                 let picture = (geo.size.width > geo.size.height ? Self.wide : Self.tall) ?? Self.wide ?? Self.tall
                 // At the largest text size the words sit on a near-solid scrim, so contrast never depends on the picture.
-                let top = TextScale.factor >= 1.3 ? 0.88 : calm ? 0.55 : 0.16, foot = TextScale.factor >= 1.3 ? 0.92 : calm ? 0.88 : 0.78
+                // Tonight is darker through the middle, where the Milky Way's core sits behind the night arc: the arc and its hour
+                // labels were hard to read there (owner, 20 October 2026).
+                let top = TextScale.factor >= 1.3 ? 0.88 : calm ? 0.55 : 0.42, foot = TextScale.factor >= 1.3 ? 0.92 : calm ? 0.88 : 0.86
+                let middle = TextScale.factor >= 1.3 ? 0.90 : calm ? 0.72 : 0.68
                 Image(nsImage: picture!).resizable().scaledToFill().frame(width: geo.size.width, height: geo.size.height).clipped()
-                    .overlay(LinearGradient(colors: [Tokens.targetsBackground.opacity(top), Tokens.targetsBackground.opacity(foot)], startPoint: .top, endPoint: .bottom))
+                    .overlay(LinearGradient(stops: [.init(color: Tokens.targetsBackground.opacity(top), location: 0),
+                                                    .init(color: Tokens.targetsBackground.opacity(middle), location: 0.45),
+                                                    .init(color: Tokens.targetsBackground.opacity(foot), location: 1)], startPoint: .top, endPoint: .bottom))
             }
             .allowsHitTesting(false).accessibilityHidden(true)
         }

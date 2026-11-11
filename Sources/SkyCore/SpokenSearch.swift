@@ -10,6 +10,18 @@ public enum SpokenSearch {
                                 "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19]
     private static let tens = ["twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90]
 
+    /// Words that ask for tonight's plan rather than for a target: Siri hands over "tonight" for "What's worth imaging tonight in Nightwatch".
+    /// No target is named for these words, so a search for them only ever found nothing.
+    public static func asksForTonight(_ text: String) -> Bool {
+        text.lowercased().split { !$0.isLetter && $0 != "'" && $0 != "’" }.contains { ["tonight", "tonight's", "tonight’s", "plan"].contains(String($0)) }
+    }
+
+    /// The group a spoken search opens: the first match among tonight's targets, else the first in the catalogue (a target that is not up tonight
+    /// still has a group, where the search hint says so). Nil when nothing matches anywhere.
+    public static func group(for text: String, planned: [RankedTarget], catalogue: Catalog) -> TargetGroup? {
+        planned.first { $0.matches(text) }?.group ?? catalogue.objects(matching: text).first?.group
+    }
+
     public static func normalise(_ text: String) -> String {
         let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
         func bare(_ i: Int) -> String { words[i].trimmingCharacters(in: .punctuationCharacters).lowercased() }

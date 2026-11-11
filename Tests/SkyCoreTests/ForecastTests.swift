@@ -21,12 +21,23 @@ func fixture(_ name: String) throws -> Data {
     #expect(hours[0].cloudTotal >= 0 && hours[0].cloudTotal <= 100)
     #expect(hours[0].visibilityM != nil)
     #expect(hours[0].seeing == nil)
+    #expect(hours[0].rainChancePct == nil)   // a reply saved before #180 has no rain chance, and still parses
+}
+
+// Rain after the window (#180): Open-Meteo's hourly chance of rain, a gap in it left as unknown.
+@Test func openMeteoReadsTheChanceOfRain() throws {
+    let json = #"""
+    {"utc_offset_seconds": 0, "hourly": {"time": ["2026-11-20T20:00", "2026-11-20T21:00", "2026-11-20T22:00"],
+     "cloud_cover": [10, 20, 90], "precipitation_probability": [0, 34.6, null]}}
+    """#
+    let hours = try OpenMeteo.parse(Data(json.utf8))
+    #expect(hours.map(\.rainChancePct) == [0, 35, nil])
 }
 
 @Test func openMeteoUrlHasRequiredVariables() {
     let u = OpenMeteo.url(latitude: 53.38, longitude: -1.47, days: 3).absoluteString
     #expect(u.hasPrefix("https://api.open-meteo.com/v1/forecast?"))
-    for v in ["cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "dew_point_2m", "temperature_2m", "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility"] {
+    for v in ["cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "dew_point_2m", "temperature_2m", "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility", "precipitation_probability"] {
         #expect(u.contains(v))
     }
     #expect(u.contains("timezone=auto"))

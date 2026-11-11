@@ -14,6 +14,11 @@ public struct HourlyConditions: Codable, Equatable, Sendable {
     public var visibilityM: Double?
     public var seeing: Int?
     public var transparency: Int?
+    /// The chance of rain or snow in this hour, 0 to 100 (#180); nil from a forecast cached by an earlier version or a source without one.
+    public var rainChancePct: Int? = nil
+    /// Aerosol optical depth at 550 nm in this hour (#183): how much smoke, dust and pollution the air carries. Nil without
+    /// the air-quality forecast: a failed request, or a forecast cached by an earlier version.
+    public var aerosolDepth: Double? = nil
 
     public init(time: Date, cloudTotal: Int, cloudLow: Int?, cloudMid: Int?, cloudHigh: Int?, tempC: Double?, dewPointC: Double?,
                 humidityPct: Int?, windKmh: Double?, gustKmh: Double?, visibilityM: Double?, seeing: Int?, transparency: Int?) {
@@ -134,7 +139,7 @@ public enum ForecastError: Error { case malformed(String) }
 
 public enum OpenMeteo {
     static let variables = ["cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "dew_point_2m", "temperature_2m",
-                            "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility"]
+                            "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility", "precipitation_probability"]
 
     /// `pastDays`: also return that many days before today. The second opinion asks for 1: Open-Meteo starts at 00:00 local,
     /// so a patrol just after midnight would otherwise lack the evening hours of tonight's darkness.
@@ -165,6 +170,7 @@ public enum OpenMeteo {
             let wind_speed_10m: [Double?]?
             let wind_gusts_10m: [Double?]?
             let visibility: [Double?]?
+            let precipitation_probability: [Double?]?
         }
     }
 
@@ -178,15 +184,61 @@ public enum OpenMeteo {
         for (i, ts) in p.hourly.time.enumerated() {
             guard let local = f.date(from: ts) else { throw ForecastError.malformed("time \(ts)") }
             func at<T>(_ a: [T?]?) -> T? { guard let a, i < a.count else { return nil }; return a[i] }
-            out.append(HourlyConditions(
+            var h = HourlyConditions(
                 time: local.addingTimeInterval(-p.utc_offset_seconds),
                 cloudTotal: at(p.hourly.cloud_cover) ?? 100,
                 cloudLow: at(p.hourly.cloud_cover_low), cloudMid: at(p.hourly.cloud_cover_mid), cloudHigh: at(p.hourly.cloud_cover_high),
                 tempC: at(p.hourly.temperature_2m), dewPointC: at(p.hourly.dew_point_2m), humidityPct: at(p.hourly.relative_humidity_2m),
                 windKmh: at(p.hourly.wind_speed_10m), gustKmh: at(p.hourly.wind_gusts_10m), visibilityM: at(p.hourly.visibility),
-                seeing: nil, transparency: nil))
+                seeing: nil, transparency: nil)
+            h.rainChancePct = at(p.hourly.precipitation_probability).map { Int($0.rounded()) }
+            out.append(h)
         }
         return out
+    }
+}
+
+public struct AerosolSample: Equatable, Sendable {
+    public let time: Date
+    public let depth: Double
+    public init(time: Date, depth: Double) { self.time = time; self.depth = depth }
+}
+
+/// Aerosol optical depth for the haze line (#183): the Copernicus Atmosphere Monitoring Service's forecast, by the hour for
+/// a place, from Open-Meteo's air-quality service. Keyless, CC BY 4.0, both credited in NOTICE.
+public enum AirQuality {
+    /// `past_days=1` for the same reason as the second opinion: the reply starts at 00:00 local, and a patrol just after
+    /// midnight still needs the evening hours of tonight's darkness. Three days cover tonight and tomorrow night.
+    public static func url(latitude: Double, longitude: Double) -> URL {
+        var c = URLComponents(string: "https://air-quality-api.open-meteo.com/v1/air-quality")!
+        c.queryItems = [
+            .init(name: "latitude", value: String(format: "%.4f", latitude)),
+            .init(name: "longitude", value: String(format: "%.4f", longitude)),
+            .init(name: "hourly", value: "aerosol_optical_depth"),
+            .init(name: "timezone", value: "auto"),
+            .init(name: "forecast_days", value: "3"),
+            .init(name: "past_days", value: "1")
+        ]
+        return c.url!
+    }
+
+    private struct Payload: Decodable {
+        let utc_offset_seconds: Double
+        let hourly: Hourly
+        struct Hourly: Decodable { let time: [String]; let aerosol_optical_depth: [Double?] }
+    }
+
+    /// Hours with no figure are left out.
+    public static func parse(_ data: Data) throws -> [AerosolSample] {
+        let p = try JSONDecoder().decode(Payload.self, from: data)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return try zip(p.hourly.time, p.hourly.aerosol_optical_depth).compactMap { ts, depth in
+            guard let local = f.date(from: ts) else { throw ForecastError.malformed("time \(ts)") }
+            return depth.map { AerosolSample(time: local.addingTimeInterval(-p.utc_offset_seconds), depth: $0) }
+        }
     }
 }
 
@@ -241,8 +293,21 @@ public enum ForecastService {
         }
     }
 
+    /// Give each hour the aerosol depth of the sample nearest it, within half an hour: Apple Weather's hours fall on the UTC
+    /// hour and the air-quality reply on the local one, which differ by 30 minutes in a time zone such as India's.
+    public static func merge(hours: [HourlyConditions], aerosol: [AerosolSample]) -> [HourlyConditions] {
+        hours.map { h in
+            var h = h
+            if let s = aerosol.min(by: { abs($0.time.timeIntervalSince(h.time)) < abs($1.time.timeIntervalSince(h.time)) }),
+               abs(s.time.timeIntervalSince(h.time)) <= 1800 { h.aerosolDepth = s.depth }
+            return h
+        }
+    }
+
     /// Cloud hours from `primary` (WeatherKit by default) when it answers, else Open-Meteo; 7Timer seeing merged on top either way.
     /// `secondOpinion`: also keep Open-Meteo's cloud when the primary answers (the active site only; dark sites pass false).
+    /// Every site gets the aerosol depth behind the haze line (#183), since haze costs sky score and a dark site or home
+    /// scored without it would look better than the site it is compared with.
     public static func fetch(site: Site, fetcher: Fetcher, now: Date, primary: CloudProvider? = WeatherKitSource.provider,
                              secondOpinion wantSecond: Bool = true) async throws -> Forecast {
         var hours: [HourlyConditions]
@@ -262,6 +327,10 @@ public enum ForecastService {
            let samples = try? SevenTimer.parse(data), !samples.isEmpty {
             hours = merge(hours: hours, seeing: samples)
             seeingSource = "7Timer"
+        }
+        if let data = try? await fetcher.get(AirQuality.url(latitude: site.latitude, longitude: site.longitude)),
+           let samples = try? AirQuality.parse(data), !samples.isEmpty {
+            hours = merge(hours: hours, aerosol: samples)
         }
         return Forecast(fetchedAt: now, latitude: site.latitude, longitude: site.longitude, hours: hours, seeingSource: seeingSource,
                         cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL, secondOpinion: second)

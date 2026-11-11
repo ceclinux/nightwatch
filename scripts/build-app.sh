@@ -66,6 +66,10 @@ ENT
   echo "Signed ad hoc (no Apple Development identity or profile for $BUNDLE_ID): Open-Meteo only, no widget"
 fi
 if [[ "${1:-}" == "--no-install" ]]; then echo "Built $APP"; exit 0; fi
+# A copy installed by the App Store or TestFlight belongs to root, and replacing it needs an administrator. Say so before
+# the running app is quit: on 8 October 2026 this script ended Nightwatch and then failed to remove a TestFlight copy.
+[[ ! -e /Applications/Nightwatch.app || -w /Applications/Nightwatch.app ]] \
+  || fail "/Applications/Nightwatch.app is owned by $(stat -f %Su /Applications/Nightwatch.app) (an App Store or TestFlight install). Move it out of Applications as an administrator, then run this again. The build is at $APP."
 pkill -x Nightwatch || true
 # macOS keeps a widget's process alive across reinstalls and goes on drawing with the code it first loaded (on 25 Sep 2026
 # the desktop showed a build three hours old). Ending it makes the system relaunch the widget from the new copy.

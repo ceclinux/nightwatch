@@ -155,6 +155,19 @@ public struct Catalog: Sendable {
         return out
     }
 
+    /// Every object a search matches, by the Targets grid's own rule, whether or not it is up tonight: for a search tonight's ranked list
+    /// cannot answer ("Find the Crescent Nebula" on a night it is below the horizon all through the dark, #72).
+    public func objects(matching query: String) -> [DeepSkyObject] {
+        guard !query.allSatisfy(\.isWhitespace) else { return [] }
+        return objects.filter { o in
+            var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours,
+                                 decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 0, peakTime: Date(timeIntervalSince1970: 0),
+                                 moonSepDeg: 90, moonWashed: false, visibleFraction: 0)
+            r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode
+            return r.matches(query)
+        }
+    }
+
     public static func bundled() throws -> Catalog {
         var all: [DeepSkyObject] = []
         for name in ["NGC", "addendum"] {

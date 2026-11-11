@@ -28,9 +28,9 @@ public struct Copy: Sendable {
     }
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
-    /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
+    /// from 00:00, so this window is less certain than usual."), then the haze and rain lines; the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
-        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) : ""
+        let line = agreement ? closingLines(plan: plan, site: site, alerts: alerts) : ""
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + L10n.text(" well placed.") + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append(L10n.format("Moon sets \(Copy.hhmm(set, site: site))")) }
@@ -40,10 +40,38 @@ public struct Copy: Sendable {
         return parts.joined(separator: ". ") + "." + line
     }
 
-    /// The second opinion as a notification ends, with its leading space; "" without one. Shared by every body that carries it.
+    /// The second opinion as a notification ends, with its leading space; "" without one.
     public func secondOpinionLine(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
         if let advice = Copy.advice(plan, site: site, alerts: alerts) { return " " + advice.sentence }
         return plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? ""
+    }
+
+    /// "Rain possible from 03:00" (#180): for a telescope left running after the window, so it is only said on a night with
+    /// a clear window, and only when rain is forecast before sunrise.
+    public static func rain(_ plan: NightPlan, site: Site) -> String? {
+        plan.rainFrom.map { L10n.format("Rain possible from \(hhmm($0, site: site))") }
+    }
+
+    /// The rain line as a tonight notification ends, with its leading space; "" on a dry night.
+    public func rainLine(plan: NightPlan, site: Site) -> String {
+        Copy.rain(plan, site: site).map { " " + $0 + "." } ?? ""
+    }
+
+    /// "Haze or smoke: faint targets will be dim" (#183): a cloudless night that will still disappoint on a nebula or a
+    /// galaxy. Only with a clear window, and only when the air through it is hazy (`NightPlan.hazy`).
+    public static func haze(_ plan: NightPlan) -> String? {
+        plan.hazy ? L10n.text("Haze or smoke: faint targets will be dim") : nil
+    }
+
+    /// The haze line as a tonight notification ends, with its leading space; "" in clean air.
+    public func hazeLine(plan: NightPlan) -> String {
+        plan.hazy ? L10n.text(" Haze or smoke in the air, so faint targets will be dim.") : ""
+    }
+
+    /// What a tonight notification ends with: the second opinion, then haze (#183), then rain (#180), each "" when it has
+    /// nothing to say. Shared by every body that carries them.
+    public func closingLines(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
+        secondOpinionLine(plan: plan, site: site, alerts: alerts) + hazeLine(plan: plan) + rainLine(plan: plan, site: site)
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
@@ -73,7 +101,8 @@ public struct Copy: Sendable {
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
     /// group on screen). Nil with no search.
-    public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool) -> String? {
+    public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool,
+                                    notPlanned: [DeepSkyObject] = []) -> String? {
         guard !query.allSatisfy(\.isWhitespace) else { return nil }   // the grid's test for "no search", newlines included
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let found = targets.filter { $0.matches(query) }
@@ -90,6 +119,10 @@ public struct Copy: Sendable {
             return n == 0 ? nil : "\(g.displayName) (\(n))"
         }
         if !elsewhere.isEmpty { parts.append(L10n.format("Also in \(elsewhere.joined(separator: ", ")).")) }
+        // In the catalogue but not in tonight's list: it is below the horizon, or too close to the Moon, all through the dark.
+        if found.isEmpty, !notPlanned.isEmpty {
+            parts.append(L10n.format("In the catalogue but not up during tonight's darkness: \(notPlanned.prefix(3).map(\.displayName).joined(separator: "; "))."))
+        }
         return parts.joined(separator: " ")
     }
 
@@ -104,11 +137,11 @@ public struct Copy: Sendable {
         if !lit {
             // No clear window: when it is up in darkness anyway, as the card now shows (owner, 28 September 2026).
             if let v = t.viewable {
-                parts.append(L10n.format("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"))
+                parts.append(L10n.format("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up, \(peakWay(t, site: site))"))
             } else { parts.append(L10n.text("no clear window, too low in darkness tonight")) }
         }
         else if let v = t.viewable {
-            parts.append(L10n.format("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"))
+            parts.append(L10n.format("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up, \(peakWay(t, site: site))"))
         } else { parts.append(L10n.text("viewable outside the clear window")) }
         return parts.joined(separator: ", ")
     }
@@ -190,6 +223,20 @@ public struct Copy: Sendable {
         return f.string(from: date)
     }
 
+    /// The site's time zone, named, when its clock differs from `clock` at `date` ("PDT"; "UTC+2" when the zone has no abbreviation of its
+    /// own in English): a window drawn in the site's time can then be told from the reader's. Nil when the two clocks agree.
+    public static func zoneName(at date: Date, site: Site, clock: TimeZone) -> String? {
+        let z = site.timeZone, offset = z.secondsFromGMT(for: date)
+        guard offset != clock.secondsFromGMT(for: date) else { return nil }
+        let style: NSTimeZone.NameStyle = z.isDaylightSavingTime(for: date) ? .shortDaylightSaving : .shortStandard
+        for locale in ["en_US", "en_GB"] {   // en_US names the American zones, en_GB the European ones; neither names the rest
+            if let name = z.localizedName(for: style, locale: Locale(identifier: locale)), name == "GMT" || !(name.hasPrefix("GMT") || name.hasPrefix("UTC")) { return name }
+        }
+        if offset == 0 { return "GMT" }   // macOS 27.0.1 names London's winter zone "GMT+0", which the loop above rejects; no offset is "GMT"
+        let minutes = abs(offset) / 60 % 60
+        return "UTC" + (offset < 0 ? "-" : "+") + "\(abs(offset) / 3600)" + (minutes > 0 ? String(format: ":%02d", minutes) : "")
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)
@@ -229,13 +276,53 @@ public struct Copy: Sendable {
         return L10n.format("Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%")
     }
 
-    /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for
+    /// The detail of a row that is not in the plan, worded as a plan row's is after what it is: "Suggested · Up
+    /// 20:18–04:10 · best 23:40 at 77° · Duo-Band · 200 × 30 s", or "Taken off tonight · Up …". Nil for a plan row.
+    public static func planOffDetail(_ row: PlanRow, nightWords: String, presetID: String?, site: Site) -> String? {
+        let lead: String
+        switch row { case .item: return nil; case .suggestion: lead = L10n.text("Suggested"); case .takenOff: lead = L10n.format("Taken off \(nightWords)") }
+        let rest = planDetail(PlanItem(target: row.target, added: false), presetID: presetID, site: site)
+        return "\(lead) · \(rest)"
+    }
+
+    /// Which way to look when a target is at its best (owner, 24 October 2026): "overhead" from 80° up, where a direction means
+    /// little, else "in the SE", one of the eight points on the horizon dial.
+    public static func way(altDeg: Double, azDeg: Double) -> String {
+        altDeg >= 80 ? L10n.text("overhead") : L10n.format("in the \(compassPoint(azDeg: azDeg))")
+    }
+
+    /// The nearest of the eight points on the horizon dial: "N", "NE", ... "NW".
+    public static func compassPoint(azDeg: Double) -> String {
+        Site.horizonDirections[Int(((azDeg.truncatingRemainder(dividingBy: 360) + 360) / 45).rounded()) % 8]
+    }
+
+    private static func peakAzimuth(_ t: RankedTarget, site: Site) -> Double {
+        Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az
+    }
+
+    /// The way to look at a target's best moment, from its position then.
+    public static func peakWay(_ t: RankedTarget, site: Site) -> String {
+        way(altDeg: t.peakAltDeg, azDeg: peakAzimuth(t, site: site))
+    }
+
+    /// "88° overhead" or "75° in the SE": its height at its best moment and which way to look.
+    public static func peakHeight(_ t: RankedTarget, site: Site) -> String {
+        "\(Int(t.peakAltDeg.rounded()))° \(peakWay(t, site: site))"
+    }
+
+    /// The same, shortened for a widget row: "75° SE", or "88° up" from 80° up (a widget row has little room, and "up" is what it said before).
+    public static func peakHeightShort(_ t: RankedTarget, site: Site) -> String {
+        let deg = Int(t.peakAltDeg.rounded())
+        return t.peakAltDeg >= 80 ? L10n.format("\(deg)° up") : "\(deg)° \(compassPoint(azDeg: peakAzimuth(t, site: site)))"
+    }
+
+    /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° in the SE · Duo-Band · 200 × 30 s", after "Added for this night" for
     /// a target that is not a favourite.
     public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
         let t = item.target
         var parts = item.added ? [L10n.text("Added for this night")] : []
         if let v = t.viewable { parts.append("\(site.horizon == nil ? L10n.text("Up") : L10n.text("Clear of your horizon")) \(span(v.start, v.end, site: site))") }
-        parts.append(L10n.format("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°"))
+        parts.append(L10n.format("best \(hhmm(t.peakTime, site: site)) at \(peakHeight(t, site: site))"))
         if let kit = ShootingTips.planKit(t, presetID: presetID) { parts.append(kit) }
         let text = parts.joined(separator: " · ")
         return text.prefix(1).uppercased() + text.dropFirst()

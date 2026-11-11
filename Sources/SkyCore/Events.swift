@@ -213,9 +213,9 @@ public enum Events {
                 + "–" + day(peakDate, site: site)
             let peakText: String
             switch days {
-            case 0, 1: peakText = "At peak tonight"
-            case 2: peakText = "Peak tomorrow night (\(peakNight))"
-            case 3...: peakText = "Peak night \(peakNight), in \(days - 1) days"
+            case 0, 1: peakText = L10n.text("At peak tonight")
+            case 2: peakText = L10n.format("Peak tomorrow night (\(peakNight))")
+            case 3...: peakText = L10n.format("Peak night \(peakNight), in \(days - 1) days")
             default: peakText = L10n.format("Past its peak (night of \(peakNight))")
             }
             let top = highest(raHours: s.raHours, decDeg: s.decDeg, from: dark.start, to: dark.end, site: site)

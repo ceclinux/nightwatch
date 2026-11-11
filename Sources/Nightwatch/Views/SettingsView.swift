@@ -115,12 +115,12 @@ struct SettingsView: View {
                 // The master switch, moved here from the popover's footer (owner, 27 September 2026): "Notify at 20:30" tonight.
                 Toggle(store.site.map { Copy.notifyLabel(store.plan, site: $0, settings: store.config.alerts) } ?? L10n.text("Notify when clear"),
                        isOn: bind(\.notifyEnabled))
-                Toggle(L10n.text("Evening heads-up (one hour before sunset)"), isOn: bind(\.alerts.headsUp))
-                Toggle(L10n.text("Tomorrow preview when tonight is out"), isOn: bind(\.alerts.tomorrowPreview))
+                Toggle(L10n.text(SettingsCopy.headsUp), isOn: bind(\.alerts.headsUp))
+                Toggle(L10n.text(SettingsCopy.tomorrowPreview), isOn: bind(\.alerts.tomorrowPreview))
                 choiceRow(L10n.text("Nudge before the window opens"), bind(\.alerts.preWindowMinutes), Array(stride(from: 0, through: 120, by: 15))) {
                     $0 == 0 ? L10n.text("When it opens") : L10n.format("\($0) min")
                 }
-                Toggle(L10n.text("Cancel notice if the forecast turns"), isOn: bind(\.alerts.cancelOnDowngrade))
+                Toggle(L10n.text(SettingsCopy.cancelOnDowngrade), isOn: bind(\.alerts.cancelOnDowngrade))
                 // Keyed on the build's source, not on one fetch: a single failed Open-Meteo call must not grey it out, and a
                 // switch that is on can always be turned off.
                 let signed = store.forecast?.cloudSource == "Apple Weather"
@@ -129,8 +129,8 @@ struct SettingsView: View {
                 if !signed {
                     Text(L10n.text("Needs Apple Weather, which is not answering at the moment")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
-                choiceRow(L10n.text("Quiet hours start"), bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
-                choiceRow(L10n.text("Quiet hours end"), bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
+                choiceRow(L10n.text(SettingsCopy.quietHoursStart), bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
+                choiceRow(L10n.text(SettingsCopy.quietHoursEnd), bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 Text(L10n.text("No banners between those hours; the popover still shows what was missed.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section(header: Text(L10n.text("Dark sites").uppercased()).capsLabel()) {
@@ -142,20 +142,9 @@ struct SettingsView: View {
                 }
                 Text(L10n.text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest three, while the Dark sites page is open.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(header: Text(L10n.text("Network use today").uppercased()).capsLabel()) {
-                let tally = RequestTally.today()
-                if tally.requests.isEmpty {
-                    Text(L10n.text("No requests yet today.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-                } else {
-                    ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
-                        LabeledContent(k) { Text("\(n)").monospacedDigit() }.font(Font.scaled(.caption))
-                    }
-                }
-                Text(L10n.text("Counted on this Mac only, from midnight UTC. The free forecast service refuses a connection after a fixed number of requests a day; this shows where they went.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-            }
             Section(header: Text(L10n.text("Bright nights").uppercased()).capsLabel()) {
                 Toggle(L10n.text("Moon and planets when there is no proper darkness"), isOn: bind(\.brightNights.enabled))
-                choiceRow(L10n.text("Minimum clear run"), bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }
+                choiceRow(L10n.text("Minimum clear run"), bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: L10n.text("%.1f h"), $0) }
                 Text(L10n.text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.")).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if Distribution.checksForUpdates {   // the App Store build has no update check

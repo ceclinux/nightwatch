@@ -1,0 +1,36 @@
+{
+ "app": {
+  "name": "Nightwatch: Clear Sky Alerts",
+  "kids_category": false,
+  "requires_login": false,
+  "declared_modes": []
+ },
+ "version": {
+  "is_first": false
+ },
+ "locales": {
+  "en-GB": {
+   "name": "Nightwatch: Clear Sky Alerts",
+   "subtitle": "Astrophotography night planner",
+   "promotional_text": "x",
+   "description": "x",
+   "keywords": "astronomy",
+   "whats_new": "x",
+   "support_url": "https://example.invalid",
+   "marketing_url": "https://example.invalid",
+   "privacy_url": "https://example.invalid",
+   "copyright": "2026 Richard Sutcliffe"
+  }
+ },
+ "asset_text": {
+  "screenshot_captions": [],
+  "header_text": "",
+  "search_text": "",
+  "preview_overlay_text": [],
+  "event_text": [
+   "Moonless week",
+   "Dark nights ahead: plan your imaging session",
+   "The new Moon brings the darkest skies of the month. Nightwatch finds your clear window and the targets that suit your telescope."
+  ]
+ }
+}

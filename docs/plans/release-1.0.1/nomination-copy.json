@@ -1,0 +1,8 @@
+{
+ "marketing": {
+  "pieces": {
+   "nomination-description": "Nightwatch tells amateur astronomers whether tonight is worth setting up the telescope. It compares two forecasts, finds the clear window, and ranks targets for the user's own telescope field of view and their own horizon, with a heads-up before sunset and a warning if the forecast turns. This update brings it to iPhone and iPad: one free purchase now covers Mac, iPhone and iPad, with Home Screen widgets, a Lock Screen card when a clear window opens, a red night mode that keeps eyes dark-adapted, and a ready-made set of colour target pictures so the app keeps working when the sky survey's website cannot be reached. No accounts, no advertising and no tracking; the code is open source.",
+   "helpful-details": "Red night mode for dark adaptation. Larger Text and Increase Contrast, Reduce Transparency and Reduce Motion are honoured on Mac and iPhone/iPad; VoiceOver labels on the controls; text colours checked at 4.5:1 or better."
+  }
+ }
+}

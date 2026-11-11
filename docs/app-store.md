@@ -265,6 +265,12 @@ Add after "Targets chosen for your field of view":
 And, once the build has the rain line (#180), after "Two forecasts compared":
 
 > • A warning when rain is forecast after the clear window, for a telescope left running outside
+> • A warning when wildfire smoke or haze will dim a clear night (#183)
+
+The same build adds one outside service, so the Notes for App Review change with it. In "Outside services (read
+only)", after "Open-Meteo and 7Timer (forecasts; sent the site's coordinates)", add: "Open-Meteo's air-quality service
+(smoke and haze forecast; sent each site's coordinates)". The App privacy answers stay as they
+are: it is the same data type, Precise Location, not linked to the person, used for app functionality.
 
 One screenshot of the horizon dial would back the first line: `docs/images/screenshot-horizon.png` is the README's.
 
@@ -280,6 +286,13 @@ Nightwatch itself keeps nothing, but the forecast services receive coordinates, 
 - **Used for tracking:** No.
 
 Nothing else is collected.
+
+From 1.7.0 the app bundle carries the same answer as a privacy manifest, `Sources/Nightwatch/PrivacyInfo.xcprivacy`
+(in the built app at `Contents/Resources/`): no tracking, precise location for app functionality, not linked. Apple asks
+for collected data in the manifest "on all platforms". It asks for reasons for certain system APIs "on iOS, iPadOS,
+tvOS, visionOS, and watchOS", which leaves out macOS; the two Nightwatch uses are declared anyway (its own stored
+preferences, CA92.1; timestamps of files in its own container, C617.1). 1.6.4 was accepted for review without one. A test
+keeps the manifest in step with these answers and with the code: change both together.
 
 ## Notes for App Review
 
@@ -307,8 +320,8 @@ location prompt appearing, and five new screenshots. The reply in App Review's m
 read "Waiting for Review" at about 15:19 BST.*
 
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
-whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,952, as saved for the
-1.6.4 resubmission on 13 October 2026, so any addition means cutting something.
+whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,994, as prepared for
+1.7.0 on 20 October 2026 (it was 3,952 for the 1.6.4 resubmission on 13 October), so any addition means cutting something.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
@@ -332,7 +345,7 @@ just before the clear spell (the attached screenshot shows them).
 
 Privacy policy: in the Welcome window (step 2) and at the foot of Settings.
 
-Outside services (read only): Apple WeatherKit, Open-Meteo and 7Timer (forecasts; sent the site's coordinates),
+Outside services (read only): Apple WeatherKit, Open-Meteo (forecasts, air quality), 7Timer and MET Norway (forecasts), each sent the site's coordinates,
 Apple Maps (place search, sent what is typed; maps and place names, sent coordinates), AuroraWatch UK and the NOAA
 Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
 Center and CelesTrak (comets, space station). Nothing identifies the user.

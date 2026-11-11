@@ -12,7 +12,7 @@ public struct GuideEntry: Identifiable, Equatable, Sendable {
 public enum NumbersGuide {
     public static var entries: [GuideEntry] { [
         GuideEntry(id: "score", title: L10n.text("Sky score"),
-                   body: L10n.text("How good tonight is for imaging from where you are, out of 100: the higher, the better. Cloud during darkness counts most, then the Moon, then seeing and transparency, then wind and damp air. “Held back by” names what cost the most tonight.")),
+                   body: L10n.text("How good tonight is for imaging from where you are, out of 100: the higher, the better. Cloud during darkness counts most, then the Moon, then seeing and transparency, then wind and damp air. Smoke or haze thick enough to dim faint targets takes more off. “Held back by” names what cost the most tonight.")),
         GuideEntry(id: "rule", title: L10n.text("Go rule and clear window"),
                    body: L10n.text("The clear window is an unbroken run of clear sky in astronomical darkness, long enough to take and stack many images of a target. You can change the rule in Settings › Go rule. By default the run lasts at least 3 hours, with cloud at or under 25%, and targets count when they are at least 30° up. Thin high cloud counts for half, since stacking works through it; low and middle cloud count in full. Clear sky by hour shows each hour’s cloud, judged the same way: a full bar is clear.")),
         GuideEntry(id: "dark", title: L10n.text("Dark"),
@@ -25,6 +25,10 @@ public enum NumbersGuide {
                    body: L10n.text("How clear the air is to faint light: haze, dust and thin high cloud dim nebulae and galaxies even when the sky looks clear. From 7Timer.")),
         GuideEntry(id: "wind", title: L10n.text("Wind and dew risk"),
                    body: L10n.text("Wind above 10 km/h starts to cost points, the most it can cost by 40 km/h, since a small telescope shakes in it. Dew risk is how close the air comes to its dew point: within 2 °C is High (fit the dew heater), within 4 °C Medium.")),
+        GuideEntry(id: "haze", title: L10n.text("Haze or smoke"),
+                   body: L10n.format("Shown on a night with a clear window when the air through it is forecast to carry enough smoke, dust or pollution to dim faint targets: an aerosol optical depth of \(Planner.hazeDepth) or more, from the Copernicus Atmosphere Monitoring Service through Open-Meteo. At that depth about a third of a nebula’s or galaxy’s light is lost overhead, and over half at 30° up. On such a night the Transparency tile reads Hazy, the sky score falls by 10 to 30 in step with the light lost, and the best three lead with the Moon, planets and bright clusters, which still work.")),
+        GuideEntry(id: "rain", title: L10n.text("Rain possible from"),
+                   body: L10n.format("Shown on a night with a clear window when rain becomes likely before sunrise: a \(Planner.rainRiskPct)% chance or more in any hour, from the same forecast as the cloud. It is for a telescope left running after the window closes, so you know when to bring it in. A night that stays dry shows nothing.")),
         GuideEntry(id: "bortle", title: L10n.text("Bortle"),
                    body: L10n.text("How dark your sky is, from 1 (pristine) to 9 (inner city). Your site’s class is set in Settings; dark sites show theirs, so you can see what a drive would gain.")),
         GuideEntry(id: "eq", title: L10n.text("EQ tilt"),

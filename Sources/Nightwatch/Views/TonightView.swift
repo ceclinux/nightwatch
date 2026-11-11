@@ -113,6 +113,12 @@ struct TonightView: View {
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
+                    if let haze = Copy.haze(plan) {
+                        Text(haze.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let rain = Copy.rain(plan, site: site) {
+                        Text(rain.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     TwoWeight.headline(L10n.text("No astronomical darkness"), size: TextScale.pt(16))
                     Text(L10n.text("Too far north or south for this date.")).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
@@ -196,7 +202,7 @@ struct TonightView: View {
         let facts = [dark == window ? nil : Fact(label: L10n.text("Dark"), value: dark),
                      Fact(label: L10n.text("Seeing"), value: Copy.seeingText(plan.darkHours)),
                      Fact(label: L10n.text("Wind"), value: windText),
-                     Fact(label: L10n.text("Transparency"), value: Copy.transparencyText(plan.darkHours)),
+                     Fact(label: L10n.text("Transparency"), value: Copy.transparencyText(plan)),
                      Fact(label: frost ? L10n.text("Frost likely") : L10n.text("Dew risk"), value: dew?.displayName, hint: dew == .high ? L10n.text("Dew heater advised") : nil)].compactMap { $0 }
         // Three to a row; the last row is what is left of the facts with the Moon filling the rest of it, so no row has an orphan or a gap.
         let full = facts.count / 3 * 3
@@ -262,8 +268,9 @@ struct TonightView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L10n.text(t.catalogueID)).font(.system(size: TextScale.pt(12), weight: .heavy)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
                             Text((t.commonName ?? L10n.text(t.typeName)).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(0.6).foregroundStyle(Tokens.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
-                            Text(L10n.format("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up")).font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
-                                .lineLimit(1).minimumScaleFactor(0.75)
+                            // No "Best": the heading above says it, and the longer line was cut off in the narrow popover ("84° over…").
+                            Text("\(Copy.hhmm(t.peakTime, site: site)) · \(Copy.peakHeight(t, site: site))").font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
+                                .lineLimit(1).minimumScaleFactor(0.65)
                         }
                         .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.black.opacity(0.55))

@@ -1,0 +1,43 @@
+{
+ "app": {
+  "name": "Nightwatch: Clear Sky Alerts",
+  "company": "",
+  "kids_category": false,
+  "requires_login": false,
+  "declared_modes": [],
+  "trademark_denylist": [
+   "Seestar",
+   "DWARF",
+   "Stellarium",
+   "SkySafari",
+   "Star Walk",
+   "Clear Outside",
+   "Pratchett",
+   "Discworld"
+  ]
+ },
+ "version": {
+  "is_first": false
+ },
+ "locales": {
+  "en-GB": {
+   "name": "Nightwatch: Clear Sky Alerts",
+   "subtitle": "Astrophotography night planner",
+   "promotional_text": "Know whether tonight is worth setting up: the sky score, the clear window and the targets that suit your telescope, on your Mac, iPhone and iPad.",
+   "description": "Nightwatch sits in your menu bar and watches the weather for you. When tonight looks clear for long enough, it sends a heads-up before sunset, then a nudge just before the clear spell begins. If the forecast turns, it tells you.\n\nOpen it to see a sky score, the clear window, cloud by hour, darkness, the Moon, seeing, wind, dew risk and transparency, and the targets that suit your telescope's field of view tonight.\n\n• Two forecasts compared: Apple Weather, with Open-Meteo as a second opinion, and 7Timer for seeing\n• A warning when rain is forecast after the clear window, for a telescope left running outside\n• A warning when wildfire smoke or haze will dim a clear night\n• Targets chosen for your field of view, with presets for popular smart telescopes and cameras\n• A colour sky-survey picture of each of 1,948 targets, downloaded once (about 18 MB)\n• Your own horizon: mark the houses, trees or hills that block your sky, or measure them from a phone photo, and Nightwatch picks targets that clear them\n• \"How to shoot this\" on every target: filter, exposure and frames for your telescope\n• Tonight's plan: your favourites in the order they peak\n• The next run of moonless nights, worked out for your site\n• Darker skies nearby, scored for tonight against home\n• Aurora alerts for your site, wherever you observe from\n• Tonight's events: the Moon passing in front of a star, comets and the space station\n• Spotlight and Shortcuts actions, so a shortcut can act on tonight's sky\n• A Text size setting, and small, medium and large desktop widgets\n\nNo accounts, no advertising and no tracking. Nightwatch is open source.",
+   "keywords": "astronomy,telescope,forecast,aurora,nebula,galaxy,messier,bortle,smart,light pollution,menu bar",
+   "support_url": "https://github.com/rsutcliffe/nightwatch/discussions",
+   "marketing_url": "https://delphi-dolphin.com/nightwatch",
+   "privacy_url": "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md",
+   "copyright": "2026 Richard Sutcliffe",
+   "whats_new": "A time zone is named correctly beside a window: GMT, not UTC+0, when a GMT site is read on another clock. Refreshed screenshots and App Store text."
+  }
+ },
+ "asset_text": {
+  "screenshot_captions": [],
+  "header_text": "",
+  "search_text": "",
+  "preview_overlay_text": [],
+  "event_text": []
+ }
+}

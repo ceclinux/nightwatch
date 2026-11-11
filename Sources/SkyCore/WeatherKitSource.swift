@@ -18,7 +18,7 @@ public enum WeatherKitSource {
                 let a = h.cloudCoverByAltitude
                 low = pct(a.low); mid = pct(a.medium); high = pct(a.high)
             }
-            return HourlyConditions(time: h.date, cloudTotal: pct(h.cloudCover), cloudLow: low, cloudMid: mid, cloudHigh: high,
+            var c = HourlyConditions(time: h.date, cloudTotal: pct(h.cloudCover), cloudLow: low, cloudMid: mid, cloudHigh: high,
                                     tempC: h.temperature.converted(to: .celsius).value,
                                     dewPointC: h.dewPoint.converted(to: .celsius).value,
                                     humidityPct: pct(h.humidity),
@@ -26,6 +26,8 @@ public enum WeatherKitSource {
                                     gustKmh: h.wind.gust?.converted(to: .kilometersPerHour).value,
                                     visibilityM: h.visibility.converted(to: .meters).value,
                                     seeing: nil, transparency: nil)
+            c.rainChancePct = pct(h.precipitationChance)
+            return c
         }
         let attribution = try await WeatherService.shared.attribution
         return CloudResult(hours: hours, source: "Apple Weather",

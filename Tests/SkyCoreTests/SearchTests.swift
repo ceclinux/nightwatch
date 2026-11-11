@@ -89,7 +89,7 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     t.viewable = ClearWindow(start: utc(2026, 11, 20, 20, 0), end: utc(2026, 11, 21, 3, 0))
     // The fixture peaks at 50° at 00:00 UTC.
     #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site)
-            .hasSuffix("no clear window, up in darkness from 20:00 to 03:00, highest at 00:00, 50 degrees up"))
+            .hasSuffix("no clear window, up in darkness from 20:00 to 03:00, highest at 00:00, 50 degrees up, \(Copy.peakWay(t, site: site))"))
     t.viewable = nil
     #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site).hasSuffix("no clear window, too low in darkness tonight"))
 }
@@ -158,7 +158,7 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
 // What the numbers mean (#59): every term the popover and target cards show has a plain entry.
 @Test func everyTermOnScreenIsExplained() {
     let titles = NumbersGuide.entries.map(\.title).joined(separator: " ").lowercased()
-    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "labels"] {
+    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "haze or smoke", "rain possible", "bortle", "eq tilt", "labels"] {
         #expect(titles.contains(term), "no entry for \(term)")
     }
     let text = NumbersGuide.entries.map(\.body).joined(separator: " ")
@@ -173,6 +173,8 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     // The figures quoted are the app's own.
     let rule = GoRule()
     #expect(text.contains("at least \(Int(rule.minHours)) hours") && text.contains("\(rule.maxCloudPct)%") && text.contains("\(Int(rule.minAltitudeDeg))° up"))
+    #expect(text.contains("a \(Planner.rainRiskPct)% chance or more"))
+    #expect(text.contains("an aerosol optical depth of \(Planner.hazeDepth) or more"))
 }
 
 @Test func eyesAndBinocularsEventsLeaveOutFaintPlanets() {
@@ -181,4 +183,47 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     }
     #expect(EyeViews.includes(e(.conjunction, "Moon near Jupiter")) && !EyeViews.includes(e(.conjunction, "Moon near Neptune")))
     #expect(EyeViews.includes(e(.meteorShower, "Orionids")) && !EyeViews.includes(e(.solarEclipse, "Partial solar eclipse")))
+}
+
+// Siri's "Find the Crescent Nebula in Nightwatch" (#72): on 27 October 2026, with no clear window and the Moon at 95%, NGC 6888 was not in tonight's
+// ranked list, so the search found nothing and the window stayed on Tonight's plan. The catalogue answers it whether or not it is up tonight.
+@Test func theCatalogueAnswersASearchTonightsListCannot() throws {
+    let catalog = try Catalog.bundled()
+    #expect(catalog.objects(matching: "Crescent Nebula").map(\.id) == ["NGC6888"])
+    #expect(catalog.objects(matching: "NGC 6888").map(\.id) == ["NGC6888"])
+    #expect(catalog.objects(matching: "C27").map(\.id) == ["NGC6888"])
+    #expect(catalog.objects(matching: "M31").map(\.id) == ["NGC0224"])
+    #expect(catalog.objects(matching: "   ").isEmpty && catalog.objects(matching: "zzzz nothing").isEmpty)
+}
+
+@Test func theHintSaysATargetIsInTheCatalogueButNotUpTonight() throws {
+    let catalog = try Catalog.bundled()
+    let crescent = catalog.objects(matching: "Crescent Nebula")
+    let hint = try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: crescent))
+    #expect(hint.hasPrefix("No match for “Crescent Nebula” in Nebulae tonight."))
+    #expect(hint.contains("not up during tonight's darkness: NGC 6888"))
+    // With nothing to add, or a planned match, the hint is as it was.
+    #expect(try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false)) == "No match for “Crescent Nebula” in Nebulae tonight.")
+}
+
+@Test func spokenTonightQuestionsOpenThePlan() {
+    #expect(SpokenSearch.asksForTonight("tonight") && SpokenSearch.asksForTonight("What's worth imaging tonight") && SpokenSearch.asksForTonight("tonight's plan"))
+    #expect(SpokenSearch.asksForTonight("plan"))
+    #expect(!SpokenSearch.asksForTonight("Crescent Nebula") && !SpokenSearch.asksForTonight("M31") && !SpokenSearch.asksForTonight("Seven Sisters"))
+}
+
+@Test func aSpokenSearchOpensTheGroupOfItsBestMatch() throws {
+    let catalog = try Catalog.bundled()
+    func planned(_ id: String) throws -> RankedTarget {
+        let o = try #require(catalog.objects.first { $0.id == id })
+        var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours, decDeg: o.decDeg,
+                             sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 60, peakTime: Date(), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode
+        return r
+    }
+    // Up tonight: its group from the plan. Not up tonight: its group from the catalogue. Neither: nil.
+    #expect(SpokenSearch.group(for: "Crescent Nebula", planned: [try planned("NGC6888")], catalogue: catalog) == .nebulae)
+    #expect(SpokenSearch.group(for: "Crescent Nebula", planned: [], catalogue: catalog) == .nebulae)
+    #expect(SpokenSearch.group(for: "M31", planned: [], catalogue: catalog) == .galaxies)
+    #expect(SpokenSearch.group(for: "zzzz nothing", planned: [], catalogue: catalog) == nil)
 }

@@ -36,6 +36,9 @@ struct PlanChart: View {
     let minAltitude: Double
     let site: Site
     var nightWords = L10n.text("tonight")
+    /// The clear window when the plan ends before it, at a finish time: the foot then says both, "Clear 20:18–05:29 ·
+    /// finish by 00:30", since the shading stops at the finish.
+    var clear: ClearWindow? = nil
     /// Each target's line style (ChartLayout.styles), shared with the rows' keys.
     let styles: [String: Int]
 
@@ -69,7 +72,8 @@ struct PlanChart: View {
                 .frame(height: 170)
             HStack {
                 Text(L10n.format("Sunset \(Copy.hhmm(night.sunset, site: site))")); Spacer()
-                Text(L10n.format("Clear \(Copy.span(window.start, window.end, site: site))")); Spacer()
+                Text(clear.map { L10n.format("Clear \(Copy.span($0.start, $0.end, site: site)) · finish by \(Copy.hhmm(window.end, site: site))") }
+                     ?? L10n.format("Clear \(Copy.span(window.start, window.end, site: site))")); Spacer()
                 Text(L10n.format("Sunrise \(Copy.hhmm(night.sunrise, site: site))"))
             }
             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
@@ -78,7 +82,7 @@ struct PlanChart: View {
         .cardSurface(radius: 14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L10n.format("Altitude \(nightWords)"))
-        .accessibilityValue(items.map { L10n.format("\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees") }
+        .accessibilityValue(items.map { L10n.format("\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees, \(Copy.peakWay($0.target, site: site))") }
             .joined(separator: "; "))
     }
 

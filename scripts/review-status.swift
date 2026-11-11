@@ -107,9 +107,12 @@ func line(_ label: String, _ state: String, _ table: [String: (String, Bool)]) {
 
 print("Nightwatch: Clear Sky Alerts (\(appID)), \(ISO8601DateFormatter().string(from: Date()))")
 print("Versions:")
-for v in get("/apps/\(appID)/appStoreVersions?fields[appStoreVersions]=versionString,platform,appVersionState,createdDate&limit=5") {
-    let a = v["attributes"] as? [String: Any] ?? [:]
-    line("\(a["platform"] as? String ?? "?") \(a["versionString"] as? String ?? "?")", a["appVersionState"] as? String ?? "?", versionStates)
+// One request per platform: a single list of the newest five let the Mac versions push the iOS ones off it (5 November 2026).
+for platform in ["IOS", "MAC_OS"] {
+    for v in get("/apps/\(appID)/appStoreVersions?filter[platform]=\(platform)&fields[appStoreVersions]=versionString,platform,appVersionState,createdDate&limit=3") {
+        let a = v["attributes"] as? [String: Any] ?? [:]
+        line("\(a["platform"] as? String ?? "?") \(a["versionString"] as? String ?? "?")", a["appVersionState"] as? String ?? "?", versionStates)
+    }
 }
 print(needsUs ? "\nSomething is waiting on us (marked !)." : "\nNothing is waiting on us.")
 exit(needsUs ? 1 : 0)

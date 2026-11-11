@@ -1,0 +1,78 @@
+{
+ "_note": "Claims in the 1.0.1 / 1.7.2 listing text. File evidence is re-read on every run.",
+ "claims": [
+  {
+   "id": "C1",
+   "phrases": [
+    "no accounts, no advertising and no tracking"
+   ],
+   "evidence": {
+    "file": "PRIVACY.md",
+    "contains": "(?i)no advertising|no ads|not track"
+   }
+  },
+  {
+   "id": "C2",
+   "phrases": [
+    "about 18 MB",
+    "downloads once"
+   ],
+   "evidence": {
+    "url": "https://github.com/rsutcliffe/nightwatch/releases/tag/survey-set-1",
+    "contains": "survey-set"
+   }
+  },
+  {
+   "id": "C3",
+   "phrases": [
+    "second source, in greyscale",
+    "falls back to a second source"
+   ],
+   "evidence": {
+    "file": "Sources/SkyCore/SurveyFetch.swift",
+    "contains": "SkyViewCutout"
+   }
+  },
+  {
+   "id": "C4",
+   "phrases": [
+    "two forecasts compared",
+    "apple weather, with open-meteo"
+   ],
+   "evidence": {
+    "file": "PRIVACY.md",
+    "contains": "(?i)open-meteo"
+   }
+  },
+  {
+   "id": "C5",
+   "phrases": [
+    "red night mode"
+   ],
+   "evidence": {
+    "file": "Phone/Sources/PhoneUI/RootView.swift",
+    "contains": "(?i)red"
+   }
+  },
+  {
+   "id": "C6",
+   "phrases": [
+    "lock screen card"
+   ],
+   "evidence": {
+    "file": "Phone/App/LiveActivityScheduler.swift",
+    "contains": "ActivityKit"
+   }
+  },
+  {
+   "id": "C7",
+   "phrases": [
+    "nightwatch is open source"
+   ],
+   "evidence": {
+    "file": "LICENSE",
+    "contains": "MIT License"
+   }
+  }
+ ]
+}

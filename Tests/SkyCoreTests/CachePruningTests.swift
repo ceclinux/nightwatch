@@ -22,8 +22,8 @@ import Foundation
 
 @Test func cardThumbnailNamesAreUnchanged() {
     #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2) == "NGC7000-2.10x1.20.jpg")   // the pre-v0.6.4 name
-    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600) == "NGC7000-2.10x1.20-w1600.jpg")
-    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600, context: 1.6) == "NGC7000-2.10x1.20-w1600-c1.6.jpg")
+    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600) == "NGC7000-2.10x1.20-w1600-v2.jpg")
+    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600, context: 1.6) == "NGC7000-2.10x1.20-w1600-v2-c1.6.jpg")
 }
 
 @Test func imagesNotShownFor30DaysArePrunedCardsIncluded() {

@@ -1,0 +1,98 @@
+{
+ "_note": "Release 1.0.3 / 1.7.4. C3 (the greyscale second source) is gone: 1.0.2 and 1.7.3 removed that fallback. C8 to C10 back the three new bullets.",
+ "claims": [
+  {
+   "id": "C1",
+   "phrases": [
+    "no accounts, no advertising and no tracking"
+   ],
+   "evidence": {
+    "file": "PRIVACY.md",
+    "contains": "(?i)no advertising|no ads|not track"
+   }
+  },
+  {
+   "id": "C2",
+   "phrases": [
+    "about 18 MB",
+    "downloads once"
+   ],
+   "evidence": {
+    "url": "https://github.com/rsutcliffe/nightwatch/releases/tag/survey-set-1",
+    "contains": "survey-set"
+   }
+  },
+  {
+   "id": "C4",
+   "phrases": [
+    "two forecasts compared",
+    "apple weather, with open-meteo"
+   ],
+   "evidence": {
+    "file": "PRIVACY.md",
+    "contains": "(?i)open-meteo"
+   }
+  },
+  {
+   "id": "C5",
+   "phrases": [
+    "red night mode"
+   ],
+   "evidence": {
+    "file": "Phone/Sources/PhoneUI/RootView.swift",
+    "contains": "(?i)red"
+   }
+  },
+  {
+   "id": "C6",
+   "phrases": [
+    "lock screen card"
+   ],
+   "evidence": {
+    "file": "Phone/App/LiveActivityScheduler.swift",
+    "contains": "ActivityKit"
+   }
+  },
+  {
+   "id": "C7",
+   "phrases": [
+    "nightwatch is open source"
+   ],
+   "evidence": {
+    "file": "LICENSE",
+    "contains": "MIT License"
+   }
+  },
+  {
+   "id": "C8",
+   "phrases": [
+    "1,948 targets",
+    "downloaded once"
+   ],
+   "evidence": {
+    "file": "docs/releasing.md",
+    "contains": "1,948 targets"
+   }
+  },
+  {
+   "id": "C9",
+   "phrases": [
+    "moonless nights"
+   ],
+   "evidence": {
+    "file": "Sources/SkyCore/MoonCalendar.swift",
+    "contains": "MoonlessRun"
+   }
+  },
+  {
+   "id": "C10",
+   "phrases": [
+    "presets for popular smart telescopes"
+   ],
+   "evidence": {
+    "file": "Sources/SkyCore/Config.swift",
+    "contains": "TelescopePresets"
+   }
+  }
+ ]
+}

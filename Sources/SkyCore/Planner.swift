@@ -27,10 +27,13 @@ public struct ScoreInputs {
     public var moonIllumination: Double
     public var moonAboveFraction: Double
     public var maxCloudPct: Int
-    public init(darkHours: [HourlyConditions], windows: [ClearWindow], darkness: (Date, Date)?, moonIllumination: Double, moonAboveFraction: Double, maxCloudPct: Int = 25) {
+    /// The average aerosol depth through the clear window (#183); nil without one, and on a bright night.
+    public var hazeDepth: Double?
+    public init(darkHours: [HourlyConditions], windows: [ClearWindow], darkness: (Date, Date)?, moonIllumination: Double, moonAboveFraction: Double, maxCloudPct: Int = 25,
+                hazeDepth: Double? = nil) {
         self.darkHours = darkHours; self.windows = windows; self.darkness = darkness
         self.moonIllumination = moonIllumination; self.moonAboveFraction = moonAboveFraction
-        self.maxCloudPct = maxCloudPct
+        self.maxCloudPct = maxCloudPct; self.hazeDepth = hazeDepth
     }
 }
 
@@ -55,6 +58,7 @@ struct ScoreTerms {
     var seeing: Double?, transparency: Double?        // points earned of 7.5 each; nil without 7Timer data
     var windPenalty: Double, avgWind: Double?
     var dewPenalty: Double, dew: DewRisk?
+    var hazePenalty: Double = 0
 }
 
 public enum Planner {
@@ -114,15 +118,28 @@ public enum Planner {
                           moon: 15 * (1 - s.moonIllumination * s.moonAboveFraction),
                           seeing: seeing, transparency: transparency,
                           windPenalty: min(1, max(0, ((avgWind ?? 0) - 10) / 30)) * 5, avgWind: avgWind,   // none under 10 km/h, full at 40
-                          dewPenalty: dew == .high ? 5 : (dew == .medium ? 2.5 : 0), dew: dew)
+                          dewPenalty: dew == .high ? 5 : (dew == .medium ? 2.5 : 0), dew: dew,
+                          hazePenalty: hazePenalty(depth: s.hazeDepth))
     }
 
-    /// 0–100. Cloud 60 (75 without seeing data), Moon 15, seeing + transparency 15, wind and dew 10.
+    /// What a hazy window costs the score (#183, owner, 8 October 2026): nothing below `hazeDepth`, then `hazeWeight` times
+    /// the share of a target's light lost overhead, 1 − e^(−depth). About 10 at 0.4, 19 at 1, 23 at 1.5, 26 at 2.
+    /// ponytail: a step at the level, so the score moves exactly when the haze line appears; smooth it if nights near 0.4 flicker.
+    public static let hazeWeight = 30.0
+    public static func hazePenalty(depth: Double?) -> Double {
+        guard let d = depth, d >= hazeDepth else { return 0 }
+        return hazeWeight * (1 - exp(-d))
+    }
+
+    /// 0–100. Cloud 60 (75 without seeing data), Moon 15, seeing + transparency 15, wind and dew 10; haze takes up to 30 off.
     public static func score(_ s: ScoreInputs) -> Int {
         guard let t = terms(s) else { return 0 }
-        let total = t.cloud + t.moon + ((t.seeing ?? 0) + (t.transparency ?? 0)) + (10 - t.windPenalty - t.dewPenalty)   // summed in the 0.3.1 order
+        let total = t.cloud + t.moon + ((t.seeing ?? 0) + (t.transparency ?? 0)) + (10 - t.windPenalty - t.dewPenalty) - t.hazePenalty   // summed in the 0.3.1 order
         return max(0, min(100, Int(total.rounded())))
     }
+
+    /// "an" before the percentages said with a vowel sound (8, 11, 18 and 80 to 89), else "a": "a 40% moon", "an 88% moon".
+    static func article(forPercent n: Int) -> String { n == 8 || n == 11 || n == 18 || (80...89).contains(n) ? "an" : "a" }
 
     /// Each term that lost more than a third of its weight, most points lost first. On a bright plan the Moon term is
     /// never lost (the plan passes moonIllumination 0), so the Moon is never blamed.
@@ -133,14 +150,17 @@ public enum Planner {
             if lost > weight / 3 { out.append(LimitingFactor(kind: k, text: text, pointsLost: lost)) }
         }
         add(.cloud, L10n.text("patchy cloud"), lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
-        add(.moon, L10n.format("a \(Int((s.moonIllumination * 100).rounded()))% moon"), lost: 15 - t.moon, of: 15)
+        let moonPct = Int((s.moonIllumination * 100).rounded())
+        let moonPhrase = article(forPercent: moonPct) == "an" ? L10n.format("an \(moonPct)% moon") : L10n.format("a \(moonPct)% moon")
+        add(.moon, moonPhrase, lost: 15 - t.moon, of: 15)
         // Worded from what the tiles show, so the line never contradicts them: transparency only when its tile is not
         // "Good", and seeing only when its tile reads worse than the 1″ the guide calls excellent.
         if let v = t.seeing, let band = Copy.seeingBand(s.darkHours), band > Copy.excellentSeeingBand, let figure = Copy.seeingText(s.darkHours) {
             add(.seeing, L10n.format("seeing at \(figure)"), lost: 7.5 - v, of: 7.5)
         }
-        if let v = t.transparency, let level = Copy.transparencyBand(s.darkHours), level > 3,
-           let band = Copy.transparencyText(s.darkHours) {
+        // In haze the Transparency tile reads "Hazy" and the haze line under the verdict says why the score fell, so
+        // 7Timer's own word for transparency is not given as well.
+        if t.hazePenalty == 0, let v = t.transparency, let band = Copy.transparencyText(s.darkHours), band != "Good" {
             add(.transparency, L10n.format("\(band.lowercased()) transparency"), lost: 7.5 - v, of: 7.5)
         }
         if let w = t.avgWind { add(.wind, String(format: L10n.text("wind at %.0f km/h"), w), lost: t.windPenalty, of: 5) }
@@ -167,8 +187,8 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public let sizeArcmin: Double?
     public let magnitude: Double?
     public let fit: FrameFit
-    public let peakAltDeg: Double
-    public let peakTime: Date
+    public var peakAltDeg: Double
+    public var peakTime: Date
     public let moonSepDeg: Double
     public let moonWashed: Bool
     public let visibleFraction: Double
@@ -188,6 +208,12 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// The short axis in arcminutes, where the catalogue gives one: with `sizeArcmin` it sets the area over which the
     /// target's light is spread, for Eyes and binoculars (#63). Optional, so plans cached before it still decode.
     public var minorArcmin: Double? = nil
+
+    /// A Messier or Caldwell object: the showpieces most observers know, which the plan's suggestions prefer (owner,
+    /// 9 October 2026, after "highest" alone offered NGC 744, a sparse cluster that happens to pass overhead).
+    public var isShowpiece: Bool {
+        caldwell != nil || (catalogueID.first == "M" && catalogueID.count > 1 && catalogueID.dropFirst().allSatisfy(\.isNumber))
+    }
 
     /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
@@ -265,6 +291,12 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var agreement: Agreement? = nil
     /// Every favourite, usable tonight or not (v1.0.1), in the order they were added.
     public var favourites: [FavouriteTarget] = []
+    /// When rain becomes likely between the window opening and sunrise (#180); nil on a dry night or without a window.
+    public var rainFrom: Date? = nil
+    /// The average aerosol optical depth through the clear window (#183); nil without a window or the air-quality forecast.
+    public var hazeDepth: Double? = nil
+    /// Enough smoke, dust or pollution through the window to dim faint targets.
+    public var hazy: Bool { (hazeDepth ?? 0) >= Planner.hazeDepth }
 }
 
 extension NightPlan {
@@ -290,6 +322,8 @@ extension NightPlan {
         moonUpFraction = try c.decodeIfPresent(Double.self, forKey: .moonUpFraction)
         agreement = try c.decodeIfPresent(Agreement.self, forKey: .agreement)
         favourites = try c.decodeIfPresent([FavouriteTarget].self, forKey: .favourites) ?? []
+        rainFrom = try c.decodeIfPresent(Date.self, forKey: .rainFrom)
+        hazeDepth = try c.decodeIfPresent(Double.self, forKey: .hazeDepth)
     }
 }
 
@@ -482,10 +516,30 @@ extension Planner {
     /// Top three across groups, at most one per group, deep sky first. The highest usable favourite that is not Moon-washed
     /// takes a slot (v1.0.1), in place of its own group's pick, else of the last. `favourites` are the usable ones, which
     /// includes any the list's magnitude cut left out.
-    static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = []) -> [RankedTarget] {
+    /// How bright a deep-sky target looks through haze, lower being brighter. A cluster's stars show one by one, so its
+    /// total magnitude counts. A nebula's or galaxy's light is judged spread over its size, as Eyes and binoculars does:
+    /// by total magnitude the first hazy night seen (Niamey, 8 October 2026) offered the California Nebula, magnitude 6
+    /// across two and a half degrees, which haze leaves nothing of. One with no magnitude or size comes last. The Moon
+    /// outshines everything, and a planet counts by its magnitude: best placed alone offered Uranus over Saturn.
+    static func hazeBrightness(_ t: RankedTarget) -> Double {
+        if t.id == "moon" { return -13 }
+        guard let m = t.magnitude else { return .infinity }
+        if t.group == .clusters || t.group == .planets { return m }
+        guard let a = t.sizeArcmin, a > 0 else { return .infinity }
+        return EyeViews.surfaceBrightness(magnitude: m, majorArcmin: a, minorArcmin: t.minorArcmin)
+    }
+
+    /// `hazy` (#183): smoke or dust dims faint targets most, so the bright kinds come first (planets and the Moon, then
+    /// star clusters), and each pick is the brightest of its kind rather than the best placed. A deep-sky target under 5′
+    /// ("Small in frame") is passed over while a bigger one is on the list: surface brightness alone chose IC 5117, a
+    /// planetary nebula two arcseconds across, which a small telescope shows as a star.
+    static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = [], hazy: Bool = false) -> [RankedTarget] {
         var picked: [RankedTarget] = []
-        for g in [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
-            if let t = ranked.first(where: { $0.group == g && !$0.moonWashed }) { picked.append(t) }
+        for g in hazy ? [TargetGroup.planets, .clusters, .nebulae, .galaxies] : [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
+            let usable = ranked.filter { $0.group == g && !$0.moonWashed }
+            let roomy = usable.filter { g == .planets || $0.fit != .small }
+            let pick = hazy ? (roomy.isEmpty ? usable : roomy).min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
+            if let t = pick { picked.append(t) }
             if picked.count == 3 { break }
         }
         guard let fav = favourites.filter({ !$0.moonWashed }).max(by: { $0.peakAltDeg < $1.peakAltDeg }),
@@ -519,7 +573,7 @@ extension Planner {
             let floor = Int(b.minAlt.rounded())
             let reason: String?
             if window == nil { reason = L10n.text("No astronomical darkness tonight") }
-            else if case .moon = src, moon.illumination <= 0.05 { reason = "New Moon tonight" }   // too thin for the list
+            else if case .moon = src, moon.illumination <= 0.05 { reason = L10n.text("New Moon tonight") }   // too thin for the list
             else if b.fraction >= 0.5 { reason = nil }
             else if b.fraction == 0 { reason = site.horizon == nil ? L10n.format("Below \(floor)° in tonight's window") : L10n.text("Behind your horizon in tonight's window") }
             else { reason = site.horizon == nil ? L10n.format("Above \(floor)° for under half of tonight's window") : L10n.text("Clear of your horizon for under half of tonight's window") }
@@ -538,8 +592,9 @@ extension Planner {
         let moonMid = Ephemeris.moon(at: primary?.midpoint ?? night.darkStart ?? night.sunset, site: site)
         let darkness: (Date, Date)? = (night.darkStart != nil && night.darkEnd != nil) ? (night.darkStart!, night.darkEnd!) : nil
         let aboveFraction = darkness.map { moonUpFraction(from: $0.0, to: $0.1, site: site) } ?? 0
+        let haze = primary.flatMap { Planner.haze(hours: forecast.hours, window: $0) }
         let inputs = ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
-                                 moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct)
+                                 moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct, hazeDepth: haze)
         let score = Planner.score(inputs)
         // Rank against the clear window when there is one, else against the whole of darkness so the browser
         // still shows what is up on a cloudy night. "Best tonight" only exists when a clear window exists.
@@ -551,9 +606,11 @@ extension Planner {
                                  seeingAvailable: dark.contains { $0.seeing != nil },
                                  limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
         darkPlan.agreement = agreement(plan: darkPlan, second: forecast.secondOpinion, rule: rule)
+        darkPlan.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
+        darkPlan.hazeDepth = haze
         darkPlan.favourites = favouriteTargets(favourites, ranked: targets, catalog: catalog, constellations: constellations, stars: stars,
                                                window: rankingWindow, night: night, site: site, fov: fov, rule: rule)
-        if primary != nil { darkPlan.best = best(from: targets, favourites: darkPlan.favourites.filter { $0.notTonight == nil }.map(\.target)) }
+        if primary != nil { darkPlan.best = best(from: targets, favourites: darkPlan.favourites.filter { $0.notTonight == nil }.map(\.target), hazy: darkPlan.hazy) }
         // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
         if let b = bright, b.enabled, !darkPlan.qualifies {
             let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
@@ -653,7 +710,39 @@ extension Planner {
                          mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site, fov: fov) } ?? [],
                          limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: moonUpFraction(from: ns, to: ne, site: site))
         p.agreement = agreement(plan: p, second: forecast.secondOpinion, rule: brightRule)
+        p.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
+        // No haze on a bright plan (#183): its targets are the Moon and the planets, which shine through it.
         return p
+    }
+
+    /// An aerosol optical depth at or above this, averaged through the clear window, counts as haze (#183; the owner
+    /// confirmed the level, 8 October 2026). NOAA's Global Monitoring Laboratory: "A value of 0.01 corresponds to an
+    /// extremely clean atmosphere, and a value of 0.4 would correspond to a very hazy condition", with 0.1 to 0.15 the
+    /// United States average (gml.noaa.gov/grad/surfrad/aod). Light lost is 1 − e^(−depth × air mass): at 0.4 a third of
+    /// a target's light overhead and over half at 30° up. Over the year to
+    /// 30 September 2026, on each night's 21:00–03:00 average, it was reached on 1% of nights in northern England, 6% in
+    /// Tenerife (Saharan dust), 7% in Calgary (wildfire smoke) and 75% in Delhi; 0.2 would be 10 to 30% of ordinary nights.
+    /// ponytail: one fixed level; tune it once real nights have been seen.
+    public static let hazeDepth = 0.4
+
+    /// The average aerosol depth over the hours the window touches, to two places as the source gives it (so an average
+    /// of exactly the level is not lost to rounding error); nil when none of them has a figure.
+    public static func haze(hours: [HourlyConditions], window: ClearWindow) -> Double? {
+        let depths = hours.filter { window.overlapsHour(startingAt: $0.time) }.compactMap(\.aerosolDepth)
+        return depths.isEmpty ? nil : (depths.reduce(0, +) / Double(depths.count) * 100).rounded() / 100
+    }
+
+    /// A chance of rain at or above this counts as a risk to a telescope left running outside (owner, 8 October 2026).
+    /// ponytail: one fixed starting level, to tune from real nights as the aurora bands were; a setting if it misjudges.
+    public static let rainRiskPct = 30
+
+    /// The first hour, from the one the window opens in until sunrise, with rain at least that likely, never earlier than
+    /// the window's start; nil when there is none, or the forecast has no rain chance. A clear window has little rain
+    /// inside it: this is for the hours after, while a long stack is still running.
+    public static func rainFrom(hours: [HourlyConditions], window: ClearWindow, sunrise: Date) -> Date? {
+        hours.sorted { $0.time < $1.time }
+            .first { $0.time.addingTimeInterval(3600) > window.start && $0.time < sunrise && ($0.rainChancePct ?? 0) >= rainRiskPct }
+            .map { max($0.time, window.start) }
     }
 }
 

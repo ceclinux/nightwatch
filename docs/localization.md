@@ -47,6 +47,15 @@ endpoint names stay canonical; generic camera headings are translated only for d
 language in both the compact and full layouts. The English and Chinese location-permission resources match the revised
 purpose statement in `Info.plist`.
 
+## Upstream refresh (November 2026)
+
+Merged the universal app release (Mac 1.7.4, iPhone and iPad 1.0.3). The Mac interface and its widget keep their Chinese
+translation through the new suggestion rows in Tonight's plan, the finish-by chart footer, "which way to look" at a target's
+best moment, rain and haze lines, the peak wording on meteor showers, and the redesigned small and medium widgets. The
+iPhone and iPad screens and their App Store listing are still English upstream; this branch does not translate them yet.
+Siri and Shortcuts metadata follow the system language, as noted above, while the Spotlight summary Nightwatch indexes for
+Siri is translated.
+
 ## Verification
 
 ```sh

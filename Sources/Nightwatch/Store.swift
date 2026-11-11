@@ -77,6 +77,8 @@ final class Store: ObservableObject {
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
     private let fetcher: Fetcher = URLSessionFetcher()
     private let catalog: Catalog
+    /// The catalogue objects a search matches, up tonight or not (Siri's search, #72).
+    func catalogueMatches(_ query: String) -> [DeepSkyObject] { catalog.objects(matching: query) }
     let constellations: [Constellation]
     private let stars: [BrightStar]
     private let showers: [MeteorShower]
@@ -253,7 +255,7 @@ final class Store: ObservableObject {
     func session(for p: NightPlan?) -> SessionPlan? {
         guard config.showPlan, let p, let site else { return nil }
         return SessionPlanner.make(plan: p, favourites: config.favourites, choices: config.planChoices[p.night.key] ?? PlanChoices(),
-                                   stopBy: config.stopBy, site: site)
+                                   stopBy: config.stopBy, site: site, minAltitudeDeg: config.goRule.minAltitudeDeg)
     }
 
     /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53). False when settings cannot be saved (an
@@ -440,8 +442,10 @@ final class Store: ObservableObject {
                 lastError = L10n.format("Forecast fetch failed: \(error.localizedDescription)")
             }
         }
-        await refreshAuxiliary(now: now)
         await recompute(now: now)
+        // The comet and ISS downloads come after the first answer: an unreachable feed (CelesTrak never answered on 28 October 2026, so a
+        // first launch sat on "Waiting for the first forecast" for its 20 s timeout) must not hold the screen. Recomputed once if they changed.
+        if await refreshAuxiliary(now: now) { await recompute(now: now) }
         refreshing = false
         // A new site has its own aurora status (1.4): ask now, not at the next 5-minute tick. The poll keeps its own gaps.
         await pollAurora(now: now)
@@ -451,15 +455,18 @@ final class Store: ObservableObject {
 
     /// Comet elements daily, ISS elements every 2 hours (CelesTrak asks for no more). The MPC file is gzip, so it goes through Gzip.decompress.
     /// Gated on the last attempt, not the last success, so a failing server is not hammered every tick.
-    private func refreshAuxiliary(now: Date) async {
+    /// True when either feed brought new elements, so the plan can be worked out again with them.
+    private func refreshAuxiliary(now: Date) async -> Bool {
+        var changed = false
         if attemptDue("comets", every: 86_400, now: now), let data = try? await fetcher.get(Comets.url) {
             let unzipped = await Task.detached { Gzip.decompress(data) ?? data }.value   // off the main actor; already plain if the server sent Content-Encoding: gzip
-            if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json") }
+            if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json"); changed = true }
         }
         if attemptDue("iss", every: 2 * 3600, now: now), let data = try? await fetcher.get(Satellites.issURL),
            let t = try? Satellites.parseTLE(String(decoding: data, as: UTF8.self)) {
-            tle = t; Store.write(t, "iss-tle.json")
+            tle = t; Store.write(t, "iss-tle.json"); changed = true
         }
+        return changed
     }
 
     /// True (and the attempt recorded) when `interval` has passed since the last attempt for `key`.

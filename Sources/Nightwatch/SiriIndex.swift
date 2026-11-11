@@ -37,7 +37,7 @@ struct OpenTonightIntent: OpenIntent {
 extension TonightEntity: IndexedEntity {
     var attributeSet: CSSearchableItemAttributeSet {
         let a = defaultAttributeSet
-        a.title = "Tonight's sky for stargazing and astrophotography"
+        a.title = L10n.text("Tonight's sky for stargazing and astrophotography")
         a.contentDescription = summary
         a.textContent = summary
         a.keywords = ["tonight", "clear sky", "clear night", "stargazing", "astronomy", "astrophotography", "telescope",
@@ -76,7 +76,7 @@ extension TargetEntity: IndexedEntity {
         var seen = Set<String>()
         return (p.targets + p.brightTargets + p.favourites.map(\.target)).filter { seen.insert($0.id).inserted }.map { t in
             let near = t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: moonUp)
-            let summary = "Tonight at \(site.name): " + Copy.cardLabel(t, lit: p.primary != nil, nearMoon: near, site: site)
+            let summary = L10n.format("Tonight at \(site.name): ") + Copy.cardLabel(t, lit: p.primary != nil, nearMoon: near, site: site)
             return TargetEntity(id: t.id, name: t.name, summary: summary,
                                 keywords: [t.catalogueID, t.commonName, t.typeName, t.group.displayName].compactMap { $0 }.filter { !$0.isEmpty })
         }

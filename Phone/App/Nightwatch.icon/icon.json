@@ -1,0 +1,18 @@
+{
+  "fill": {
+    "solid": "srgb:0.07059,0.06275,0.15686,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "Nightwatch.png",
+          "name": "Nightwatch"
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

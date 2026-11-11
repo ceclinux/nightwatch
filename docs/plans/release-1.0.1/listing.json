@@ -1,0 +1,43 @@
+{
+ "app": {
+  "name": "Nightwatch: Clear Sky Alerts",
+  "company": "",
+  "kids_category": false,
+  "requires_login": false,
+  "declared_modes": [],
+  "trademark_denylist": [
+   "Seestar",
+   "DWARF",
+   "Stellarium",
+   "SkySafari",
+   "Star Walk",
+   "Clear Outside",
+   "Pratchett",
+   "Discworld"
+  ]
+ },
+ "version": {
+  "is_first": false
+ },
+ "locales": {
+  "en-GB": {
+   "name": "Nightwatch: Clear Sky Alerts",
+   "subtitle": "Astrophotography night planner",
+   "promotional_text": "Know whether tonight is worth setting up: the sky score, the clear window and the targets that suit your telescope, on your iPhone, iPad and Mac.",
+   "description": "A weather app tells you the cloud cover. Nightwatch tells you whether tonight is worth setting up the telescope, and speaks up when it is. When tonight looks clear for long enough, it sends a heads-up before sunset, then a nudge just before the clear spell begins. If the forecast turns, it tells you.\n\nOpen it to see a sky score, the clear window, cloud by hour, darkness, the Moon, seeing, wind, dew risk and transparency, and the targets that suit your telescope's field of view tonight.\n\n• Two forecasts compared: Apple Weather, with Open-Meteo as a second opinion, and 7Timer for seeing\n• Targets chosen for your telescope, with \"How to shoot this\" on every target: filter, exposure and frames\n• Tonight's plan: your favourites in the order they peak\n• Darker skies nearby, scored for tonight\n• Your own horizon: mark what blocks your sky, or measure it from a photo\n• Aurora alerts for your site, wherever you observe from\n• Tonight's events: the Moon passing in front of a star, comets and the space station\n• Small, medium and large Home Screen widgets, and a Lock Screen card when a clear window opens\n• Spotlight and Shortcuts actions, and on iOS 27 Siri search for any target\n• A red night mode that keeps your eyes dark-adapted\n• Shares your sites and settings with the Nightwatch Mac app through iCloud\n\nNo accounts, no advertising and no tracking. Nightwatch is open source.",
+   "keywords": "astronomy,telescope,stars,forecast,seeing,dark,aurora,moon,nebula,galaxy,messier,stargazing,bortle",
+   "whats_new": "Target pictures now come from a ready-made set that Nightwatch downloads once (about 18 MB), so the cards show their pictures even when the sky survey's website cannot be reached.\nA target outside that set falls back to a second source, in greyscale, when the survey is down.\nThe iPad sidebar's selected row is easier to read.\nThe note on a Plan card that clashes with another sits under its label.",
+   "support_url": "https://github.com/rsutcliffe/nightwatch/discussions",
+   "marketing_url": "https://delphi-dolphin.com/nightwatch",
+   "privacy_url": "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md",
+   "copyright": "2026 Richard Sutcliffe"
+  }
+ },
+ "asset_text": {
+  "screenshot_captions": [],
+  "header_text": "",
+  "search_text": "",
+  "preview_overlay_text": [],
+  "event_text": []
+ }
+}

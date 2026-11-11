@@ -85,3 +85,27 @@ without notarising; that image is for checking only, never for distribution.
   UK, the Digitized Sky Survey). Keep it that way, or those sources need paid plans or replacing. See `NOTICE`.
 - 7Timer asks developers to tell its author when they use the data.
 - Downloads do not update themselves: people fetch each new version from the website or the GitHub release.
+
+## The survey picture set
+
+Target pictures normally come from CDS's hips2fits. CDS was unreachable for days from 26 October 2026 and every card fell back to its icon, so the
+app also carries a pre-built set: one 480 x 274 colour DSS2 picture for each of the 1,948 targets the Planner can list, in the default 2.1 x 1.2
+degree field of view. It is one file, `survey-set.nwsp` (layout in `Sources/SkyCore/SurveyPack.swift`), published as an asset of the prerelease tagged
+`survey-set-1`. The app fetches it once, on the first card that wants a picture, and keeps it in the caches folder; `SurveyFetch` looks in it before
+CDS. When CDS cannot be reached, a target outside the set shows its icon: a greyscale NASA SkyView stand-in shipped in 1.7.2 and 1.0.1 and was removed in 1.7.3 and 1.0.2, because on a target's page the large grey picture replaced the colour card picture.
+
+**It is a prerelease on purpose.** GitHub's "latest release" is what the update check and the disk image link read; a data release must never be it.
+
+Rebuild it (only when the catalogue's target list or the default field of view changes; the pictures themselves do not age):
+
+```bash
+python3 -m venv build/survey-venv && build/survey-venv/bin/pip install numpy astropy-healpix pillow
+build/survey-venv/bin/python scripts/build-survey-set.py --source hips --out build/survey-set-colour --pack build/survey-set.nwsp
+```
+
+`--source hips` cuts the pictures from the HiPS tiles of the DSS2 colour survey on two public mirrors (IRSA at Caltech and CASDA at CSIRO), one
+request at a time, alternating, with the tiles kept in `build/hips-tiles`. `--source cds` asks hips2fits instead when it is up. Publish with
+`gh release create survey-set-1 build/survey-set.nwsp --prerelease --latest=false --title "Survey picture set" --notes-file <notes>`, or, for a
+new set under the same tag, `gh release upload survey-set-1 build/survey-set.nwsp --clobber`. The credit (Digitized Sky Survey, STScI/NASA, plate
+owners, CDS) is in the app's About page and the notes, and the notes say the set is offered under the Open Database License 1.0 (CDS asked for
+this on 3 November 2026: its HiPS are ODbL share-alike, and the original producers' terms take precedence).

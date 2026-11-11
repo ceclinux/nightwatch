@@ -43,6 +43,10 @@ public struct ScoreBezel: View {
                 .overlay(alignment: .top) {   // numeral centred in the bezel, caption hung beneath it (handover: caption 11 pt below centre)
                     Text(L10n.text("SKY SCORE", language: language)).font(.system(size: 9, weight: .medium)).foregroundStyle(Tokens.textSecondary).fixedSize().offset(y: 28)
                 }
+                // The numeral and its caption are centred in the dial as a pair (owner, 9 October 2026). With the numeral
+                // alone on the centre, as the handover drew it, the pair's ink ran from 36 to 66.5 pt of the 91 and read
+                // as bottom-heavy; lifted 6 pt it runs from 30 to 60.5, centred on 45.4. Measured from a render at 8x.
+                .offset(y: -6)
         }
         .frame(width: 91, height: 91)
         // The whole dial grows with the app's text size, numeral and ticks together, so nothing inside it has to be refitted.
