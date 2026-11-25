@@ -6,5 +6,14 @@
   {"id":"seestar-s30-pro","name":"ZWO Seestar S30 Pro","maker":"ZWO","widthDeg":3.99,"heightDeg":2.24,"source":"seestar.com specs, 160 mm f/5.3, IMX585 (computed from 11.14 x 6.26 mm)","batteryHours":6},
   {"id":"seestar-s50","name":"ZWO Seestar S50","maker":"ZWO","widthDeg":1.29,"heightDeg":0.73,"source":"seestar.com FAQ, 250 mm f/5, IMX462","batteryHours":6},
   {"id":"seestar-s50-pro","name":"ZWO Seestar S50 Pro","maker":"ZWO","widthDeg":2.45,"heightDeg":1.38,"source":"seestar.com product page, 260 mm f/5.2, OS08B10 (computed from 11.14 x 6.26 mm; ZWO gives only the 2.8 degree diagonal)","batteryHours":9},
+  {"id":"vespera-2","name":"Vaonis Vespera II","maker":"Vaonis","widthDeg":2.5,"heightDeg":1.4,"source":"vaonis.com Vespera II page, 250 mm f/5, IMX585 (native field; a mosaic reaches 4.33 x 2.43 deg)","batteryHours":4},
+  {"id":"vespera-3","name":"Vaonis Vespera 3","maker":"Vaonis","widthDeg":2.6,"heightDeg":1.4,"source":"vaonis.com Vespera 3 and Vespera Pro 2 page, 245 mm f/4.9, IMX585 (native field; a mosaic reaches 4.3 x 2.4 deg)","batteryHours":11},
+  {"id":"vespera-pro-2","name":"Vaonis Vespera Pro 2","maker":"Vaonis","widthDeg":1.6,"heightDeg":1.6,"source":"vaonis.com Vespera 3 and Vespera Pro 2 page, 245 mm f/4.9, IMX676 (native field; a mosaic reaches 3.2 x 3.2 deg)","batteryHours":11},
+  {"id":"odyssey","name":"Unistellar Odyssey","maker":"Unistellar","widthDeg":0.75,"heightDeg":0.56,"source":"unistellar.com Odyssey page, 320 mm f/3.9, 85 mm mirror (33.6 x 45 arcmin, from the Odyssey Pro's list, which the page says the Odyssey shares)","batteryHours":5},
+  {"id":"odyssey-pro","name":"Unistellar Odyssey Pro","maker":"Unistellar","widthDeg":0.75,"heightDeg":0.56,"source":"unistellar.com Odyssey page, 320 mm f/3.9, 85 mm mirror (33.6 x 45 arcmin)","batteryHours":5},
+  {"id":"evscope-2","name":"Unistellar eVscope 2","maker":"Unistellar","widthDeg":0.76,"heightDeg":0.57,"source":"unistellar.com eVscope 2 and eQuinox 2 page, 450 mm f/4, 114 mm mirror (34.2 x 45.6 arcmin)","batteryHours":9},
+  {"id":"equinox-2","name":"Unistellar eQuinox 2","maker":"Unistellar","widthDeg":0.76,"heightDeg":0.57,"source":"unistellar.com eVscope 2 and eQuinox 2 page, 450 mm, 114 mm mirror (34.2 x 45.6 arcmin)","batteryHours":11},
+  {"id":"origin","name":"Celestron Origin","maker":"Celestron","widthDeg":1.27,"heightDeg":0.85,"source":"Celestron Origin manual #12099 (July 2024), 152 mm f/2.2, 335 mm, IMX178","batteryHours":6},
+  {"id":"origin-mark-ii","name":"Celestron Origin Mark II","maker":"Celestron","widthDeg":1.32,"heightDeg":0.75,"source":"Celestron Origin manual #12100 (September 2025), 152 mm f/2.2, 335 mm, IMX678; Celestron's Origin page names this camera's model the Mark II","batteryHours":6},
   {"id":"dslr-apsc-200","name":"APS-C camera, 200 mm lens","maker":"Camera and lens","widthDeg":6.7,"heightDeg":4.5,"source":"computed from 23.5 x 15.6 mm sensor"}
 ]

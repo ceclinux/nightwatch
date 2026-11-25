@@ -4,7 +4,7 @@ import Foundation
 
 @Test func presetsLoad() throws {
     let p = try TelescopePresets.bundled()
-    #expect(p.count == 8)
+    #expect(p.count == 17)
     let draco = try #require(p.first { $0.id == "draco" })
     #expect(draco.widthDeg == 1.65 && draco.heightDeg == 1.24)
     #expect(p.first { $0.id == "dwarf-mini" }?.widthDeg == 2.1)
@@ -16,10 +16,18 @@ import Foundation
     #expect(Set(p.map(\.id)).count == p.count)   // no id twice
     // The Preset menu's headings and the names under them (owner-approved mock-up A, 7 October 2026).
     let groups = TelescopePresets.byMaker(p)
-    #expect(groups.map(\.maker) == ["DwarfLab", "ZWO", "Camera and lens"])
+    #expect(groups.map(\.maker) == ["DwarfLab", "ZWO", "Vaonis", "Unistellar", "Celestron", "Camera and lens"])
     #expect(groups[0].presets.map(\.model) == ["DWARF Mini", "DWARF 3", "Draco"])
     #expect(groups[1].presets.map(\.model) == ["Seestar S30", "Seestar S30 Pro", "Seestar S50", "Seestar S50 Pro"])
-    #expect(groups[2].presets.map(\.model) == ["APS-C camera, 200 mm lens"])   // no maker to drop
+    // The makers' own figures, read 25 November 2026: Vaonis gives degrees, Unistellar arcminutes (33.6 x 45 and 34.2 x 45.6).
+    #expect(groups[2].presets.map(\.model) == ["Vespera II", "Vespera 3", "Vespera Pro 2"])
+    #expect(groups[3].presets.map(\.model) == ["Odyssey", "Odyssey Pro", "eVscope 2", "eQuinox 2"])
+    #expect(p.first { $0.id == "vespera-pro-2" }?.fov == FieldOfView(widthDeg: 1.6, heightDeg: 1.6))
+    #expect(p.first { $0.id == "odyssey" }?.fov == FieldOfView(widthDeg: 0.75, heightDeg: 0.56) && p.first { $0.id == "evscope-2" }?.fov == FieldOfView(widthDeg: 0.76, heightDeg: 0.57))
+    // Celestron's two manuals, read 25 November 2026: #12099 gives 1.27 x 0.85 degrees, #12100 (the Mark II's camera) 1.32 x 0.75.
+    #expect(groups[4].presets.map(\.model) == ["Origin", "Origin Mark II"])
+    #expect(p.first { $0.id == "origin" }?.fov == FieldOfView(widthDeg: 1.27, heightDeg: 0.85) && p.first { $0.id == "origin-mark-ii" }?.fov == FieldOfView(widthDeg: 1.32, heightDeg: 0.75))
+    #expect(groups[5].presets.map(\.model) == ["APS-C camera, 200 mm lens"])   // no maker to drop
     #expect(p.allSatisfy { $0.maker != nil } && p.first { $0.id == "seestar-s50" }?.name == "ZWO Seestar S50")
 }
 

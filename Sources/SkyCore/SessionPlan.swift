@@ -103,7 +103,10 @@ public enum SessionPlanner {
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never a
     /// favourite, one washed out by the Moon, one too big or too small for the frame, or a deep-sky object clear of the
     /// horizon for under `gapHours` before the plan ends. In haze the brightest wins, not the highest (`Planner.hazeBrightness`).
-    static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [RankedTarget] {
+    /// `brightest`: among what qualifies, the brightest of its kind and not the highest, and one with a name before one known by a number. The week ahead's Highlights line asks for it
+    /// (owner, 25 November 2026): by height, 2 December's highlight was the Owl Cluster, overhead, where a brighter object was also up.
+    static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow,
+                            brightest: Bool = false) -> [RankedTarget] {
         let gap = gapHours * 3600
         var used = excluding, out: [RankedTarget] = []
         func best(from: Date, to: Date) -> RankedTarget? {
@@ -113,13 +116,17 @@ public enum SessionPlanner {
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
-            let pool = candidates.contains(where: \.isShowpiece) ? candidates.filter(\.isShowpiece) : candidates
+            let offered = candidates.filter { !$0.id.hasPrefix("minor-") }   // Pluto, Ceres and the Lagrange points: never suggested
+            let known = offered.contains { !$0.isSharplessOnly } ? offered.filter { !$0.isSharplessOnly } : offered
+            let showpieces = known.contains(where: \.isShowpiece) ? known.filter(\.isShowpiece) : known
+            // The Highlights line names one that has a name when one qualifies: by brightness alone 2 December's was "M39".
+            let pool = brightest && showpieces.contains { $0.commonName != nil } ? showpieces.filter { $0.commonName != nil } : showpieces
             // Then the kind the night has least of so far, favourites included, so the rows are a mix of nebulae,
             // galaxies and clusters (owner, 10 October 2026: highest alone gave three star clusters, since those are
             // what pass overhead in October). Among that kind the highest, or in haze the brightest.
             let had = Dictionary(grouping: anchors + out, by: \.group).mapValues(\.count)
             func key(_ t: RankedTarget) -> (Int, Double, Double) {
-                (had[t.group] ?? 0, plan.hazy ? Planner.hazeBrightness(t) : -t.peakAltDeg, t.magnitude ?? 99)
+                (had[t.group] ?? 0, plan.hazy ? Planner.hazeBrightness(t) : (brightest ? t.magnitude ?? 99 : -t.peakAltDeg), t.magnitude ?? 99)
             }
             return pool.min { key($0) < key($1) }
         }

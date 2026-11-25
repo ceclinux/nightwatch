@@ -214,6 +214,13 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
         caldwell != nil || (catalogueID.first == "M" && catalogueID.count > 1 && catalogueID.dropFirst().allSatisfy(\.isNumber))
     }
 
+    /// A Sharpless region with a row of its own: no magnitude, usually faint, and known by a number. It is listed and found by search, but
+    /// is never the popover's pick or a plan suggestion while anything else qualifies (the highest nebula on 2 December 2026 was Sh 2-210).
+    public var isSharplessOnly: Bool { id.hasPrefix("Sh2-") }
+    /// Listed and found by search, never offered: a Sharpless-only row, or Pluto, Ceres or a Lagrange point (`MinorBody`), which are
+    /// there to be looked up and not what a night is for.
+    public var isListedOnly: Bool { isSharplessOnly || id.hasPrefix("minor-") }
+
     /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
     /// A card's second line, so the name people know is never cut (owner, 28 September 2026): "Little Sombrero Galaxy",
@@ -226,14 +233,16 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// type, so a word for a kind of object finds every one of that kind, not only those whose name contains it (owner,
     /// 27 September 2026: "galaxy" found nine of 141 galaxies). Empty matches all.
     public func matches(_ query: String) -> Bool {
-        let q = query.filter { !$0.isWhitespace }.lowercased()
+        // A hyphen counts for no more than a space, so "sh2 101" and "Sh 2-101" both find Sh 2-101.
+        let q = query.filter { !$0.isWhitespace && $0 != "-" }.lowercased()
         guard !q.isEmpty else { return true }
         let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
         guard let first = number.first, first.isNumber else {
             return [name, subtitle, typeName].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
         }
-        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
-        if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }
+        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace && $0 != "-" }.lowercased() }
+        // A bare number is an NGC, IC, Messier or Caldwell number; every Sharpless name starts "2-", so "21" must not find them all.
+        if letters.isEmpty { return parts.contains { !$0.hasPrefix("sh2") && $0.drop { $0.isLetter }.hasPrefix(q) } }
         return parts.contains { $0.hasPrefix(q) }
     }
 
@@ -403,7 +412,7 @@ extension Planner {
 
     /// Where a target comes from. Tonight's list and a favourite outside it are built from these the same way.
     enum Source {
-        case object(DeepSkyObject), star(BrightStar), planet(Planet), moon, constellation(Constellation)
+        case object(DeepSkyObject), star(BrightStar), planet(Planet), moon, constellation(Constellation), minor(MinorBody)
     }
 
     /// One target from its source, tracked across `window`. `minAlt` is the floor its fraction and viewable span use:
@@ -451,6 +460,17 @@ extension Planner {
                                            visibleFraction: tr.fraction),
                               viewable: tr.viewable, site: site, typeName: "Planet", catalogueID: p.displayName)
             return (t, tr.fraction, rule.minAltitudeDeg)
+        case .minor(let b):
+            // Placed as it is at the middle of the window: Pluto and Ceres barely move in a night, a Lagrange point by a few degrees.
+            let pos = b.place(at: window.midpoint, site: site)
+            let tr = track(raHours: pos.raHours, decDeg: pos.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard passes(tr) else { return nil }
+            let t = described(RankedTarget(id: b.id, name: b.name, subtitle: b.subtitle, group: .planets,
+                                           raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
+                                           peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(pos.raHours, pos.decDeg), moonWashed: false,
+                                           visibleFraction: tr.fraction),
+                              viewable: tr.viewable, site: site, typeName: b.typeName, catalogueID: b.title, commonName: b.commonName)
+            return (t, tr.fraction, rule.minAltitudeDeg)
         case .moon:
             let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10)
             guard passes(tr) else { return nil }
@@ -490,6 +510,7 @@ extension Planner {
         }
         out += stars.compactMap { add(.star($0)) }
         out += Planet.allCases.compactMap { add(.planet($0)) }
+        out += MinorBody.allCases.compactMap { add(.minor($0)) }
         if moon.illumination > 0.05, let t = add(.moon, needs: { $0 > 0 }) { out.append(t) }
         out += constellations.compactMap { add(.constellation($0)) }
 
@@ -526,7 +547,8 @@ extension Planner {
     static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = [], hazy: Bool = false) -> [RankedTarget] {
         var picked: [RankedTarget] = []
         for g in hazy ? [TargetGroup.planets, .clusters, .nebulae, .galaxies] : [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
-            let usable = ranked.filter { $0.group == g && !$0.moonWashed }
+            let all = ranked.filter { $0.group == g && !$0.moonWashed }
+            let usable = all.contains { !$0.isListedOnly } ? all.filter { !$0.isListedOnly } : all.filter { !$0.id.hasPrefix("minor-") }
             let roomy = usable.filter { g == .planets || $0.fit != .small }
             let pick = hazy ? (roomy.isEmpty ? usable : roomy).min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
             if let t = pick { picked.append(t) }
@@ -552,6 +574,7 @@ extension Planner {
         func source(_ id: String) -> Source? {
             if id == "moon" { return .moon }
             if id.hasPrefix("planet-"), let p = Planet(rawValue: String(id.dropFirst(7))) { return .planet(p) }
+            if let b = MinorBody(targetID: id) { return .minor(b) }
             if let s = stars.first(where: { $0.id == id }) { return .star(s) }
             if let c = constellations.first(where: { $0.id == id }) { return .constellation(c) }
             return catalog.objects.first(where: { $0.id == id }).map { .object($0) }

@@ -55,6 +55,21 @@ private final class Hits: @unchecked Sendable {
         #expect(hits.count == 1)
     }
 
+    // The set gained the Sharpless nebulae on 25 November 2026. A kept file is never fetched again, so the new set is kept under a new
+    // name: a Mac holding the earlier set fetches the new one, and the earlier file goes.
+    @Test func anEarlierSetOnDiskIsReplacedByTheNewOne() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("packs-\(UUID())", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let earlier = dir.appendingPathComponent("survey-set.nwsp")
+        try Self.pack(["old": Data("old".utf8)]).write(to: earlier)
+        let pic = Data("webp".utf8), hits = Hits()
+        let bytes = Self.pack([Self.key: pic])
+        #expect(SurveyPackStore.fileName != "survey-set.nwsp")
+        let store = SurveyPackStore(file: dir.appendingPathComponent(SurveyPackStore.fileName), get: { _, _ in hits.add(); return bytes })
+        #expect(await store.picture(for: url) == pic)
+        #expect(hits.count == 1 && !FileManager.default.fileExists(atPath: earlier.path))
+    }
+
     @Test func aFailedFetchIsNotRepeatedForAnHour() async {
         let hits = Hits(), now = Date()
         let store = SurveyPackStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("pack-\(UUID()).nwsp"),

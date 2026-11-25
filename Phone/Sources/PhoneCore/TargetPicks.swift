@@ -30,7 +30,7 @@ public struct TargetPick: Equatable, Sendable, Identifiable {
 
     static func picture(for t: RankedTarget, fov: FieldOfView) -> Picture {
         if t.id == "moon" { return .moon(at: t.peakTime) }
-        if let p = PlanetImages.planet(forTargetID: t.id) { return .planet(p.rawValue) }
+        if let n = PlanetImages.name(forTargetID: t.id) { return .planet(n) }
         if MilkyWay.isMilkyWay(t.id) { return .milkyWay(t.id) }
         if t.group == .constellations { return .constellation(t.id) }
         if t.group == .planets { return .symbol }

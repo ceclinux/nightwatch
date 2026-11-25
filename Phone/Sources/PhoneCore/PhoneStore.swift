@@ -753,7 +753,8 @@ public final class PhoneStore: ObservableObject {
         tonight = TonightModel.make(plan: plan, tomorrow: tomorrow, forecast: fc, site: site, config: config, aurora: auroraHere)
         planning = Planning(tonight: plan, tomorrow: tomorrow,
                             week: Planner.week(tonight: plan, tomorrow: tomorrow, forecast: fc, site: site, fov: config.fov,
-                                               rule: config.goRule, bright: config.brightNights))
+                                               rule: config.goRule, bright: config.brightNights, catalog: catalog,
+                                               constellations: constellations, stars: stars, showers: showers, occultations: occultationsAhead))
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: config.goRule.maxCloudPct)
         phase = .ready
         if let mark = appleMarkData, let address = fc.attributionMarkURL { markSink?(mark, address) }   // before the snapshot, which looks for the file

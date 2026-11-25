@@ -58,6 +58,9 @@ struct WeekView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(Copy.weekDetail(p, site: site)).font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+            if let h = Copy.weekHighlights(n) {   // what the night is good for: its events first, then what there is time to stack
+                Text(h).font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
+            }
             if form != .wide, let lead {
                 Text(lead).font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
             }

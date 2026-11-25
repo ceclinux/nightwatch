@@ -16,6 +16,8 @@ private let settings = AlertSettings()
     #expect(r.ledger.scheduled.map(\.fireDate) == due)
     #expect(r.ledger.scheduled[0].id == "\(p.night.key).headsUp")
     #expect(r.ledger.scheduled[1].title.hasPrefix("Clear from"))
+    // Queued two hours and more before they fire, so each says which forecast it was written from.
+    #expect(r.ledger.scheduled.allSatisfy { $0.body.hasSuffix(" Forecast from \(Copy.hhmm(now, site: sheffield)).") })
 }
 
 @Test func whatWentOutIsNotSentAgainOnTheNextRefresh() throws {

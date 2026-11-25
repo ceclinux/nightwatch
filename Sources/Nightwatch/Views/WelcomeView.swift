@@ -42,14 +42,11 @@ struct WelcomeView: View {
                 Text(e).font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
             }
             step("1  What do you image with?") {
-                ForEach(state.presets) { p in
-                    choice(p.name, detail: String(format: "%g × %g°", p.fov.widthDeg, p.fov.heightDeg), on: store.config.fovPresetID == p.id) {
-                        store.config.fovPresetID = p.id; store.config.fov = p.fov; store.saveConfig()
-                    }
-                }
-                choice("Something else", detail: "Enter its field of view in Settings", on: store.config.fovPresetID == nil) {
-                    store.config.fovPresetID = nil; store.saveConfig()
-                }
+                // A menu, as in Settings: one choice a row grew past the foot of a laptop's screen once there were fifteen telescopes.
+                PresetPicker(presets: state.presets).labelsHidden()
+                Text(store.config.fovPresetID == nil ? "Something else: enter its field of view in Settings."
+                     : String(format: "Field of view %g × %g°. For anything else, choose Custom.", store.config.fov.widthDeg, store.config.fov.heightDeg))
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
             }
             step("2  Where do you observe from?") {
                 Text("Nightwatch needs a place to forecast for. Its coordinates are sent to the weather services to get the forecast, with nothing that says who you are.")
@@ -136,21 +133,5 @@ struct WelcomeView: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
-    }
-
-    private func choice(_ title: String, detail: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: on ? "largecircle.fill.circle" : "circle").foregroundStyle(on ? Tokens.controlOn : Theme.dim).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title)
-                    Text(detail).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-                }
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }

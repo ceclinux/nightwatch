@@ -81,7 +81,7 @@ enum Thumbnails {
     static func image(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> NSImage? {
         // Planets and the Moon get real photographs, not a survey cutout.
         if t.id == "moon" { return await MoonImages.image(at: t.peakTime) }
-        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap(ImageMemory.image(at:)) }
+        if let n = PlanetImages.name(forTargetID: t.id) { return PlanetImages.url(named: n).flatMap(ImageMemory.image(at:)) }
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov, width: width, context: context)
         if let img = cached(f) { return img }
@@ -108,7 +108,7 @@ enum Thumbnails {
     /// downloaded (the task that follows fetches it) and for constellations, whose artwork is drawn separately.
     static func ready(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) -> NSImage? {
         if t.id == "moon" { return MoonImages.ready(at: t.peakTime) }
-        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap(ImageMemory.image(at:)) }
+        if let n = PlanetImages.name(forTargetID: t.id) { return PlanetImages.url(named: n).flatMap(ImageMemory.image(at:)) }
         guard t.group != .constellations, t.group != .planets else { return nil }
         return ImageMemory.image(at: file(for: t, fov: fov, width: width, context: context))
     }

@@ -58,6 +58,8 @@ public struct AlertNotification: Equatable, Sendable {
 
 public enum AlertEngine {
     static let staleAfter: TimeInterval = 6 * 3600
+    /// Past this age an alert ends "Forecast from 14:05." A Mac refreshing every half hour never reaches it.
+    static let ageNoteAfter: TimeInterval = 3600
 
     public static func inQuietHours(_ date: Date, site: Site, settings: AlertSettings) -> Bool {
         let h = site.calendar.component(.hour, from: date)
@@ -179,6 +181,11 @@ public enum AlertEngine {
 
         if note != nil, inQuietHours(now, site: site, settings: settings) { note = nil }   // dropped, not deferred
         if note != nil, firstClearUsed { s.firstClearSaid = true }
+        // The phone queues an alert hours ahead from the forecast it had then, so an alert says when its forecast is old.
+        if let n = note, now.timeIntervalSince(forecastFetchedAt) > ageNoteAfter {
+            note = AlertNotification(kind: n.kind, title: n.title, body: n.body + " " + Copy.forecastFrom(forecastFetchedAt, site: site),
+                                     planNight: n.planNight)
+        }
         if s.stage != .idle, s.stage != .previewSent { s.mode = tonight.mode }
         return (note, s)
     }

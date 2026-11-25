@@ -91,6 +91,7 @@ struct TargetGroupScreen: View {
             RankedTarget.cards(all, group: group, query: query, fitsOnly: fitsOnly, includeMoonWashed: includeMoonWashed, sort: sort,
                                now: store.now, span: plan?.primary, site: site)
         } ?? []
+        let extras = plan.flatMap { p in store.site.map { store.searchExtraCards(query, group: group, ranked: all, plan: p, site: $0) } } ?? []
         ScrollView {
             LazyVStack(spacing: 10) {
                 HStack {
@@ -105,7 +106,7 @@ struct TargetGroupScreen: View {
                     Toggle(SettingsCopy.showMisfits, isOn: Binding(get: { !fitsOnly }, set: { fitsOnly = !$0 })).font(.callout)
                     Toggle(SettingsCopy.showMoonWashed, isOn: $includeMoonWashed).font(.callout)
                 }
-                if let hint = searchHint(all) {   // what the search found, as the Mac's Targets window says it
+                if let hint = searchHint(all, plan: plan) {   // what the search found, as the Mac's Targets window says it
                     Text(hint).font(.callout).foregroundStyle(theme.warning).fixedSize(horizontal: false, vertical: true)
                 } else if shown.isEmpty {
                     Text("Nothing in this group is up tonight.").font(.callout).secondary().padding(.top, 20)
@@ -114,6 +115,12 @@ struct TargetGroupScreen: View {
                     NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
                         TargetCardView(store: store, target: t, dimmed: t.hiddenByFit(fitsOnly: fitsOnly) || t.hiddenByMoon(includeMoonWashed: includeMoonWashed))
                     }.buttonStyle(PressStyle()).risesIn(i)
+                }
+                // In the catalogue but not in tonight's list (#250): greyed with when each is next well placed, as a favourite is.
+                ForEach(extras) { f in
+                    NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: {
+                        TargetCardView(store: store, target: f.target, dimmed: f.notTonight != nil, note: f.notTonight)
+                    }.buttonStyle(PressStyle())
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
@@ -128,8 +135,8 @@ struct TargetGroupScreen: View {
 
     /// The Mac's search hint: matches here, the two switches' hidden ones, matches in other groups, and a target the catalogue has but tonight's
     /// list leaves out. Nil with no search.
-    private func searchHint(_ all: [RankedTarget]) -> String? {
-        let notPlanned = all.contains { $0.matches(query) } ? [] : store.catalogueMatches(query)
+    private func searchHint(_ all: [RankedTarget], plan: NightPlan?) -> String? {
+        let notPlanned = plan.map { store.notListed(query, ranked: all, plan: $0) } ?? []
         return Copy.searchHint(query: query, targets: all, group: group, fitsOnly: fitsOnly, includeMoonWashed: includeMoonWashed, notPlanned: notPlanned)
     }
 }

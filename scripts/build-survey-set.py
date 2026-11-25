@@ -42,9 +42,9 @@ def sexagesimal(s):
 
 
 def targets():
-    """The objects the app lists (Planner: magnitude 12 or brighter; nebulae and cluster-plus-nebula without one are kept)."""
+    """The objects the app lists (Planner: magnitude 12 or brighter; nebulae and cluster-plus-nebula without one are kept), and its named stars."""
     out = []
-    for name in ("NGC.csv", "addendum.csv"):
+    for name in ("NGC.csv", "addendum.csv", "sharpless.csv"):
         for r in csv.DictReader(open(CATALOG / name, encoding="utf-8"), delimiter=";"):
             if r["Type"] not in GROUPS or not r["RA"] or not r["Dec"]:
                 continue
@@ -57,6 +57,9 @@ def targets():
             size = SIZE_CORRECTIONS.get(r["Name"]) or (float(r["MajAx"]) if r["MajAx"] else None)
             fov = max(FOV_W, (size or 0) / 60 * 1.5, 0.05)
             out.append({"id": r["Name"], "ra": sexagesimal(r["RA"]) * 15, "dec": sexagesimal(r["Dec"]), "fov": fov, "mag": mag if mag is not None else 99})
+    # The Stars group: the named stars of magnitude 2 or brighter, each framed at the default field of view (a star has no size).
+    for star in json.load(open(ROOT / "Sources/SkyCore/Resources/stars/bright.json", encoding="utf-8")):
+        out.append({"id": star["id"], "ra": star["raHours"] * 15, "dec": star["decDeg"], "fov": FOV_W, "mag": star["magnitude"]})
     out.sort(key=lambda t: t["mag"])
     return out
 

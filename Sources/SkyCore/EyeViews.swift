@@ -37,7 +37,7 @@ public enum EyeViews {
         let b = min(9, max(1, bortle)), limit = nakedEyeLimit[b]!, sky = skyBrightness[b]!
         if t.id == "moon" { return .nakedEye }
         if MilkyWay.isMilkyWay(t.id) { return t.moonWashed ? nil : .nakedEye }   // #114
-        guard let m = t.magnitude else { return nil }
+        guard let m = t.magnitude, !t.id.hasPrefix("minor-") else { return nil }   // Pluto and Ceres are looked up, not looked for
         switch t.group {
         case .planets:
             return m <= limit ? .nakedEye : (m <= binocularLimit ? .binoculars : nil)

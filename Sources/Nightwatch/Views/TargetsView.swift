@@ -58,11 +58,8 @@ struct TargetsView: View {
     /// On a bright night only the Moon and planets are suggested, so they stand in for the ranked list.
     private var targets: [RankedTarget] { plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
 
-    /// What the search matches in the catalogue when tonight's list has nothing, so the hint can say it is not up tonight.
-    private var notPlanned: [DeepSkyObject] {
-        guard !ui.search.allSatisfy(\.isWhitespace), !targets.contains(where: { $0.matches(ui.search) }) else { return [] }
-        return store.catalogueMatches(ui.search)
-    }
+    /// What the search matches in the catalogue that the night's list leaves out (#250): counted in the hint, and carded after the group's own.
+    private var notPlanned: [TargetGroup] { plan.map { store.notListed(ui.search, ranked: targets, plan: $0) } ?? [] }
 
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
@@ -117,6 +114,7 @@ struct TargetsView: View {
         case .group(let g):
             return RankedTarget.cards(targets, group: g, query: ui.search, fitsOnly: ui.fitsOnly, includeMoonWashed: ui.includeMoonWashed,
                                       sort: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+                + (plan.map { store.searchExtraCards(ui.search, group: g, ranked: targets, plan: $0, site: site) } ?? [])
         case .eyes:
             let found = eyeTargets.filter { $0.matches(ui.search) }
             let dimmed = milkyWay.dimmed.flatMap { $0.target.matches(ui.search) ? [$0] : nil } ?? []
