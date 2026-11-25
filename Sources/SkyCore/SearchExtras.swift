@@ -97,7 +97,8 @@ extension Planner {
                 return (p.raHours, p.decDeg)
             }
             // Pluto keeps its declination for years, so "never clears" can be said of it; the others move too far to say.
-            let text = Copy.nextWellPlaced(next, decDeg: body == .pluto ? b.target.decDeg : nil, site: site, minAlt: rule.minAltitudeDeg)
+            let text = Copy.nextWellPlaced(next, decDeg: body == .pluto ? b.target.decDeg : nil, site: site, minAlt: rule.minAltitudeDeg,
+                                           span: body.isLagrangePoint ? "two months" : "year")
             return FavouriteTarget(target: b.target, notTonight: text)
         }
     }
@@ -134,13 +135,14 @@ extension Planner {
 extension Copy {
     /// A searched-for target's greyed card (#250): when to come back for it, or that this site never gets it.
     /// `decDeg`: nil for something that moves too far for "never" to be said of it.
-    static func nextWellPlaced(_ night: Night?, decDeg: Double?, site: Site, minAlt: Double) -> String {
+    /// `span`: how far ahead was looked.
+    static func nextWellPlaced(_ night: Night?, decDeg: Double?, site: Site, minAlt: Double, span: String = "year") -> String {
         if let night {
             let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "d MMM"; f.locale = Locale(identifier: "en_GB")
             return "Next well placed from \(f.string(from: night.localDate))"
         }
         // Its highest point anywhere in the year is when it crosses the meridian.
         if let decDeg, 90 - abs(site.latitude - decDeg) < minAlt { return "Never clears \(Int(minAlt.rounded()))° from here" }
-        return "Not well placed from here in the coming year"
+        return "Not well placed from here in the coming \(span)"
     }
 }

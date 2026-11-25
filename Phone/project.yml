@@ -14,8 +14,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: 8B44CZ9923
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.0.3"
-    CURRENT_PROJECT_VERSION: "12"
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "13"
 targets:
   NightwatchPhone:
     type: application
@@ -50,7 +50,7 @@ targets:
       properties:
         CFBundleDisplayName: Nightwatch
         CFBundleShortVersionString: $(MARKETING_VERSION)
-        CFBundleVersion: "12"
+        CFBundleVersion: "13"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
@@ -84,7 +84,7 @@ targets:
       properties:
         CFBundleDisplayName: Nightwatch
         CFBundleShortVersionString: $(MARKETING_VERSION)
-        CFBundleVersion: "12"
+        CFBundleVersion: "13"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

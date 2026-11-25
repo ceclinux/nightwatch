@@ -25,9 +25,9 @@ public enum MinorBody: String, CaseIterable, Sendable {
     }
     public var isLagrangePoint: Bool { self == .l4 || self == .l5 }
     /// The card's second line for a Lagrange point; Pluto and Ceres show their kind.
-    public var commonName: String? { isLagrangePoint ? "Earth–Moon Lagrange point" : nil }
+    public var commonName: String? { isLagrangePoint ? "Earth-Moon Lagrange point" : nil }
     public var typeName: String { isLagrangePoint ? "Lagrange point" : "Dwarf planet" }
-    /// What the search reads: "L4 · Earth–Moon Lagrange point", so "L4" finds it as a catalogue number does.
+    /// What the search reads: "L4 · Earth-Moon Lagrange point", so "L4" finds it as a catalogue number does.
     public var name: String { commonName.map { "\(title) · \($0)" } ?? title }
     /// Searched as well as the name: "Kordylewski" finds the two points, "dwarf planet" the two bodies.
     public var subtitle: String { isLagrangePoint ? "Lagrange point · Kordylewski cloud" : "Dwarf planet" }

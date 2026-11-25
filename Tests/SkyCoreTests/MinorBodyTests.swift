@@ -85,8 +85,9 @@ private func apart(_ ra1: Double, _ dec1: Double, _ ra2: Double, _ dec2: Double)
     #expect(try cards("Ceres").first?.notTonight == nil)
     // A Lagrange point is either up tonight or greyed with a night within two months.
     let l4 = try #require(try cards("L4").first)
-    #expect(l4.target.catalogueID == "L4" && l4.target.commonName == "Earth–Moon Lagrange point")
+    #expect(l4.target.catalogueID == "L4" && l4.target.commonName == "Earth-Moon Lagrange point")
     #expect(l4.notTonight == nil || l4.notTonight?.hasPrefix("Next well placed from ") == true)
+    #expect(Copy.nextWellPlaced(nil, decDeg: nil, site: site, minAlt: 30, span: "two months") == "Not well placed from here in the coming two months")
     // The hint counts them in Planets and Moon from any other group.
     let groups = extras.unlistedGroups(query: "Pluto", ranked: [], catalog: try Catalog.bundled(), nightKey: night.key)
     #expect(groups == [.planets])
