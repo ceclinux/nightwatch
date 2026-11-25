@@ -261,6 +261,8 @@ private func extras(_ query: String, _ group: TargetGroup, _ plan: NightPlan, ra
     let first = try #require(try (1...364).first { try placed($0) })
     #expect(next.localDate == searchSite.calendar.date(byAdding: .day, value: first, to: june.night.localDate))
     #expect(reason == Copy.nextWellPlaced(next, decDeg: o.decDeg, site: searchSite, minAlt: 30))
+    // The Orion Nebula tops out just over 30° from 53° north: above the floor, but never for half of any night.
+    #expect(try extras("M42", .clusters, june).first { $0.target.id == "NGC1976" }?.notTonight == "Never above 30° for half the night from here")
     // The Lagoon Nebula reaches 12° at best from 53° north.
     #expect(try extras("M8", .nebulae, june).first { $0.target.id == "NGC6523" }?.notTonight == "Never clears 30° from here")
 }

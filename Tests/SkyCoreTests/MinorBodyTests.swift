@@ -98,3 +98,12 @@ private func apart(_ ra1: Double, _ dec1: Double, _ ra2: Double, _ dec2: Double)
     #expect(PlanetImages.name(forTargetID: "minor-pluto") == "pluto" && PlanetImages.url(named: "ceres") != nil && PlanetImages.name(forTargetID: "minor-l4") == nil)
     #expect(PlanetImages.name(forTargetID: "planet-mars") == "mars")
 }
+
+// "Find Pluto in Nightwatch": a search link opens the group of its match. Pluto is in no catalogue and, from Britain, never in the night's
+// list, so the link opened nothing until it looked here as well.
+@Test func aSearchLinkForOneOfThemOpensPlanetsAndMoon() throws {
+    let catalogue = try Catalog.bundled()
+    for text in ["Pluto", "ceres", "L4", "Lagrange"] { #expect(SpokenSearch.group(for: text, planned: [], catalogue: catalogue) == .planets, "\(text)") }
+    #expect(SpokenSearch.group(for: "M31", planned: [], catalogue: catalogue) == .galaxies)
+    #expect(SpokenSearch.group(for: "zzzz nothing", planned: [], catalogue: catalogue) == nil)
+}

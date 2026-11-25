@@ -17,9 +17,11 @@ public enum SpokenSearch {
     }
 
     /// The group a spoken search opens: the first match among tonight's targets, else the first in the catalogue (a target that is not up tonight
-    /// still has a group, where the search hint says so). Nil when nothing matches anywhere.
+    /// still has a group, where the search hint says so), else Planets and Moon for Pluto, Ceres or a Lagrange point, which are in no
+    /// catalogue. Nil when nothing matches anywhere.
     public static func group(for text: String, planned: [RankedTarget], catalogue: Catalog) -> TargetGroup? {
         planned.first { $0.matches(text) }?.group ?? catalogue.objects(matching: text).first?.group
+            ?? (MinorBody.matching(text).isEmpty ? nil : .planets)
     }
 
     public static func normalise(_ text: String) -> String {

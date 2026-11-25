@@ -142,7 +142,9 @@ extension Copy {
             return "Next well placed from \(f.string(from: night.localDate))"
         }
         // Its highest point anywhere in the year is when it crosses the meridian.
-        if let decDeg, 90 - abs(site.latitude - decDeg) < minAlt { return "Never clears \(Int(minAlt.rounded()))° from here" }
-        return "Not well placed from here in the coming \(span)"
+        let floor = Int(minAlt.rounded())
+        guard let decDeg else { return "Not well placed from here in the coming \(span)" }
+        // A fixed place in the sky that passes on no night of the year never will: the Orion Nebula from 54° north tops out just over 30°.
+        return 90 - abs(site.latitude - decDeg) < minAlt ? "Never clears \(floor)° from here" : "Never above \(floor)° for half the night from here"
     }
 }

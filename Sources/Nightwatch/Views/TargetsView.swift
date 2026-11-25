@@ -268,6 +268,8 @@ struct TargetsView: View {
                 ui.section = .group(first.group)
             } else if let known = store.catalogueMatches(text).first {
                 ui.section = .group(known.group)   // not up tonight: still open its group, where the hint says so, not Tonight's plan with nothing in it (#72)
+            } else if !MinorBody.matching(text).isEmpty {
+                ui.section = .group(.planets)   // Pluto, Ceres or a Lagrange point: in no catalogue, and not up tonight
             }
         }
         store.targetsRequest = nil
