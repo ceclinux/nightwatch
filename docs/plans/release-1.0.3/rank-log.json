@@ -139,6 +139,346 @@
    "searched_depth": 186,
    "source": "other",
    "notes": "7 Nov 2026 baseline from Apple's public search API (iTunes Search, iPhone software, UK): NOT the real App Store ordering, a rough marker only"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "mac",
+   "position": 1,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API)"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "mac",
+   "position": 2,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API)"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "mac",
+   "position": 4,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API)"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "mac",
+   "position": 8,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API)"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "mac",
+   "position": 15,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API)"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "mac",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "seeing",
+   "country": "gb",
+   "platform": "mac",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "seeing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-10",
+   "term": "seeing",
+   "country": "gb",
+   "platform": "ipad",
+   "position": null,
+   "searched_depth": 32,
+   "source": "app-store",
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "mac",
+   "position": 1,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "mac",
+   "position": 2,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "mac",
+   "position": 3,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "mac",
+   "position": 8,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "mac",
+   "position": 10,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "mac",
+   "position": 24,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "seeing",
+   "country": "gb",
+   "platform": "mac",
+   "position": null,
+   "searched_depth": 3,
+   "source": "app-store",
+   "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two; the Mac Apps tab listed only 3 results in all and Nightwatch was not one of them"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "iphone",
+   "position": 4,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
   }
  ]
 }
