@@ -119,7 +119,7 @@ import Foundation
             #expect(L10n.text(key) != key, "Untranslated: \(key)")
         }
         #expect(L10n.format("Peak night \("4–5 November"), in \(38) days") == "极大期在 4–5 November 晚，还有 38 天")
-        #expect(L10n.format("Next well placed from \("4 Dec"))") == "下次位置良好的日期：4 Dec")
+        #expect(L10n.format("Next well placed from \("4 Dec")") == "下次位置良好的日期：4 Dec")
         // The makers' names under their headings keep their brand; the new minor bodies are named in Chinese.
         #expect(L10n.text("Pluto") == "冥王星" && L10n.text("Ceres") == "谷神星")
         #expect(L10n.text("Origin Mark II") == "Origin Mark II")
