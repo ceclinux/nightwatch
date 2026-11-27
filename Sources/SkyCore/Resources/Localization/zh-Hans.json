@@ -1016,5 +1016,7 @@
   "Never above {0}° for half the night from here": "从此地整夜一半时间内都无法超过 {0}°",
   "two months": "两个月",
   "year": "一年",
-  "Hazy night": "有霾的夜晚"
+  "Hazy night": "有霾的夜晚",
+  "Show solid stars in the menu bar when tonight is clear": "今晚晴朗时在菜单栏显示实心星星",
+  "The menu-bar icon becomes a group of solid stars when tonight has a clear window in darkness, and stays the usual star when it has not, or the forecast is out of date.": "当今晚在黑夜中有晴朗时段时，菜单栏图标会变成一组实心星星；否则或预报已过期时，仍显示平常的单颗星。"
 }

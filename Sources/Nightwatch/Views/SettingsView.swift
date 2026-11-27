@@ -158,6 +158,9 @@ struct SettingsView: View {
                 LanguagePicker()
                 Text(L10n.text("Changes immediately. Language is saved only on this Mac."))
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                Toggle(L10n.text("Show solid stars in the menu bar when tonight is clear"), isOn: bind(\.menuBarFilledStars))
+                Text(L10n.text("The menu-bar icon becomes a group of solid stars when tonight has a clear window in darkness, and stays the usual star when it has not, or the forecast is out of date."))
+                    .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
                 Toggle(L10n.text("Start at login"), isOn: Binding(get: { SMAppService.mainApp.status == .enabled }, set: { on in
                     do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; store.config.loginItem = on; store.saveConfig() }

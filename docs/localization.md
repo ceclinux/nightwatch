@@ -65,6 +65,12 @@ lines, and the new Numbers-guide entries are translated. Canonical catalogue typ
 target's filter tip and are never translated in the code path: they are translated at presentation only. Search keywords
 ("tonight", "plan") and network identifiers stay English. The iPhone and iPad app remains English upstream.
 
+## Menu-bar stars (this branch)
+
+When **Show solid stars in the menu bar when tonight is clear** is on in Settings › App, the menu-bar icon is a group of three
+solid stars while the plan has a clear window in darkness and the forecast is not stale; otherwise it keeps the usual star,
+star-in-circle or crossed-out star. The setting stays on each Mac, like the text size. Its two strings are translated.
+
 ## Verification
 
 ```sh

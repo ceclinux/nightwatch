@@ -76,6 +76,9 @@ public struct Config: Codable, Equatable, Sendable {
     public var stopBy = StopBy()
     /// How large the app's text is (1.5). It stays on each Mac: it depends on that Mac's display.
     public var textSize: TextSize = .standard
+    /// The menu bar shows solid stars when tonight has a clear window (this branch, 1.9). Off by default: the icon is the
+    /// single star it has always been until someone asks for this.
+    public var menuBarFilledStars = false
     public var showPlan = true
     /// Tonight's plan choices by night key ("2026-09-29"); synced with the rest of the settings (#49).
     public var planChoices: [String: PlanChoices] = [:]
@@ -155,7 +158,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan, planChoices, textSize
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora, favourites, stopBy, showPlan, planChoices, textSize, menuBarFilledStars
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -182,6 +185,7 @@ public struct Config: Codable, Equatable, Sendable {
         favourites = try c.decodeIfPresent([String].self, forKey: .favourites) ?? []
         stopBy = try c.decodeIfPresent(StopBy.self, forKey: .stopBy) ?? StopBy()
         textSize = (try? c.decodeIfPresent(TextSize.self, forKey: .textSize)) ?? .standard   // an unknown size never fails the file
+        menuBarFilledStars = try c.decodeIfPresent(Bool.self, forKey: .menuBarFilledStars) ?? false
         showPlan = try c.decodeIfPresent(Bool.self, forKey: .showPlan) ?? true
         planChoices = (try? c.decodeIfPresent([String: PlanChoices].self, forKey: .planChoices)) ?? [:]
     }

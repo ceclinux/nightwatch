@@ -42,17 +42,34 @@ struct MenuBarLabel: View {
     let boot: () async -> Void
     @Environment(\.openWindow) private var openWindow
     var body: some View {
-        Image(systemName: store.iconName)
-            .accessibilityLabel(Copy.menuBarLabel(store.snapshot(), now: Date()))   // VoiceOver: tonight's verdict, not the symbol's name
-            .task {
-                if store.showWelcome { NSApp.activate(); openWindow(id: "welcome") }   // first launch only, before the rest of boot
-                await boot()
+        Group {
+            if store.config.menuBarFilledStars, MenuBarStars.filled(plan: store.plan, isStale: store.isStale) {
+                // Solid stars when tonight is worth imaging (this branch, 1.9): the template image takes the menu bar's own colour.
+                Image(systemName: "star.fill")
+                    .resizable().scaledToFit().frame(width: 10, height: 10)
+                    .overlay(alignment: .topTrailing) {
+                        Image(systemName: "star.fill").resizable().scaledToFit().frame(width: 6, height: 6).offset(x: 6, y: -4)
+                    }
+                    .overlay(alignment: .bottomLeading) {
+                        Image(systemName: "star.fill").resizable().scaledToFit().frame(width: 4, height: 4).offset(x: -5, y: 4)
+                    }
+                    .frame(width: 18, height: 16)
+            } else {
+                Image(systemName: store.iconName)
             }
-            .onChange(of: store.targetsRequest) { _, r in
-                guard r != nil else { return }
-                NSApp.activate()
-                openWindow(id: "targets")
-            }
+        }
+        // VoiceOver: tonight's verdict once, whatever the picture holds.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Copy.menuBarLabel(store.snapshot(), now: Date()))
+        .task {
+            if store.showWelcome { NSApp.activate(); openWindow(id: "welcome") }   // first launch only, before the rest of boot
+            await boot()
+        }
+        .onChange(of: store.targetsRequest) { _, r in
+            guard r != nil else { return }
+            NSApp.activate()
+            openWindow(id: "targets")
+        }
     }
 }
 
