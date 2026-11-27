@@ -106,6 +106,21 @@ See `docs/plans/2026-11-07-accessibility-audit.md`. Not tied to the version; do 
 5. (me) After approval: confirm both versions READY_FOR_DISTRIBUTION with `scripts/review-status.swift` and the public lookup; assign the custom pages' keywords; re-test the two custom links.
 6. (both) Record positions two and four weeks later; compare with the baseline; add a lesson to the skill if the result is clear.
 
+## Custom product page links, tested 10 November 2026
+
+Both pages are Approved (page B's keyword version, `bortle` and `light pollution`, approved 10 November). Tested on an iPhone 15 Pro with the App Store build of 1.0.3 (12) installed, opening each link in the App Store app:
+
+| Page | Link id (`ppid`) | First screenshots shown | Result |
+|---|---|---|---|
+| Smart telescope owners | `51bd4389-9c0a-41f5-9a1e-c9ce26e296b2` | "See every target in colour", "Told how to shoot" | Own set, not the default page |
+| Blocked horizon | `802feb1c-6667-4bdd-981f-8f83cff4c509` | "Mark what blocks your sky" | Own set, not the default page |
+
+Three things that gave false "default page" results first, so they are not repeated:
+
+- **The link id is not the page id.** The id in the App Store Connect address bar (`.../productpages/<id>`) is not the `ppid`; a link built from it opens the default page. Take the link from the page's **Copy Link** button.
+- **A TestFlight build on the device hides the custom page.** The App Store showed "TestFlight version 1.0.3 is installed" and the default screenshots. Test with the App Store build installed. Deleting the app is safe: saved sites and alert settings return from iCloud.
+- **A browser on a Mac cannot test it.** The apps.apple.com web page ignores `ppid`; only the App Store app on an iPhone shows custom pages.
+
 ## Timing
 
 To be live before the Moonless week event is promoted (22 November) and the nomination window opens (1 December): decide the picture-set stars question about 14 November,

@@ -40,6 +40,7 @@ struct WeekScreen: View {
                 ClearSkyBarsView(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), trackHeight: 26)
                 Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site).plainDashes).font(.callout.weight(.bold))
                 Text(Copy.weekDetail(n.plan, site: site).plainDashes).font(.footnote).secondary()
+                if let h = Copy.weekHighlights(n) { Text(h.plainDashes).font(.footnote).fixedSize(horizontal: false, vertical: true) }
                 if n.daysAhead <= 1, n.plan.primary != nil {
                     Button { onOpenPlan(n.daysAhead == 1) } label: {
                         Text(n.daysAhead == 0 ? "Open tonight's plan" : "Open tomorrow's plan").font(.footnote.weight(.medium))

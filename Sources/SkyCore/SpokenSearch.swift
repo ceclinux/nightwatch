@@ -13,13 +13,15 @@ public enum SpokenSearch {
     /// Words that ask for tonight's plan rather than for a target: Siri hands over "tonight" for "What's worth imaging tonight in Nightwatch".
     /// No target is named for these words, so a search for them only ever found nothing.
     public static func asksForTonight(_ text: String) -> Bool {
-        text.lowercased().split { !$0.isLetter && $0 != "'" && $0 != "’" }.contains { ["tonight", "tonight's", "tonight’s", "plan"].contains(String($0)) }
+        text.lowercased().split { !$0.isLetter && $0 != "'" && $0 != "’" }.contains { ["tonight", L10n.text("tonight's"), "tonight’s", "plan"].contains(String($0)) }
     }
 
     /// The group a spoken search opens: the first match among tonight's targets, else the first in the catalogue (a target that is not up tonight
-    /// still has a group, where the search hint says so). Nil when nothing matches anywhere.
+    /// still has a group, where the search hint says so), else Planets and Moon for Pluto, Ceres or a Lagrange point, which are in no
+    /// catalogue. Nil when nothing matches anywhere.
     public static func group(for text: String, planned: [RankedTarget], catalogue: Catalog) -> TargetGroup? {
         planned.first { $0.matches(text) }?.group ?? catalogue.objects(matching: text).first?.group
+            ?? (MinorBody.matching(text).isEmpty ? nil : .planets)
     }
 
     public static func normalise(_ text: String) -> String {

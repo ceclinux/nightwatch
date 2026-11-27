@@ -79,6 +79,15 @@ final class Store: ObservableObject {
     private let catalog: Catalog
     /// The catalogue objects a search matches, up tonight or not (Siri's search, #72).
     func catalogueMatches(_ query: String) -> [DeepSkyObject] { catalog.objects(matching: query) }
+    private let searchExtras = SearchExtras()
+    /// A search's catalogue matches that `plan`'s list leaves out (#250), every group, for the hint.
+    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [TargetGroup] {
+        searchExtras.unlistedGroups(query: query, ranked: ranked, catalog: catalog, nightKey: plan.night.key)
+    }
+    /// The same for one group, as cards: greyed with when each is next well placed.
+    func searchExtraCards(_ query: String, group: TargetGroup, ranked: [RankedTarget], plan: NightPlan, site: Site) -> [FavouriteTarget] {
+        searchExtras.cards(query: query, group: group, ranked: ranked, catalog: catalog, plan: plan, site: site, fov: config.fov, rule: config.goRule)
+    }
     let constellations: [Constellation]
     private let stars: [BrightStar]
     private let showers: [MeteorShower]
@@ -499,7 +508,8 @@ final class Store: ObservableObject {
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
         fetchPagePhotosAhead(for: p)
-        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights)
+        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights,
+                            catalog: catalog, constellations: constellations, stars: stars, showers: showers, occultations: occultationsAhead)
         scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }

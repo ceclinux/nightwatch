@@ -6,7 +6,9 @@ import Foundation
 public struct WeekNight: Equatable, Sendable {
     public let plan: NightPlan
     public let daysAhead: Int
-    public init(plan: NightPlan, daysAhead: Int) { self.plan = plan; self.daysAhead = daysAhead }
+    /// What a clear night is good for, for its row's Highlights line (`Planner.highlights`); empty on a night with no clear window.
+    public var highlights: [String] = []
+    public init(plan: NightPlan, daysAhead: Int, highlights: [String] = []) { self.plan = plan; self.daysAhead = daysAhead; self.highlights = highlights }
 }
 
 extension Planner {
@@ -14,26 +16,37 @@ extension Planner {
 
     /// Tonight and the nights after it, as far as the forecast reaches the end of each night's darkness: a night the
     /// forecast covers only in part would read as clear or cloudy by accident.
+    /// With `catalog`, each clear night gets its highlights. A later night's row keeps its plan without targets; the plan its
+    /// highlights are chosen from is made with the catalogue and dropped, and only for a night with a clear window.
     public static func week(tonight: NightPlan, tomorrow: NightPlan?, forecast: Forecast, site: Site, fov: FieldOfView, rule: GoRule,
-                            bright: BrightSettings?) -> [WeekNight] {
+                            bright: BrightSettings?, catalog: Catalog = Catalog(objects: []), constellations: [Constellation] = [],
+                            stars: [BrightStar] = [], showers: [MeteorShower] = [], occultations: [SkyEvent] = []) -> [WeekNight] {
         guard let last = forecast.hours.map(\.time).max() else { return [] }
         var out: [WeekNight] = []
         for i in 0..<weekNights {
             let plan: NightPlan
+            var full: NightPlan?   // the plan with targets, for the highlights
             switch i {
-            case 0: plan = tonight
+            case 0: plan = tonight; full = tonight
             case 1:
                 guard let t = tomorrow else { return out }
-                plan = t
+                plan = t; full = t
             default:
                 guard let date = site.calendar.date(byAdding: .day, value: i, to: tonight.night.localDate),
                       let night = try? Ephemeris.night(localDate: date, site: site) else { return out }
                 plan = Planner.plan(night: night, forecast: forecast, catalog: Catalog(objects: []), constellations: [],
                                     site: site, fov: fov, rule: rule, bright: bright)
+                if plan.primary != nil, !catalog.objects.isEmpty {
+                    full = Planner.plan(night: night, forecast: forecast, catalog: catalog, constellations: constellations, stars: stars,
+                                        site: site, fov: fov, rule: rule, bright: bright)
+                }
             }
             let end = plan.night.darkEnd ?? plan.night.nauticalEnd ?? plan.night.sunrise
             guard last.addingTimeInterval(3600) >= end else { return out }
-            out.append(WeekNight(plan: plan, daysAhead: i))
+            let highlights = catalog.objects.isEmpty ? [] : full.map {
+                Planner.highlights(plan: $0, site: site, fov: fov, showers: showers, occultations: occultations)
+            } ?? []
+            out.append(WeekNight(plan: plan, daysAhead: i, highlights: highlights))
         }
         return out
     }

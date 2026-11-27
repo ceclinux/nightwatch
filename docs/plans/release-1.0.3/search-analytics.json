@@ -1,0 +1,26 @@
+{
+ "readings": [
+  {
+   "date": "2026-11-26",
+   "source": "App Store Connect, App Analytics, Acquisition, Sources",
+   "period": "2026-10-26 to 2026-11-24",
+   "platforms": "all",
+   "total_downloads_by_source": {
+    "App Store Search": 37,
+    "App Referrer": 7,
+    "App Store Browse": 7,
+    "Web Referrer": 3,
+    "Unavailable": 2
+   },
+   "app_store_search_product_page_views_unique_devices_daily_average": 2,
+   "whole_app": {
+    "first_time_downloads": 49,
+    "redownloads": 11,
+    "impressions": "4.53K",
+    "product_page_views": 144,
+    "conversion_rate_daily_average": "1.65%"
+   },
+   "notes": "Apple gives no per-term breakdown; these are source totals"
+  }
+ ]
+}

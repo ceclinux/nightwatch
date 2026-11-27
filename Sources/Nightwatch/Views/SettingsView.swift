@@ -65,19 +65,7 @@ struct SettingsView: View {
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section(header: Text(L10n.text("Telescope").uppercased()).capsLabel()) {
-                Picker(L10n.text("Preset"), selection: Binding(get: { store.config.fovPresetID ?? "custom" }, set: { id in
-                    store.config.fovPresetID = id == "custom" ? nil : id
-                    if let p = ui.presets.first(where: { $0.id == id }) { store.config.fov = p.fov }
-                    store.saveConfig()
-                })) {
-                    // A heading per maker, the models under it (owner-approved mock-up A, 7 October 2026).
-                    ForEach(TelescopePresets.byMaker(ui.presets)) { group in
-                        Section(L10n.text(group.maker)) { ForEach(group.presets) { Text(L10n.text($0.model)).scaledItem.tag($0.id) } }
-                    }
-                    Divider()
-                    Text(L10n.text("Custom")).scaledItem.tag("custom")
-                }
-                .id("Preset \(store.config.textSize)")   // a pop-up keeps the items it was built with: rebuilt when the size changes
+                PresetPicker(presets: ui.presets)
                 HStack {
                     TextField(L10n.text("Width °"), value: Binding(get: { store.config.fov.widthDeg }, set: { setFOV(width: $0) }), format: .number)
                     TextField(L10n.text("Height °"), value: Binding(get: { store.config.fov.heightDeg }, set: { setFOV(height: $0) }), format: .number)

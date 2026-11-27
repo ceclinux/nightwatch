@@ -25,10 +25,11 @@ public enum ShootingTips {
 
     static func kind(_ t: RankedTarget) -> Kind {
         if t.id == "moon" { return .moon }
-        if t.id.hasPrefix("planet-") { return .planet }
+        if t.id.hasPrefix("planet-") || t.id.hasPrefix("minor-") { return .planet }   // neither has a deep-sky filter or a copy line
         switch t.group {
         case .constellations: return .constellation
         case .stars: return .star
+        // The catalogue's canonical type name, never the translated one: it decides the filter, and a language must not.
         case .galaxies, .clusters: return t.typeName == "Cluster with nebula" ? .emission : .broadband
         default: break
         }
@@ -47,14 +48,14 @@ public enum ShootingTips {
         guard [.emission, .broadband, .nebulaUnknown].contains(k) else { return nil }
         switch presetID {
         case "dwarf-mini", "dwarf-3":
-            return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : L10n.text("Duo-Band or Astro"))) · 200 × 30 s"
-        case "draco":   // filter names only: DWARFLAB has published no frame counts for it
+            return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
+        case "draco":   // filter names only: DWARFLAB's Auto-Parameter sets the count to 999, which is a ceiling and not a plan
             return k == .emission ? "Hα + O III" : (k == .broadband ? L10n.text("Astronomy filter") : L10n.text("Hα + O III or Astronomy filter"))
-        case "seestar-s50":
+        case "seestar-s50", "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // every Seestar's manual gives 10 s frames by default
             let filter = k == .emission ? L10n.text("Light-pollution filter on · ") : (k == .broadband ? L10n.text("Light-pollution filter off · ") : "")
             return filter + "1,000 × 10 s"
-        case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // filter only: ZWO has published no frame length for them
-            return k == .emission ? L10n.text("Light-pollution filter on") : (k == .broadband ? L10n.text("Light-pollution filter off") : nil)
+        case "origin", "origin-mark-ii":   // Celestron's schedule default for the kind of target, in its default 10 s frames
+            return "\(originMinutes(t) * 6) × 10 s"
         default:
             return nil
         }
@@ -65,11 +66,12 @@ public enum ShootingTips {
     public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site,
                            night: String = L10n.text("tonight")) -> ShootingTip {
         if MilkyWay.isMilkyWay(t.id) { return milkyWayTip(t, site: site) }
+        if let b = MinorBody(targetID: t.id) { return minorTip(b, t, presetName: presetName, site: site) }
         let k = kind(t)
         var rows: [ShootingTip.Row] = []
         var source: String?
         let name = presetName ?? L10n.text("your telescope")
-        let hours = stackMinutes.map { String(format: "%.1f h", $0 / 60).replacingOccurrences(of: ".0 h", with: " h") }
+        let hours = stackMinutes.map { String(format: L10n.text("%.1f h"), $0 / 60).replacingOccurrences(of: ".0 h", with: " h") }
         func frames(_ seconds: Double) -> Int? { stackMinutes.map { Int(($0 * 60 / seconds).rounded()) } }
 
         // The same for every instrument: no maker publishes star settings, so this is guidance without numbers.
@@ -110,8 +112,8 @@ public enum ShootingTips {
                                   + L10n.text("and keep one exposure and gain, to be safe. Trailed stars in any night can stop the stack.")))
             }
         case "draco":
-            // #69: DWARFLAB publishes the Draco's filters but, as of 29 September 2026, no manual with exposure, gain or
-            // frame figures, so the tip names the filters and gives the rest without numbers (and no copy icon).
+            // #69: DWARFLAB's Draco help pages (read 25 November 2026) give what Auto-Parameter sets, shutter auto, gain 60 and
+            // count 999, and which filter suits what. They give no frame length in seconds, so the tip gives none either.
             switch k {
             case .moon:
                 rows.append(.init(L10n.text("Exposure"), L10n.text("The Moon is bright: use short exposures and check the histogram.")))
@@ -120,9 +122,10 @@ public enum ShootingTips {
             case .constellation:
                 rows.append(.init(L10n.text("Framing"), L10n.text("Far larger than the field of view: use a wide-angle lens, or pick one bright object in it.")))
             default:
-                source = L10n.text("Filters from DWARFLAB's Draco product page; it has published no exposure settings yet.")
+                source = L10n.text("Filters and Auto-Parameter from DWARFLAB's Draco help pages; they give no frame length.")
                 rows.append(.init(L10n.text("Filter"), filterText(k, dualBand: L10n.text("Hα + O III dual-narrowband filter"), broadband: L10n.text("Astronomy filter"))))
-                rows.append(.init(L10n.text("Exposure"), L10n.text("Single frames can run up to 300 s; DWARFLAB has not yet published a recommended exposure or gain.")))
+                rows.append(.init(L10n.text("Exposure"), "Auto-Parameter picks the filter and sets the shutter to auto, gain 60 and count 999. "
+                                  + "Set by hand, single frames can run up to 300 s: shorten them if stars stretch."))
                 if let h = hours { rows.append(.init(L10n.text("Frames"), L10n.format("It is up and clear for \(h) \(night)."))) }
             }
         case "seestar-s50":
@@ -146,9 +149,8 @@ public enum ShootingTips {
                 }
             }
         case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":
-            // ZWO's pages for these three (read 7 October 2026) name the same light-pollution filter as the S50's but give no
-            // alt-az frame length, only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon),
-            // as for the Draco.
+            // ZWO's manuals for these three (read 25 November 2026) each say it "captures 10-second exposure frames and stacks
+            // them" by default, as the S50 does; its pages give EQ mode's 60 s cap.
             switch k {
             case .moon:
                 // ZWO names it Solar System mode for these models (the S30's page, the S30 Pro's FAQ and its
@@ -159,11 +161,45 @@ public enum ShootingTips {
             case .constellation:
                 rows.append(.init(L10n.text("Framing"), L10n.text("Far larger than the field of view: use a wide-angle lens, or pick one bright object in it.")))
             default:
-                let page = ["seestar-s30": L10n.text("Seestar S30 page"), "seestar-s50-pro": L10n.text("Seestar S50 Pro page")][presetID ?? ""] ?? L10n.text("Seestar S30 Pro FAQ")
-                source = L10n.format("Filter and EQ-mode limit from ZWO's \(page); it publishes no frame length.")
+                let model = ["seestar-s30": "Seestar S30", "seestar-s50-pro": "Seestar S50 Pro"][presetID ?? ""] ?? "Seestar S30 Pro"
+                source = L10n.format("Filter and frame length from ZWO's \(model) manual; the EQ-mode limit from its pages.")
                 rows.append(.init(L10n.text("Filter"), filterText(k, dualBand: L10n.text("Light-pollution filter on"), broadband: L10n.text("Light-pollution filter off (UV/IR cut)"))))
-                rows.append(.init(L10n.text("Exposure"), L10n.text("Short frames in alt-az mode, up to 60 s in EQ mode; the Seestar stacks them as it goes.")))
-                if let h = hours { rows.append(.init(L10n.text("Frames"), L10n.format("It is up and clear for \(h) \(night)."))) }
+                rows.append(.init(L10n.text("Exposure"), L10n.text("10 s frames by default, up to 60 s in EQ mode; the Seestar stacks them as it goes.")))
+                if let n = frames(10), let h = hours {
+                    rows.append(.init(L10n.text("Frames"), L10n.format("Let it stack while it is up: \(h) is about \(n) frames.")))
+                } else {
+                    rows.append(.init(L10n.text("Frames"), L10n.text("Let it stack for as long as you can.")))
+                }
+            }
+        case "origin", "origin-mark-ii":
+            // Celestron's manuals, read 25 November 2026: #12099 (the Origin, ISO 200 by default) and #12100 (the Mark II's camera,
+            // ISO 1000). Both: 10-second frames by default, 15 or 30 s by choice, 30 s the most its alt-azimuth mount allows.
+            let iso = originISO(presetID)
+            source = L10n.format("Settings from Celestron's Origin manual (\(presetID == "origin" ? "#12099" : "#12100")).")
+            switch k {
+            case .moon:
+                rows.append(.init(L10n.text("Mode"), L10n.text("Use SnapShot mode: the Moon needs exposures well under a second.")))
+            case .planet:
+                rows.append(.init(L10n.text("Expect"), L10n.text("A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points.")))
+                source = nil
+            case .constellation:
+                rows.append(.init(L10n.text("Framing"), L10n.text("Far larger than the field of view: use a wide-angle lens, or pick one bright object in it.")))
+                source = nil
+            default:
+                rows.append(.init(L10n.text("Filter"), filterText(k, dualBand: L10n.text("Celestron's Nebula Filter in the filter drawer, if you have one"),
+                                                       broadband: L10n.text("No filter"))))
+                rows.append(.init(L10n.text("Exposure"), "10 s frames at ISO \(iso) by default, 15 s with the Nebula Filter. You can choose 15 or 30 s: "
+                                  + "30 s is the most its mount allows, and less for a target near the zenith."))
+                let minutes = originMinutes(t)
+                if let n = frames(10), let h = hours {
+                    rows.append(.init(L10n.text("Frames"), "Celestron's schedule gives this kind of target \(minutes) minutes by default. "
+                                      + L10n.format("Let it stack while it is up: \(h) is about \(n) frames.")))
+                } else {
+                    rows.append(.init(L10n.text("Frames"), L10n.format("Celestron's schedule gives this kind of target \(minutes) minutes by default; longer shows more.")))
+                }
+                // The owner's source, 25 November 2026: a thread in the Celestron Origin User Group. The one row not from the maker.
+                rows.append(.init(L10n.text("Owners' tip"), "Owners in the Celestron Origin User Group often raise the frames to 15 s and keep dithering on. "
+                                  + "That is their advice, not Celestron's."))
             }
         case "dslr-apsc-200":
             source = L10n.text("The untracked limit comes from the 500 and NPF rules; tracked times are typical ranges, not a maker's figure.")
@@ -210,6 +246,24 @@ public enum ShootingTips {
         return tip
     }
 
+    /// Pluto, Ceres and the Earth–Moon Lagrange points (#250): no maker publishes settings for them, so guidance without numbers,
+    /// and for a Lagrange point the plain fact that there is nothing a small telescope will record.
+    static func minorTip(_ b: MinorBody, _ t: RankedTarget, presetName: String?, site: Site) -> ShootingTip {
+        var rows: [ShootingTip.Row]
+        if b.isLagrangePoint {
+            rows = [.init(L10n.text("What is here"), "A point 60° \(b == .l4 ? "ahead of" : "behind") the Moon in its orbit, where the pull of the Earth and the Moon balance. "
+                          + "The Kordylewski dust clouds claimed here are too faint for a small telescope: there is nothing to record."),
+                    .init("Where", L10n.text("It moves with the Moon, about 13° a day, so its place is right for tonight only, and to a few degrees."))]
+        } else {
+            rows = [.init("Expect", b == .pluto ? L10n.text("A faint point among the stars, near magnitude 14 to 15: a long stack shows it, a single frame may not.")
+                                                : L10n.text("A point like a star, bright enough for a short stack.")),
+                    .init("Proof", L10n.text("Shoot the same field on two nights: it is the point that has moved.")),
+                    .init("Exposure", L10n.text("Use your telescope's ordinary deep-sky settings with no narrowband filter: its light is reflected sunlight."))]
+        }
+        if let v = t.viewable { rows.append(.init("When", L10n.format("Up and clear from \(Copy.hhmm(v.start, site: site)); highest at \(Copy.hhmm(t.peakTime, site: site))."))) }
+        return ShootingTip(title: L10n.format("How to shoot this with \(presetName.map { "your \($0)" } ?? "your telescope")"), rows: rows, source: nil)
+    }
+
     /// The Milky Way (#114, owner-approved mock-up): a camera and wide lens whatever the telescope, since even the widest
     /// smart telescope sees a few degrees of a band that spans the sky.
     static func milkyWayTip(_ t: RankedTarget, site: Site) -> ShootingTip {
@@ -231,6 +285,18 @@ public enum ShootingTips {
         return ShootingTip(title: L10n.text("How to shoot this with a camera and wide lens"), rows: rows, source: L10n.text("Exposure limits from the 500 and NPF rules."))
     }
 
+    /// The Origin's default ISO: 200 for the first camera (manual #12099), 1000 for the Mark II's (#12100).
+    static func originISO(_ presetID: String?) -> Int { presetID == "origin" ? 200 : 1000 }
+    /// The total Celestron's imaging schedule gives a kind of target by default: 5 minutes for an open cluster, 10 for a globular
+    /// cluster or a planetary nebula, 20 for a galaxy or a diffuse nebula.
+    static func originMinutes(_ t: RankedTarget) -> Int {
+        switch t.typeName {
+        case L10n.text("Open cluster"), L10n.text("Stellar association"): 5
+        case L10n.text("Globular cluster"), L10n.text("Planetary nebula"): 10
+        default: 20
+        }
+    }
+
     /// The numbers the card gives, without the explanations; nil where it gives none.
     static func copyNumbers(_ k: Kind, presetID: String?) -> String? {
         switch presetID {
@@ -242,12 +308,25 @@ public enum ShootingTips {
                 let filter = k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : L10n.text("Duo-Band or Astro"))
                 return L10n.format("\(filter) filter, 15–60 s at gain 60–80, 200–400 frames")
             }
-        case "seestar-s50":
+        case "draco":
+            switch k {
+            case .moon, .planet, .constellation, .star: return nil
+            default:
+                let filter = k == .emission ? "Hα + O III" : (k == .broadband ? "Astronomy" : "Hα + O III or Astronomy")
+                return "\(filter) filter, Auto-Parameter: shutter auto, gain 60, count 999"
+            }
+        case "seestar-s50", "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":
             switch k {
             case .emission: return L10n.text("light-pollution filter on, 10 s frames")
             case .broadband: return L10n.text("light-pollution filter off, 10 s frames")
             case .nebulaUnknown: return L10n.text("light-pollution filter on if it glows red, off if not, 10 s frames")
             default: return nil
+            }
+        case "origin", "origin-mark-ii":
+            switch k {
+            case .moon, .planet, .star, .constellation: return nil
+            case .broadband: return "no filter, 10 s frames at ISO \(originISO(presetID))"
+            default: return "10 s frames at ISO \(originISO(presetID)), or 15 s with the Nebula Filter"
             }
         case "dslr-apsc-200":
             switch k {

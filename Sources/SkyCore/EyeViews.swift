@@ -37,16 +37,16 @@ public enum EyeViews {
         let b = min(9, max(1, bortle)), limit = nakedEyeLimit[b]!, sky = skyBrightness[b]!
         if t.id == "moon" { return .nakedEye }
         if MilkyWay.isMilkyWay(t.id) { return t.moonWashed ? nil : .nakedEye }   // #114
-        guard let m = t.magnitude else { return nil }
+        guard let m = t.magnitude, !t.id.hasPrefix("minor-") else { return nil }   // Pluto and Ceres are looked up, not looked for
         switch t.group {
         case .planets:
             return m <= limit ? .nakedEye : (m <= binocularLimit ? .binoculars : nil)
-        case .clusters where t.typeName != "Cluster with nebula":
+        case .clusters where t.typeName != L10n.text("Cluster with nebula"):
             guard !t.moonWashed else { return nil }
             if m <= limit { return .nakedEye }
             return m <= binocularLimit && (t.sizeArcmin ?? 0) >= binocularMinArcmin ? .binoculars : nil
         case .nebulae, .galaxies, .clusters:
-            guard !t.moonWashed, t.typeName != "Supernova remnant", let a = t.sizeArcmin, a > 0 else { return nil }
+            guard !t.moonWashed, t.typeName != L10n.text("Supernova remnant"), let a = t.sizeArcmin, a > 0 else { return nil }
             let sb = surfaceBrightness(magnitude: m, majorArcmin: a, minorArcmin: t.minorArcmin)
             if m <= limit, sb <= sky + nakedEyeMargin { return .nakedEye }
             let faintest = t.subtitle.hasPrefix("HII ") ? emissionBinocularLimit : binocularLimit
@@ -77,7 +77,7 @@ extension Copy {
         switch t.group {
         case .planets: return eye ? L10n.text("A bright star that does not twinkle") : L10n.text("A small steady point in binoculars")
         case .galaxies: return eye ? L10n.text("A faint smudge to the eye") : L10n.text("A small oval glow in binoculars")
-        case .clusters where t.typeName == "Globular cluster": return eye ? L10n.text("A fuzzy star to the eye") : L10n.text("A fuzzy ball in binoculars")
+        case .clusters where t.typeName == "Globular cluster": return eye ? L10n.text("A fuzzy star to the eye") : L10n.text("A fuzzy ball in binoculars")   // canonical: the kind decides, not the language
         case .clusters: return eye ? L10n.text("A misty patch to the eye") : L10n.text("A spray of stars in binoculars")
         default: return eye ? L10n.text("A misty glow to the eye") : L10n.text("A small grey patch in binoculars")
         }

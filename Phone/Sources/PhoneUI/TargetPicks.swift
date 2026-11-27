@@ -94,7 +94,7 @@ struct TargetPicture: View {
                 if let d = moon.data { Color.clear.overlay(photo(d)).transition(.opacity) } else { symbol }
                 Color.clear.task(id: MoonImage.hourKey(for: at)) { await moon.load(at: at, allowDownload: allowsDownloads) }
             case .planet(let name):
-                if let p = Planet(rawValue: name), let u = PlanetImages.url(for: p), let d = try? Data(contentsOf: u) { Color.clear.overlay(photo(d)) } else { symbol }
+                if let u = PlanetImages.url(named: name), let d = try? Data(contentsOf: u) { Color.clear.overlay(photo(d)) } else { symbol }
             case .constellation(let id):
                 if let f = bundledArt("\(id)-figure", folder: "Constellations"), let p = bundledArt("\(id)-plot", folder: "Constellations") {
                     ZStack { art(f); art(p) }.padding(4)

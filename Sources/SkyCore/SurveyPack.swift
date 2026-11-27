@@ -52,6 +52,10 @@ public actor SurveyPackStore {
     /// A prerelease, so GitHub's "latest release" (the app's update check and the disk image link) stays the app's own.
     public static let source = URL(string: "https://github.com/rsutcliffe/nightwatch/releases/download/survey-set-1/survey-set.nwsp")!
     static let retryAfter: TimeInterval = 3600
+    /// The name the set is kept under. It changes when the published set gains targets (2: the Sharpless nebulae, 25 November 2026), so a
+    /// Mac or phone already holding the earlier set fetches the new one: a kept file is otherwise never fetched again.
+    public static let fileName = "survey-set-2.nwsp"
+    static let earlierFileNames = ["survey-set.nwsp"]
     static let maxBytes = 100_000_000
 
     private let file: URL
@@ -62,7 +66,7 @@ public actor SurveyPackStore {
     private var failedAt = Date.distantPast
 
     public init(file: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                    .appendingPathComponent("Nightwatch", isDirectory: true).appendingPathComponent("survey-set.nwsp"),
+                    .appendingPathComponent("Nightwatch", isDirectory: true).appendingPathComponent(SurveyPackStore.fileName),
                 source: URL = SurveyPackStore.source,
                 get: @escaping Get = { try await URLSessionFetcher(timeout: $1).get($0) }) {
         self.file = file; self.source = source; self.get = get
@@ -84,6 +88,9 @@ public actor SurveyPackStore {
             guard let data = try? await get(source, 120), data.count < Self.maxBytes, let p = SurveyPack(data) else { return nil }
             try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: file, options: .atomic)
+            for old in Self.earlierFileNames where old != file.lastPathComponent {   // the set it replaces, 17 MB
+                try? FileManager.default.removeItem(at: file.deletingLastPathComponent().appendingPathComponent(old))
+            }
             return p
         }
         loading = task

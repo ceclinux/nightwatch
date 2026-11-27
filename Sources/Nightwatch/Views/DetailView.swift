@@ -196,7 +196,7 @@ extension DetailView {
 
     /// "How to see this" for a target opened from Eyes and binoculars (owner's UAT, 29 September 2026).
     func eyeCard(_ eye: EyeView, site: Site) -> some View {
-        let abbr = target.subtitle.components(separatedBy: " in ").last ?? ""
+        let abbr = target.subtitle.components(separatedBy: L10n.text(" in ")).last ?? ""
         let moonUp = plan.flatMap(Planner.moonTonight).map { $0 != .down } ?? false
         let tip = ShootingTips.eyeTip(for: target, eye: eye, constellation: store.constellations.first { $0.id == abbr }?.name,
                                       moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site, night: nightWords)

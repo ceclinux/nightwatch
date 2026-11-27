@@ -56,6 +56,15 @@ iPhone and iPad screens and their App Store listing are still English upstream; 
 Siri and Shortcuts metadata follow the system language, as noted above, while the Spotlight summary Nightwatch indexes for
 Siri is translated.
 
+## Upstream refresh (late November 2026)
+
+Merged Mac 1.8.0 and iPhone 1.1.0. On the Mac: the new Pluto, Ceres and Earth–Moon Lagrange points, Sharpless nebulae, the
+week's highlights, a search card for a target that is not up tonight, the new telescope presets (Vaonis, Unistellar and
+Celestron Origin) with their shooting tips, the telescope menu shared by Settings and the welcome, alert age, the haze and rain
+lines, and the new Numbers-guide entries are translated. Canonical catalogue type names (`Catalog.typeNames`) decide a
+target's filter tip and are never translated in the code path: they are translated at presentation only. Search keywords
+("tonight", "plan") and network identifiers stay English. The iPhone and iPad app remains English upstream.
+
 ## Verification
 
 ```sh

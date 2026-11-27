@@ -29,6 +29,8 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
     public let constellation: String
     /// The Caldwell number (1–109), from OpenNGC's "C 043" identifier or an addendum entry named "C009".
     public var caldwell: Int? = nil
+    /// The Sharpless number (1–313), where SIMBAD or OpenNGC says which Sharpless region this is, or for a row of its own.
+    public var sharpless: Int? = nil
 
     /// "M42" for a Messier object, else the catalogue number spaced and without leading zeros: "NGC 281", "IC 1340".
     /// An addendum entry that is only a Caldwell object reads "C14". Otherwise the NGC or IC number stays the ID even for
@@ -54,6 +56,15 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
         return nil
     }
 
+    /// 155 from OpenNGC's identifiers list ("LBN 529,SH 2-155").
+    static func sharplessNumber(identifiers: String) -> Int? {
+        for token in identifiers.split(separator: ",") {
+            let t = token.trimmingCharacters(in: .whitespaces)
+            if t.hasPrefix("SH 2-"), let n = Int(t.dropFirst(5)) { return n }
+        }
+        return nil
+    }
+
     /// "{catalogue} {number}": letters, a space, then the number without leading zeros. ESO, PGC and UGC numbers are
     /// fixed-format and kept whole ("ESO 056-115"). An id with no letters or no number is returned as it is.
     static func spaced(_ id: String) -> String {
@@ -69,6 +80,8 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
         if let m = messier { parts += ["M\(m)", DeepSkyObject.spaced(id)] } else { parts.append(catalogueID) }
         if let c = caldwell, catalogueID != "C\(c)" { parts.append("C\(c)") }
         if let c = commonName { parts.append(c) }
+        // Last, so a narrow row (the widgets') cuts this short and not the name. A row of its own already reads "Sh 2-101".
+        if let s = sharpless, !id.hasPrefix("Sh2-") { parts.append("Sh 2-\(s)") }
         return parts.joined(separator: " · ")
     }
 }
@@ -100,6 +113,27 @@ public struct Catalog: Sendable {
     /// Sizes OpenNGC gets wrong, in arcminutes (major, minor), where a visibility judgement depends on them (#63).
     /// NGC 7000: OpenNGC has 120 × 30; the nebula is 120′ × 100′ (Wikipedia, North America Nebula).
     static let sizeCorrections: [String: (Double, Double)] = ["NGC7000": (120, 100)]
+
+    /// The Sharpless numbers of objects OpenNGC lists under another name, by its Name, so "Sh2-25" finds the Lagoon Nebula.
+    /// SIMBAD's identifications, printed by `scripts/build-sharpless.py` (25 November 2026); OpenNGC's own "SH 2-155"
+    /// identifier is read from the file. A nebula that merely lies inside a Sharpless region is in `sharplessByPosition`.
+    static let sharplessNumbers: [String: Int] = [
+        "NGC6302": 6, "NGC6357": 11, "NGC6523": 25, "NGC6590": 37, "NGC6823": 86, "NGC6842": 95, "NGC6847": 97, "NGC7000": 117,
+        "NGC7380": 142, "IC1470": 156, "NGC7538": 158, "NGC7635": 162, "NGC7822": 171, "NGC0281": 184, "IC1805": 190,
+        "IC1848": 199, "NGC1491": 206, "NGC1624": 212, "NGC1499": 220, "NGC1579": 222, "IC0417": 234, "NGC1931": 237,
+        "NGC1555": 238, "NGC1952": 244, "IC0443": 248, "NGC2175": 252, "IC2162": 255, "NGC2264": 273, "NGC2238": 275,
+        "IC0466": 288, "IC2177": 292, "NGC2359": 298, "NGC2467": 311
+    ]
+
+    /// Sharpless numbers given by position, where neither SIMBAD nor OpenNGC says which region an object is (owner, 25 November
+    /// 2026: "Sh2-281" found nothing, though the Orion Nebula lies inside it). The number goes to the OpenNGC nebula nearest the
+    /// region's centre among those inside it; never a planetary or reflection nebula, never a region over 5° wide, and an object keeps
+    /// one number. A match, not an identification: in a crowded field it can name the wrong member. From `scripts/build-sharpless.py`.
+    static let sharplessByPosition: [String: Int] = [
+        "NGC6334": 8, "NGC6559": 29, "NGC6514": 30, "IC4701": 44, "NGC6618": 45, "IC4703": 49, "NGC6857": 100, "NGC6974": 103,
+        "NGC6888": 105, "IC5146": 125, "IC1396": 131, "IC0063": 185, "IC0405": 229, "IC0410": 236, "IC0434": 277, "NGC1977": 279,
+        "NGC1976": 281
+    ]
 
     static let extraNames: [String: String] = [
         "NGC0188": "Polarissima Cluster", "IC0342": "Hidden Galaxy", "NGC0891": "Silver Sliver Galaxy",
@@ -141,6 +175,7 @@ public struct Catalog: Sendable {
                   let ra = hours(field(row, "RA")), let dec = degrees(field(row, "Dec")) else { continue }
             let v = Double(field(row, "V-Mag")), b = Double(field(row, "B-Mag"))
             let names = field(row, "Common names")
+            let listed = field(row, "Const")   // Sharpless gives no constellation: it is found from the place
             out.append(DeepSkyObject(
                 id: field(row, "Name"),
                 commonName: names.isEmpty ? extraNames[field(row, "Name")]
@@ -149,8 +184,10 @@ public struct Catalog: Sendable {
                 typeCode: type, group: group, raHours: ra, decDeg: dec,
                 majAxisArcmin: sizeCorrections[field(row, "Name")]?.0 ?? Double(field(row, "MajAx")),
                 minAxisArcmin: sizeCorrections[field(row, "Name")]?.1 ?? Double(field(row, "MinAx")),
-                magnitude: v ?? b, constellation: field(row, "Const"),
-                caldwell: DeepSkyObject.caldwellNumber(identifiers: field(row, "Identifiers")) ?? DeepSkyObject.caldwellNumber(name: field(row, "Name"))))
+                magnitude: v ?? b, constellation: listed.isEmpty ? Ephemeris.constellation(raHours: ra, decDeg: dec).symbol : listed,
+                caldwell: DeepSkyObject.caldwellNumber(identifiers: field(row, "Identifiers")) ?? DeepSkyObject.caldwellNumber(name: field(row, "Name")),
+                sharpless: DeepSkyObject.sharplessNumber(identifiers: field(row, "Identifiers")) ?? sharplessNumbers[field(row, "Name")]
+                    ?? sharplessByPosition[field(row, "Name")]))
         }
         return out
     }
@@ -160,7 +197,7 @@ public struct Catalog: Sendable {
     public func objects(matching query: String) -> [DeepSkyObject] {
         guard !query.allSatisfy(\.isWhitespace) else { return [] }
         return objects.filter { o in
-            var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours,
+            var r = RankedTarget(id: o.id, name: o.displayName, subtitle: L10n.format("\(o.typeCode) in \(o.constellation)"), group: o.group, raHours: o.raHours,
                                  decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 0, peakTime: Date(timeIntervalSince1970: 0),
                                  moonSepDeg: 90, moonWashed: false, visibleFraction: 0)
             r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode
@@ -170,7 +207,7 @@ public struct Catalog: Sendable {
 
     public static func bundled() throws -> Catalog {
         var all: [DeepSkyObject] = []
-        for name in ["NGC", "addendum"] {
+        for name in ["NGC", "addendum", "sharpless"] {
             guard let url = Bundle.module.url(forResource: name, withExtension: "csv", subdirectory: "Resources/catalog") else {
                 throw CatalogError.missingResource(name)
             }

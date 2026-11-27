@@ -112,6 +112,43 @@ import Foundation
     }
 }
 
+@Test func theNewPlanSearchAndTelescopeWordingIsTranslated() {
+    L10n.$languageOverride.withValue(.simplifiedChinese) {
+        for key in ["Add to plan", "Show suggestions", "Hide suggestions", "Suggested", "At peak tonight", "New Moon tonight",
+                    "Best now", "Hazy", "Haze or smoke", "Peak night {0}, in {1} days", "Next well placed from {0}"] {
+            #expect(L10n.text(key) != key, "Untranslated: \(key)")
+        }
+        #expect(L10n.format("Peak night \("4–5 November"), in \(38) days") == "极大期在 4–5 November 晚，还有 38 天")
+        #expect(L10n.format("Next well placed from \("4 Dec"))") == "下次位置良好的日期：4 Dec")
+        // The makers' names under their headings keep their brand; the new minor bodies are named in Chinese.
+        #expect(L10n.text("Pluto") == "冥王星" && L10n.text("Ceres") == "谷神星")
+        #expect(L10n.text("Origin Mark II") == "Origin Mark II")
+    }
+    L10n.$languageOverride.withValue(.english) {
+        #expect(L10n.text("Add to plan") == "Add to plan")
+        #expect(L10n.text("Pluto") == "Pluto")
+    }
+}
+
+@Test func aShootingTipKeepsItsKindWhateverTheLanguage() throws {
+    // The kind of light a target gives decides its filter tip: a translated type name must not change it.
+    func tipTitle(_ language: AppLanguage) -> String {
+        L10n.$languageOverride.withValue(language) {
+            var t = RankedTarget(id: "NGC6888", name: "NGC 6888", subtitle: "Sh 2-105", group: .nebulae, raHours: 0, decDeg: 0,
+                                 sizeArcmin: 18, magnitude: 7, fit: .fits, peakAltDeg: 60, peakTime: Date(),
+                                 moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+            t.typeName = "Emission nebula"
+            #expect(ShootingTips.kind(t) == .emission)
+            return ShootingTips.tip(for: t, presetID: "origin", presetName: nil, stackMinutes: 120, site: testSite).title
+        }
+    }
+    let en = tipTitle(.english), zh = tipTitle(.simplifiedChinese)
+    #expect(en.hasPrefix("How to shoot this with"))
+    #expect(zh.contains("拍摄"))   // the sentence around the telescope's name follows the language, the name itself does not
+}
+
+private let testSite = Site(name: "Malham", latitude: 54.07, longitude: -2.16, elevationM: 400, timeZoneID: "Europe/London", bortle: 3)
+
 @Test func chineseKeepsCatalogueIdentifiersAndClassification() throws {
     let english = try L10n.$languageOverride.withValue(.english) { try Catalog.bundled() }
     let chinese = try L10n.$languageOverride.withValue(.simplifiedChinese) { try Catalog.bundled() }
@@ -125,7 +162,7 @@ import Foundation
         target.typeName = "Emission nebula"
         #expect(ShootingTips.kind(target) == .emission)
         #expect(target.cardName == "发射星云")
-        #expect(target.displaySubtitle == "HII，位于 Cyg")
+        #expect(target.displaySubtitle == "HII in Cyg")   // translated: "HII" and "Cyg" stay, and the phrase around them follows the language
         #expect(target.matches("发射星云") && target.matches("emission") && target.matches("NGC7000"))
         let moon = RankedTarget(id: "moon", name: "Moon", subtitle: "62% illuminated", group: .planets,
                                 raHours: 0, decDeg: 0, sizeArcmin: 30, magnitude: -10, fit: .fits,

@@ -87,6 +87,19 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     #expect(r.notification == nil && r.state.stage == .idle)
 }
 
+@Test func anAlertFromAForecastOverAnHourOldSaysWhenItWasFetched() throws {
+    let (night, good, _, _) = try fixtures()
+    let due = night.sunset.addingTimeInterval(-3000)
+    func body(age: TimeInterval) -> String? {
+        AlertEngine.step(now: due, tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due.addingTimeInterval(-age),
+                         site: site, copy: copy).notification?.body
+    }
+    #expect(body(age: 30 * 60)?.contains("Forecast from") == false)
+    let fetched = due.addingTimeInterval(-2 * 3600)
+    #expect(body(age: 2 * 3600)?.hasSuffix(" Forecast from \(Copy.hhmm(fetched, site: site)).") == true)
+    #expect(body(age: 7 * 3600) == nil)
+}
+
 @Test func newNightResetsState() throws {
     let (night, good, _, _) = try fixtures()
     let stale = AlertState(nightKey: "2026-09-22", stage: .done)

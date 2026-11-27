@@ -7,3 +7,5 @@ jupiter.jpg  File:Jupiter and its shrunken Great Red Spot.jpg  credit: NASA, ESA
 saturn.jpg  File:Saturn during Equinox.jpg  credit: NASA (Cassini); full credit line on the Commons page  https://commons.wikimedia.org/wiki/File%3ASaturn_during_Equinox.jpg
 uranus.jpg  File:Uranus2.jpg  credit: NASA/JPL-Caltech  https://commons.wikimedia.org/wiki/File%3AUranus2.jpg
 neptune.jpg  File:Neptune Full.jpg  credit: NASA  https://commons.wikimedia.org/wiki/File%3ANeptune_Full.jpg
+pluto.jpg  File:Pluto in True Color - High-Res.jpg  credit: NASA/Johns Hopkins University Applied Physics Laboratory/Southwest Research Institute/Alex Parker (New Horizons)  https://commons.wikimedia.org/wiki/File:Pluto_in_True_Color_-_High-Res.jpg
+ceres.jpg  File:Ceres - RC3 - Haulani Crater (22381131691) (cropped).jpg  credit: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA (Dawn), processed by Justin Cowart; marked public domain on Commons  https://commons.wikimedia.org/wiki/File:Ceres_-_RC3_-_Haulani_Crater_(22381131691)_(cropped).jpg
